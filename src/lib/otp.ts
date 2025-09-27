@@ -3,6 +3,7 @@ import { ulid } from "ulid"
 
 import { encryptOtp, decryptOtp } from "./crypto/otp.js"
 
+import { deleteEncryptionKey } from "./custom/kms.js"
 import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "./custom/otp.js"
 import sendOtp from "./custom/send.js"
 
@@ -18,8 +19,8 @@ const otpMaxDurationMs = otpMaxDurationSeconds * 1000
 const resendBlockMs = resendBlockSeconds * 1000
 
 
+export const cookieKeyIdName = "e"
 export const cookieOtpName = "t"
-export const keyOtpName = "e"
 
 
 export async function createOtpCookie(
@@ -53,8 +54,8 @@ export async function createOtpCookie(
 
   const keyId = ulid()
 
-  setCookie(c, cookieOtpName, await encryptOtp(c, value), cookieOptions)
-  setCookie(c, keyOtpName, keyId, cookieOptions)
+  setCookie(c, cookieOtpName, await encryptOtp(c, keyId, value, expires), cookieOptions)
+  setCookie(c, cookieKeyIdName, keyId, cookieOptions)
 
 }
 
@@ -89,18 +90,26 @@ export async function createOtpAndSend(
 }
 
 
+export async function deleteOtpData(c: Context, keyId: string) {
+  deleteCookie(c, cookieOtpName)
+  deleteCookie(c, cookieKeyIdName)
+  await deleteEncryptionKey(c, keyId)
+}
+
+
 export async function getOtpTokenData(
   c: Context,
+  keyId: string,
   token: string
 ) {
   
-  if (token) {
+  if (keyId && token) {
     try {
       // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-      return (await decryptOtp(c, token)).split(separator) as [credential: string, expires: string, resendBlockDate: string, otp: string, attempts: string, otpBlockDate?: string]
+      return (await decryptOtp(c, keyId, token))?.split(separator) as [credential: string, expires: string, resendBlockDate: string, otp: string, attempts: string, otpBlockDate?: string]
     } catch {}
   }
-  
-  deleteCookie(c, cookieOtpName)
+
+  await deleteOtpData(c, keyId)
 
 }

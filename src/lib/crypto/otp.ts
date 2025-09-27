@@ -1,9 +1,5 @@
-import {
-  createSymmetricKey,
-  createSymmetricKeyWithText,
-  encryptSymmetricallyText,
-  decryptSymmetricallyText
-} from "./index.js"
+import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "./index.js"
+import { storeEncryptionKey, getEncryptionKey } from "../custom/kms.js"
 
 import type { Context } from "hono"
 
@@ -12,53 +8,30 @@ const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 
 
-let otpKeyObject: CryptoKey
+export async function encryptOtp(c: Context, keyId: string, value: string, expires: number) {
 
+  const key = await createSymmetricKey()
 
-async function getOtpKey(
-  c: Context
-) {
-
-  if (!otpKeyObject) {
-    const { OTP_KEY } = env(c)
-    if (!OTP_KEY) {
-      throw new Error(
-        "Required environment variable `OTP_KEY` is not set or is empty."
-      )
-    }
-    otpKeyObject = await createSymmetricKeyWithText(
-      OTP_KEY,
-      textEncoder
-    )
-  }
-
-  return otpKeyObject
-
-}
-
-
-export async function encryptOtp(
-  c: Context,
-  value: string
-) {
-
-  return await encryptSymmetricallyText(
+  const result = await encryptSymmetricallyText(
     value,
-    await getOtpKey(c),
+    key,
     textEncoder
   )
 
+  await storeEncryptionKey(c, keyId, key, expires)
+
+  return result
+
 }
 
 
-export async function decryptOtp(
-  c: Context,
-  value: string
-) {
+export async function decryptOtp(c: Context, keyId: string, value: string) {
 
-  return await decryptSymmetricallyText(
+  const key = await getEncryptionKey(c, keyId)
+
+  return key && await decryptSymmetricallyText(
     value,
-    await getOtpKey(c),
+    key,
     textDecoder
   )
 

@@ -5,12 +5,11 @@ import { cors } from "hono/cors"
 import { secureHeaders } from "hono/secure-headers"
 
 import { env } from "hono/adapter"
-import { deleteCookie } from "hono/cookie"
 
 import otpCookieValidator from "./lib/validators/cookie.js"
 import otpValueValidator from "./lib/validators/value.js"
 
-import { cookieOtpName, createOtpAndSend } from "./lib/otp.js"
+import { createOtpAndSend, deleteOtpData } from "./lib/otp.js"
 import {
   ERR_OTP_ALREADY_RESENT,
   ERR_OTP_EXPIRED_COOKIE,
@@ -53,14 +52,17 @@ app.post("/api/otp/create", inputValidator, async(c) => {
 
 
 app.post("/api/otp/resend", otpCookieValidator, async(c) => {
-
-  // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-  const [credential, expires, resendBlockDate] = c.req.valid("cookie")
+  
+  const {
+    keyId,
+    // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
+    value: [credential, expires, resendBlockDate]
+  } = c.req.valid("cookie")
 
   const dateNow = Date.now()
 
   if (dateNow > +expires) {
-    deleteCookie(c, cookieOtpName)
+    await deleteOtpData(c, keyId)
     return c.json(ERR_OTP_EXPIRED_COOKIE, 400)
   }
 
@@ -85,14 +87,17 @@ app.post("/api/otp/verify",
   otpCookieValidator,
   async(c) => {
 
-    // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-    const [credential, expires, resendBlockDate, otpValid, attempts, otpBlockDate] = c.req.valid("cookie")
+    const {
+      keyId,
+      // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
+      value: [credential, expires, resendBlockDate, otpValid, attempts, otpBlockDate]
+    } = c.req.valid("cookie")
     
     const expiresNumber = +expires
     const dateNow = Date.now()
 
     if (dateNow > expiresNumber) {
-      deleteCookie(c, cookieOtpName)
+      await deleteOtpData(c, keyId)
       return c.json(ERR_OTP_EXPIRED_COOKIE, 400)
     }
 
@@ -115,8 +120,8 @@ app.post("/api/otp/verify",
           newOtpDateBlocked = dateNow + otpInvalidBlockMs
           break
         case 0:
-          deleteCookie(c, cookieOtpName)
-          return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)  // User has to login again
+          await deleteOtpData(c, keyId)
+          return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)  // User has to log in again
       }
       return c.json({
         error: "OTP:INCORRECT",
