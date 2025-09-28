@@ -1,6 +1,6 @@
 import { validator } from "hono/validator"
 
-import { ERR_ID_INVALID } from "../errors.js"
+import { ERR_ID_INVALID } from "@/lib/errors.js"
 
 
 /**

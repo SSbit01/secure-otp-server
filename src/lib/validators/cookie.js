@@ -1,7 +1,7 @@
 import { validator } from "hono/validator"
 
-import { cookieKeyIdName, cookieOtpName, getOtpTokenData } from "../otp.js"
-import { ERR_OTP_INVALID_COOKIE } from "../errors.js"
+import { cookieKeyIdName, cookieOtpName, getOtpTokenData } from "@/lib/otp"
+import { ERR_OTP_INVALID_COOKIE } from "@/lib/errors"
 
 
 const otpCookieValidator = validator("cookie", async(cookies, c) => {

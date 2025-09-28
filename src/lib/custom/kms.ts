@@ -1,4 +1,4 @@
-import { otpMaxDurationSeconds } from "./otp.js"
+import { otpMaxDurationSeconds } from "@/lib/custom/otp"
 
 import type { Context } from "hono"
 

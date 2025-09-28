@@ -1,4 +1,4 @@
-import base64ToBytes from "../base64.js"
+import base64ToBytes from "@/lib/base64"
 
 
 const encryptionAlgorithm = "AES-GCM"

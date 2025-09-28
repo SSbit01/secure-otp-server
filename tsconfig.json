@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
     "lib": [
@@ -11,9 +11,13 @@
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
+    "outDir": "./dist",
     "allowJs": true,
     "checkJs": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "exclude": [".vercel", ".wrangler", "dist", "build", "node_modules"]
+  "include": ["src"]
 }

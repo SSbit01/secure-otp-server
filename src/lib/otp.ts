@@ -1,13 +1,13 @@
 import { setCookie, deleteCookie } from "hono/cookie"
 import { ulid } from "ulid"
 
-import { encryptOtp, decryptOtp } from "./crypto/otp.js"
-import isProduction from "./production.js"
-import getReducedTimePrecision from "./time.js"
+import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
+import isProduction from "@/lib/production"
+import getReducedTimePrecision from "@/lib/time"
 
-import { deleteEncryptionKey } from "./custom/kms.js"
-import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "./custom/otp.js"
-import sendOtp from "./custom/send.js"
+import { deleteEncryptionKey } from "@/lib/custom/kms"
+import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "@/lib/custom/otp"
+import sendOtp from "@/lib/custom/send"
 
 import type { Context } from "hono"
 import type { CookieOptions } from "hono/utils/cookie"

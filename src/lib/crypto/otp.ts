@@ -1,5 +1,5 @@
-import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "./index.js"
-import { storeEncryptionKey, getEncryptionKey } from "../custom/kms.js"
+import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto"
+import { storeEncryptionKey, getEncryptionKey } from "@/lib/custom/kms"
 
 import type { Context } from "hono"
 

@@ -1,9 +1,9 @@
 import { sleep } from "bun"
 import { it, expect } from "bun:test"
 
-import { resendBlockSeconds, maxAttempts, otpInvalidBlockSeconds, createOtp } from "./lib/custom/otp.js"
+import { resendBlockSeconds, maxAttempts, otpInvalidBlockSeconds, createOtp } from "@/lib/custom/otp"
 
-import app from "./index.js"
+import app from "@/index"
 
 
 let cookies: string | null
