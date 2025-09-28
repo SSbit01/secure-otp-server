@@ -73,6 +73,8 @@ if (resendBlockSeconds < 5) {
       }
     })
 
+    cookies = res.headers.get("set-cookie")
+
     const data = await res.json()
     const dateNow = Date.now()
 
@@ -113,6 +115,8 @@ it("Send invalid OTP format", async() => {
     }
   })
 
+  cookies = res.headers.get("set-cookie")
+
   const data = await res.json()
   
   expect(data.error).toBe("OTP:INVALID_FORMAT")
@@ -129,6 +133,8 @@ it("Send an OTP without sending the cookie", async() => {
       "Content-Type": "application/x-www-form-urlencoded"
     }
   })
+
+  cookies = res.headers.get("set-cookie")
 
   const data = await res.json()
   
@@ -147,6 +153,8 @@ async function sendInvalidOtp() {
       cookie: cookies || ""
     }
   })
+
+  cookies = res.headers.get("set-cookie")
 
   const data = await res.json()
   

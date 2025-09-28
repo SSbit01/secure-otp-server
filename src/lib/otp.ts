@@ -2,12 +2,12 @@ import { setCookie, deleteCookie } from "hono/cookie"
 import { ulid } from "ulid"
 
 import { encryptOtp, decryptOtp } from "./crypto/otp.js"
+import isProduction from "./production.js"
+import getReducedTimePrecision from "./time.js"
 
 import { deleteEncryptionKey } from "./custom/kms.js"
 import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "./custom/otp.js"
 import sendOtp from "./custom/send.js"
-
-import isProduction from "./production.js"
 
 import type { Context } from "hono"
 import type { CookieOptions } from "hono/utils/cookie"
@@ -25,11 +25,11 @@ export const cookieOtpName = "t"
 
 export async function createOtpCookie(
   c: Context,
-  credential: string | number,
   otp: string | number,
+  credential: string | number,
   expires: number,
   resendBlockDate: string | number = "",
-  attempts = maxAttempts,
+  attempts: string | number = maxAttempts,
   otpBlockDate: string | number | false | null | undefined = false
 ) {
 
@@ -64,7 +64,7 @@ export async function createOtpAndSend(
   c: Context,
   credential: string | number,
   resent?: boolean,
-  dateNow = Date.now()
+  dateNow = getReducedTimePrecision()
 ): Promise<{
   expires: number
   resendBlockDate?: number
@@ -77,13 +77,13 @@ export async function createOtpAndSend(
   const expires = dateNow + otpMaxDurationMs
 
   if (resent) {
-    await createOtpCookie(c, credential, otp, expires)
+    await createOtpCookie(c, otp, credential, expires)
     return { expires }
   }
 
   const resendBlockDate = dateNow + resendBlockMs
 
-  await createOtpCookie(c, credential, otp, expires, resendBlockDate)
+  await createOtpCookie(c, otp, credential, expires, resendBlockDate)
 
   return { expires, resendBlockDate }
 
