@@ -1,5 +1,5 @@
-import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto"
-import { storeEncryptionKey, getEncryptionKey } from "@/lib/custom/kms"
+import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto/symmetric"
+import { storeEncryptionKey, getEncryptionKey } from "@/custom/kms"
 
 import type { Context } from "hono"
 
@@ -8,7 +8,7 @@ const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 
 
-export async function encryptOtp(c: Context, keyId: string, value: string, expires: number) {
+export async function encryptOtp(c: Context, keyID: string, value: string, expires: number) {
 
   const key = await createSymmetricKey()
 
@@ -18,16 +18,16 @@ export async function encryptOtp(c: Context, keyId: string, value: string, expir
     textEncoder
   )
 
-  await storeEncryptionKey(c, keyId, key, expires)
+  await storeEncryptionKey(c, keyID, key, expires)
 
   return result
 
 }
 
 
-export async function decryptOtp(c: Context, keyId: string, value: string) {
+export async function decryptOtp(c: Context, keyID: string, value: string) {
 
-  const key = await getEncryptionKey(c, keyId)
+  const key = await getEncryptionKey(c, keyID)
 
   return key && await decryptSymmetricallyText(
     value,

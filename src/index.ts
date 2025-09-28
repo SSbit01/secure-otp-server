@@ -7,26 +7,30 @@ import {
   ERR_OTP_TOO_MANY_ATTEMPTS
 } from "@/lib/errors"
 import { createOtpCookie, createOtpAndSend, deleteOtpData } from "@/lib/otp"
-import getReducedTimePrecision from "@/lib/time"
+import { getReducedTimePrecision } from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/cookie"
 import otpValueValidator from "@/lib/validators/value"
 
-import inputValidator from "@/lib/custom/input"
-import { otpInvalidBlockSeconds } from "@/lib/custom/otp"
-import finalAction from "@/lib/custom/final"
+import inputValidator from "@/custom/input"
+import { otpInvalidBlockSeconds } from "@/custom/otp"
+import finalAction from "@/custom/final"
+
+
+
+const otpInvalidBlockMs = otpInvalidBlockSeconds * 1000
 
 
 
 app.post("/api/otp/create", inputValidator, async(c) => {
-  return c.json(await createOtpAndSend(c, c.req.valid("form")))
+  return c.json(await createOtpAndSend(c, c.req.valid("json")))
 })
 
 
 app.post("/api/otp/resend", otpCookieValidator, async(c) => {
   
   const {
-    keyId,
+    keyID,
     // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
     value: [credential, expires, resendBlockDate]
   } = c.req.valid("cookie")
@@ -34,7 +38,7 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
   const dateNow = getReducedTimePrecision()
 
   if (dateNow > +expires) {
-    await deleteOtpData(c, keyId)
+    await deleteOtpData(c, keyID)
     return c.json(ERR_OTP_EXPIRED_COOKIE, 400)
   }
 
@@ -51,13 +55,10 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
 })
 
 
-const otpInvalidBlockMs = otpInvalidBlockSeconds * 1000
-
-
 app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
   const {
-    keyId,
+    keyID,
     // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
     value: [credential, expires, resendBlockDate, otpValid, attempts, otpBlockDate]
   } = c.req.valid("cookie")
@@ -66,7 +67,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   const dateNow = getReducedTimePrecision()
 
   if (dateNow > expiresNumber) {
-    await deleteOtpData(c, keyId)
+    await deleteOtpData(c, keyID)
     return c.json(ERR_OTP_EXPIRED_COOKIE, 400)
   }
 
@@ -89,7 +90,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
         newOtpDateBlocked = dateNow + otpInvalidBlockMs
         break
       case 0:
-        await deleteOtpData(c, keyId)
+        await deleteOtpData(c, keyID)
         return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)  // User has to log in again
     }
     await createOtpCookie(c, otpValid, credential, expiresNumber, resendBlockDate, currentAttempts, newOtpDateBlocked)

@@ -3,11 +3,11 @@ import { ulid } from "ulid"
 
 import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
-import getReducedTimePrecision from "@/lib/time"
+import { getReducedTimePrecision } from "@/lib/time"
 
-import { deleteEncryptionKey } from "@/lib/custom/kms"
-import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "@/lib/custom/otp"
-import sendOtp from "@/lib/custom/send"
+import { deleteEncryptionKey } from "@/custom/kms"
+import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "@/custom/otp"
+import sendOtp from "@/custom/send"
 
 import type { Context } from "hono"
 import type { CookieOptions } from "hono/utils/cookie"
@@ -19,7 +19,7 @@ const otpMaxDurationMs = otpMaxDurationSeconds * 1000
 const resendBlockMs = resendBlockSeconds * 1000
 
 
-export const cookieKeyIdName = "e"
+export const cookiekeyIDName = "e"
 export const cookieOtpName = "t"
 
 
@@ -52,10 +52,10 @@ export async function createOtpCookie(
     partitioned: false
   }
 
-  const keyId = ulid()
+  const keyID = ulid()
 
-  setCookie(c, cookieOtpName, await encryptOtp(c, keyId, value, expires), cookieOptions)
-  setCookie(c, cookieKeyIdName, keyId, cookieOptions)
+  setCookie(c, cookieOtpName, await encryptOtp(c, keyID, value, expires), cookieOptions)
+  setCookie(c, cookiekeyIDName, keyID, cookieOptions)
 
 }
 
@@ -90,26 +90,26 @@ export async function createOtpAndSend(
 }
 
 
-export async function deleteOtpData(c: Context, keyId: string) {
+export async function deleteOtpData(c: Context, keyID: string) {
   deleteCookie(c, cookieOtpName)
-  deleteCookie(c, cookieKeyIdName)
-  await deleteEncryptionKey(c, keyId)
+  deleteCookie(c, cookiekeyIDName)
+  await deleteEncryptionKey(c, keyID)
 }
 
 
 export async function getOtpTokenData(
   c: Context,
-  keyId: string,
+  keyID: string,
   token: string
 ) {
   
-  if (keyId && token) {
+  if (keyID && token) {
     try {
       // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-      return (await decryptOtp(c, keyId, token))?.split(separator) as [credential: string, expires: string, resendBlockDate: string, otp: string, attempts: string, otpBlockDate?: string]
+      return (await decryptOtp(c, keyID, token))?.split(separator) as [credential: string, expires: string, resendBlockDate: string, otp: string, attempts: string, otpBlockDate?: string]
     } catch {}
   }
 
-  await deleteOtpData(c, keyId)
+  await deleteOtpData(c, keyID)
 
 }

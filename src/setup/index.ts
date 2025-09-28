@@ -7,7 +7,7 @@ import { secureHeaders } from "hono/secure-headers"
 import { env } from "hono/adapter"
 
 import { ERR_SERVER } from "@/lib/errors"
-import errorHandler from "@/lib/custom/error"
+import errorHandler from "@/custom/error"
 
 
 
@@ -42,7 +42,7 @@ app.use(cors({
 
 
 /**
- * Error handler
+ * Error handler.
  */
 app.onError(async(err, c) => {
   await errorHandler(err, c)
