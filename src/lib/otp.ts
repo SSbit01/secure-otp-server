@@ -5,7 +5,7 @@ import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import getReducedTimePrecision from "@/lib/time"
 
-import { deleteEncryptionKey } from "@/custom/kms"
+import { doesEncryptionKeyExist, deleteEncryptionKey } from "@/custom/kms"
 import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
@@ -52,7 +52,11 @@ export async function createOtpCookie(
     partitioned: false
   }
 
-  const keyID = createRandomID()
+  let keyID: string
+
+  do {
+    keyID = createRandomID()
+  } while (await doesEncryptionKeyExist(c, keyID))
 
   setCookie(c, cookieOtpName, await encryptOtp(c, keyID, value, expires), cookieOptions)
   setCookie(c, cookiekeyIDName, keyID, cookieOptions)

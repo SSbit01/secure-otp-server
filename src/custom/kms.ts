@@ -8,6 +8,13 @@ const keyStorage = new Map<string, { key: CryptoKey; expires: Date | number }>()
 
 
 
+export async function doesEncryptionKeyExist(c: Context, keyID: string) {
+
+  return keyStorage.has(keyID)
+
+}
+
+
 export async function storeEncryptionKey(c: Context, keyID: string, key: CryptoKey, expires: number) {
 
   keyStorage.set(keyID, { key, expires })
