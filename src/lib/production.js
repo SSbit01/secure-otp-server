@@ -1,14 +1,23 @@
 import { env } from "hono/adapter"
 
-import type { Context } from "hono"
+/**
+ * @import { Context } from "hono"
+ */
 
 
 const PRODUCTION = "production"
 
-let production: boolean
+/** @type {boolean} */
+let production
 
 
-export default function isProduction(c: Context) {
+/**
+ * Returns whether the server is running in a production environment or not.
+ * 
+ * @param   {Context} c
+ * @returns {boolean}
+ */
+export default function isProduction(c) {
 
   if (production === undefined) {
     const envVars = env(c)

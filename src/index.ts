@@ -7,7 +7,7 @@ import {
   ERR_OTP_TOO_MANY_ATTEMPTS
 } from "@/lib/errors"
 import { createOtpCookie, createOtpAndSend, deleteOtpData } from "@/lib/otp"
-import { getReducedTimePrecision } from "@/lib/time"
+import getReducedTimePrecision from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/cookie"
 import otpValueValidator from "@/lib/validators/value"
@@ -23,7 +23,11 @@ const otpInvalidBlockMs = otpInvalidBlockSeconds * 1000
 
 
 app.post("/api/otp/create", inputValidator, async(c) => {
-  return c.json(await createOtpAndSend(c, c.req.valid("json")))
+
+  return c.json(
+    await createOtpAndSend(c, c.req.valid("json"))
+  )
+
 })
 
 

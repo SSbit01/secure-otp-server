@@ -1,9 +1,9 @@
 import { setCookie, deleteCookie } from "hono/cookie"
-import { ulid } from "ulid"
 
+import createRandomID from "@/lib/crypto/id"
 import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
-import { getReducedTimePrecision } from "@/lib/time"
+import getReducedTimePrecision from "@/lib/time"
 
 import { deleteEncryptionKey } from "@/custom/kms"
 import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "@/custom/otp"
@@ -52,7 +52,7 @@ export async function createOtpCookie(
     partitioned: false
   }
 
-  const keyID = ulid()
+  const keyID = createRandomID()
 
   setCookie(c, cookieOtpName, await encryptOtp(c, keyID, value, expires), cookieOptions)
   setCookie(c, cookiekeyIDName, keyID, cookieOptions)

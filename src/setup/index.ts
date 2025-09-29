@@ -12,7 +12,7 @@ import errorHandler from "@/custom/error"
 
 
 /**
- * Hono server instance.
+ * The main Hono server instance.
  */
 const app = new Hono()
 

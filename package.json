@@ -27,8 +27,7 @@
   },
   "type": "module",
   "dependencies": {
-    "hono": "^4.9.9",
-    "ulid": "^3.0.1"
+    "hono": "^4.9.9"
   },
   "devDependencies": {
     "@types/bun": "^1.2.23",
