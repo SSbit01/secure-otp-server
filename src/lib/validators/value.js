@@ -1,6 +1,6 @@
 import { validator } from "hono/validator"
 
-import { otpLength, otpRegex } from "../../custom/otp.js"
+import { OTP_LENGTH, OTP_REGEX } from "../../custom/otp.js"
 import { ERR_OTP_INVALID_FORMAT } from "../errors.js"
 
 
@@ -12,7 +12,7 @@ const otpValueValidator = validator("form", async({ otp }, c) => {
 
   otp = otp.trim()
 
-  if (otp.length !== otpLength || !otpRegex.test(otp)) {
+  if (otp.length !== OTP_LENGTH || !OTP_REGEX.test(otp)) {
     return c.json(ERR_OTP_INVALID_FORMAT, 400)
   }
 

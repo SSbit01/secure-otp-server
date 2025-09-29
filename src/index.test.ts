@@ -1,7 +1,7 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { resendBlockSeconds, maxAttempts, otpInvalidBlockSeconds, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, INALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 
 import app from "@/index"
 
@@ -13,6 +13,8 @@ describe("Tests with the same cookie", () => {
 
   it("Generate OTP", async() => {
 
+    console.log("A")
+
     const res = await app.request("/api/otp/create", {
       method: "POST",
       body: `"${Math.random().toString(36)}"`,
@@ -20,6 +22,8 @@ describe("Tests with the same cookie", () => {
         "Content-Type": "application/json"
       }
     })
+
+    console.log("B")
 
     cookies = res.headers.get("set-cookie")
 
@@ -63,11 +67,11 @@ describe("Tests with the same cookie", () => {
   })
 
 
-  if (resendBlockSeconds < 5) {
+  if (RESEND_BLOCK_SECONDS < 5) {
 
-    it(`Waiting the resend block seconds (${resendBlockSeconds}s) and try to resend OTP again`, async() => {
+    it(`Waiting the resend block seconds (${RESEND_BLOCK_SECONDS}s) and try to resend OTP again`, async() => {
 
-      await sleep(resendBlockSeconds * 1000)
+      await sleep(RESEND_BLOCK_SECONDS * 1000)
 
       const res = await app.request("/api/otp/resend", {
         method: "POST",
@@ -168,18 +172,18 @@ describe("Tests with the same cookie", () => {
   }
 
 
-  for (let i = 1; i < maxAttempts - 2; i++) {
+  for (let i = 1; i < MAX_ATTEMPTS - 2; i++) {
     it(`Send an invalid OTP - attempt: ${i}`, sendInvalidOtp)
   }
 
 
-  it(`Send an invalid OTP - attempt: ${maxAttempts - 2}`, async() => {
+  it(`Send an invalid OTP - attempt: ${MAX_ATTEMPTS - 2}`, async() => {
     const data = await sendInvalidOtp()
     expect(data.blockedUntil).toBeGreaterThan(Date.now())
   })
 
 
-  it(`Send an invalid OTP - attempt: ${maxAttempts - 1}`, async() => {
+  it(`Send an invalid OTP - attempt: ${MAX_ATTEMPTS - 1}`, async() => {
 
     const res = await app.request("/api/otp/verify", {
       method: "POST",
@@ -197,10 +201,10 @@ describe("Tests with the same cookie", () => {
   })
 
 
-  if (otpInvalidBlockSeconds < 5) {
+  if (INALID_BLOCK_SECONDS < 5) {
 
     it("Wait and send an invalid OTP", async() => {
-      await sleep(otpInvalidBlockSeconds * 1050)
+      await sleep(INALID_BLOCK_SECONDS * 1000)
       const data = await sendInvalidOtp()
       expect(data.blockedUntil).toBeGreaterThan(Date.now())
     })

@@ -14,12 +14,12 @@ import otpValueValidator from "@/lib/validators/value"
 
 import inputValidator from "@/custom/input"
 import { deleteEncryptionKey } from "@/custom/kms"
-import { otpInvalidBlockSeconds } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INALID_BLOCK_SECONDS } from "@/custom/otp"
 import finalAction from "@/custom/final"
 
 
 
-const otpInvalidBlockMs = otpInvalidBlockSeconds * 1000
+const otpInvalidBlockMs = INALID_BLOCK_SECONDS * 1000
 
 
 
@@ -28,42 +28,6 @@ app.post("/api/otp/create", inputValidator, async(c) => {
   return c.json(
     await createOtpAndSend(c, c.req.valid("json"))
   )
-
-})
-
-
-
-app.post("/api/otp/resend", otpCookieValidator, async(c) => {
-  
-  const {
-    keyID,
-    // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-    value: [credential, expires, resendBlockDate]
-  } = c.req.valid("cookie")
-  
-
-  const dateNow = getReducedTimePrecision()
-
-
-  if (dateNow > +expires) {
-    await deleteOtpData(c, keyID)
-    return c.json(ERR_OTP_EXPIRED_COOKIE, 400)
-  }
-
-
-  if (!resendBlockDate) {
-    return c.json(ERR_OTP_ALREADY_RESENT, 400)
-  }
-
-
-  if (dateNow < +resendBlockDate) {
-    return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
-  }
-
-
-  await deleteEncryptionKey(c, keyID)
-
-  return c.json(await createOtpAndSend(c, credential, true, dateNow))
 
 })
 
@@ -107,16 +71,18 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
     const currentAttempts = +attempts - 1
 
+    /**
+     * Is `currentAttempts` 0?
+     */
+    if (!currentAttempts) {
+      await deleteOtpData(c, keyID)
+      return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)  // User has to log in again
+    }
+
     let newOtpDateBlocked = 0
 
-    switch (currentAttempts) {
-      case 2:
-      case 1:
-        newOtpDateBlocked = dateNow + otpInvalidBlockMs
-        break
-      case 0:
-        await deleteOtpData(c, keyID)
-        return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)  // User has to log in again
+    if (currentAttempts <= ATTEMPTS_BLOCK) {
+      newOtpDateBlocked = dateNow + otpInvalidBlockMs
     }
 
     await deleteEncryptionKey(c, keyID)
@@ -135,6 +101,46 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   return await finalAction(c, credential)
 
 })
+
+
+
+if (RESEND_BLOCK_SECONDS) {
+
+  app.post("/api/otp/resend", otpCookieValidator, async(c) => {
+  
+    const {
+      keyID,
+      // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
+      value: [credential, expires, resendBlockDate]
+    } = c.req.valid("cookie")
+
+
+    const dateNow = getReducedTimePrecision()
+
+
+    if (dateNow > +expires) {
+      await deleteOtpData(c, keyID)
+      return c.json(ERR_OTP_EXPIRED_COOKIE, 400)
+    }
+
+
+    if (!resendBlockDate) {
+      return c.json(ERR_OTP_ALREADY_RESENT, 400)
+    }
+
+
+    if (dateNow < +resendBlockDate) {
+      return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
+    }
+
+
+    await deleteEncryptionKey(c, keyID)
+
+    return c.json(await createOtpAndSend(c, credential, ALLOW_ONLY_ONE_RESENDING, dateNow))
+
+  })
+
+}
 
 
 

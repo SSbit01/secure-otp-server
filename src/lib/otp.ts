@@ -1,12 +1,11 @@
 import { setCookie, deleteCookie } from "hono/cookie"
 
-import createRandomID from "@/lib/crypto/id"
 import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import getReducedTimePrecision from "@/lib/time"
 
-import { doesEncryptionKeyExist, deleteEncryptionKey } from "@/custom/kms"
-import { maxAttempts, resendBlockSeconds, otpMaxDurationSeconds, createOtp } from "@/custom/otp"
+import { deleteEncryptionKey } from "@/custom/kms"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 import type { Context } from "hono"
@@ -15,8 +14,15 @@ import type { CookieOptions } from "hono/utils/cookie"
 
 const separator = ":"
 
-const otpMaxDurationMs = otpMaxDurationSeconds * 1000
-const resendBlockMs = resendBlockSeconds * 1000
+const otpMaxDurationMs = MAX_DURATION_SECONDS * 1000
+
+const disableResending = !RESEND_BLOCK_SECONDS
+
+let resendBlockMs: number
+
+if (!disableResending) {
+  resendBlockMs = RESEND_BLOCK_SECONDS * 1000
+}
 
 
 export const cookiekeyIDName = "e"
@@ -29,7 +35,7 @@ export async function createOtpCookie(
   credential: string | number,
   expires: number,
   resendBlockDate: string | number = "",
-  attempts: string | number = maxAttempts,
+  attempts: number = MAX_ATTEMPTS,
   otpBlockDate: string | number | false | null | undefined = false
 ) {
 
@@ -51,14 +57,10 @@ export async function createOtpCookie(
     sameSite: "strict",
     partitioned: false
   }
+  
+  const [result, keyID] = await encryptOtp(c, value, expires)
 
-  let keyID: string
-
-  do {
-    keyID = createRandomID()
-  } while (await doesEncryptionKeyExist(c, keyID))
-
-  setCookie(c, cookieOtpName, await encryptOtp(c, keyID, value, expires), cookieOptions)
+  setCookie(c, cookieOtpName, result, cookieOptions)
   setCookie(c, cookiekeyIDName, keyID, cookieOptions)
 
 }
@@ -67,7 +69,7 @@ export async function createOtpCookie(
 export async function createOtpAndSend(
   c: Context,
   credential: string | number,
-  resent?: boolean,
+  resent = disableResending,
   dateNow = getReducedTimePrecision()
 ): Promise<{
   expires: number
@@ -110,7 +112,7 @@ export async function getOtpTokenData(
   if (keyID && token) {
     try {
       // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-      return (await decryptOtp(c, keyID, token))?.split(separator) as [credential: string, expires: string, resendBlockDate: string, otp: string, attempts: string, otpBlockDate?: string]
+      return (await decryptOtp(c, token, keyID))?.split(separator) as [credential: string, expires: string, resendBlockDate: string, otp: string, attempts: string, otpBlockDate?: string]
     } catch {}
   }
 
