@@ -14,10 +14,10 @@ const textDecoder = new TextDecoder()
 
 /**
  * @async
- * @param   {Context}                                  c
- * @param   {string}                                   value
- * @param   {number}                                   expires
- * @returns {Promise<[result: string, keyID: string]>}
+ * @param {Context} c
+ * @param {string} value
+ * @param {number} expires
+ * @returns {Promise<[result:string,keyID:string]>}
  */
 export async function encryptOtp(c, value, expires) {
 
@@ -44,9 +44,9 @@ export async function encryptOtp(c, value, expires) {
 
 /**
  * @async
- * @param   {Context}                   c
- * @param   {string}                    value
- * @param   {string}                    keyID
+ * @param {Context} c
+ * @param {string} value
+ * @param {string} keyID
  * @returns {Promise<string|undefined>}
  */
 export async function decryptOtp(c, value, keyID) {

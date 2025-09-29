@@ -8,7 +8,7 @@ import { HTTPResponseError } from "hono/types"
  * It should accept an Error object and the Hono context.
  */
 export default async function errorHandler(
-  err: Error | HTTPResponseError,
+  err: Error|HTTPResponseError,
   c: Context
 ) {
   console.error(err)

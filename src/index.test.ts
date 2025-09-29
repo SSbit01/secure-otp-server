@@ -8,7 +8,7 @@ import app from "@/index"
 
 describe("Tests with the same cookie", () => {
 
-  let cookies: string | null
+  let cookies: string|null
 
 
   it("Generate OTP", async() => {
