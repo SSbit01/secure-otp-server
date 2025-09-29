@@ -64,6 +64,104 @@ describe("Tests with the same cookie", () => {
   })
 
 
+  it("Resend OTP without a key", async() => {
+
+    const res = await app.request("/api/otp/resend", {
+      method: "POST",
+      headers: {
+        cookie: (cookies || "").split("; ")[0]
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Resend OTP without the encrypted data", async() => {
+
+    const res = await app.request("/api/otp/resend", {
+      method: "POST",
+      headers: {
+        cookie: (cookies || "").split("; ")[1]
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Resend OTP with a wrong key", async() => {
+
+    const cookieArray = (cookies || "").split("; ")
+
+    const partToBeReplaced = cookieArray[1].substring(5, 10)
+
+    cookieArray[1] = cookieArray[1].replace(partToBeReplaced, "aaaaa")
+
+    const res = await app.request("/api/otp/resend", {
+      method: "POST",
+      headers: {
+        cookie: cookieArray.join("")
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Resend OTP with wrong data", async() => {
+
+    const cookieArray = (cookies || "").split("; ")
+
+    const partToBeReplaced = cookieArray[0].substring(5, 10)
+
+    cookieArray[0] = cookieArray[0].replace(partToBeReplaced, "aaaaa")
+
+    const res = await app.request("/api/otp/resend", {
+      method: "POST",
+      headers: {
+        cookie: cookieArray.join("")
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Generate OTP again", async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      body: `"${Math.random().toString(36)}"`,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+
+    cookies = getCookies(res)
+
+    const data = await res.json()
+    
+    const dateNow = Date.now()
+
+    expect(data.resendBlockDate).toBeGreaterThan(dateNow)
+    expect(data.expires).toBeGreaterThan(dateNow)
+
+  })
+
+
   it("Resend OTP without waiting", async() => {
 
     const res = await app.request("/api/otp/resend", {
