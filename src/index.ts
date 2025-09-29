@@ -140,6 +140,8 @@ if (RESEND_BLOCK_SECONDS) {
 
   })
 
+} else {
+  console.warn("Resend route disabled (`/api/otp/resend`), if unintentional, check if `RSEND_BLOCK_SECONDS` is falsy in `./src/custom/otp.ts`.")
 }
 
 

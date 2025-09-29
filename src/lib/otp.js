@@ -78,7 +78,6 @@ export async function createOtpCookie(
  * @property {number} [resendBlockDate]
  */
 
-
 /**
  * @async
  * @param   {Context} c
