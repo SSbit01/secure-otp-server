@@ -58,7 +58,7 @@ export async function createOtpCookie(
   const cookieOptions = {
     expires: new Date(expires),
     httpOnly: true,
-    maxAge: MAX_DURATION_MS,
+    maxAge: MAX_DURATION_SECONDS,
     secure: isProduction(c),
     sameSite: "strict",
     partitioned: false

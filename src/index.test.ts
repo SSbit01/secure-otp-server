@@ -6,14 +6,29 @@ import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, INALID_BLOCK_SECONDS, createOtp } f
 import app from "@/index"
 
 
+
+function getCookies(res: Response) {
+
+  const arr = res.headers.getSetCookie()
+
+  let result = []
+
+  for (const cookie of arr) {
+    result.push(cookie.split(";")[0])
+  }
+
+  return result.join("; ")
+
+}
+
+
+
 describe("Tests with the same cookie", () => {
 
-  let cookies: string|null
+  let cookies: string | null
 
 
   it("Generate OTP", async() => {
-
-    console.log("A")
 
     const res = await app.request("/api/otp/create", {
       method: "POST",
@@ -23,9 +38,7 @@ describe("Tests with the same cookie", () => {
       }
     })
 
-    console.log("B")
-
-    cookies = res.headers.get("set-cookie")
+    cookies = getCookies(res)
 
     const data = await res.json()
     
@@ -80,7 +93,7 @@ describe("Tests with the same cookie", () => {
         }
       })
 
-      cookies = res.headers.get("set-cookie")
+      cookies = getCookies(res)
 
       const data = await res.json()
       const dateNow = Date.now()
@@ -122,8 +135,6 @@ describe("Tests with the same cookie", () => {
       }
     })
 
-    cookies = res.headers.get("set-cookie")
-
     const data = await res.json()
     
     expect(data.error).toBe("OTP:INVALID_FORMAT")
@@ -140,8 +151,6 @@ describe("Tests with the same cookie", () => {
         "Content-Type": "application/x-www-form-urlencoded"
       }
     })
-
-    cookies = res.headers.get("set-cookie")
 
     const data = await res.json()
     
@@ -161,7 +170,7 @@ describe("Tests with the same cookie", () => {
       }
     })
 
-    cookies = res.headers.get("set-cookie")
+    cookies = getCookies(res)
 
     const data = await res.json()
     
