@@ -1,13 +1,13 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, INALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 
 import app from "@/index"
 
 
 
-function getCookies(res: Response) {
+function getCookiesFromResponse(res: Response) {
 
   const arr = res.headers.getSetCookie()
 
@@ -23,29 +23,37 @@ function getCookies(res: Response) {
 
 
 
-describe("Tests with the same cookie", () => {
+async function fetchOtpCookies() {
+
+  const res = await app.request("/api/otp/create", {
+    method: "POST",
+    body: `"${Math.random().toString(36)}"`,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+
+  const data = await res.json()
+  
+  const dateNow = Date.now()
+
+  expect(data.resendBlockDate).toBeGreaterThan(dateNow)
+  expect(data.expires).toBeGreaterThan(dateNow)
+
+  return getCookiesFromResponse(res)
+
+}
+
+
+
+describe("OTP 1", () => {
 
   let cookies: string | null
 
 
   it("Generate OTP", async() => {
 
-    const res = await app.request("/api/otp/create", {
-      method: "POST",
-      body: `"${Math.random().toString(36)}"`,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-
-    cookies = getCookies(res)
-
-    const data = await res.json()
-    
-    const dateNow = Date.now()
-
-    expect(data.resendBlockDate).toBeGreaterThan(dateNow)
-    expect(data.expires).toBeGreaterThan(dateNow)
+    cookies = await fetchOtpCookies()
 
   })
 
@@ -139,25 +147,18 @@ describe("Tests with the same cookie", () => {
 
   })
 
+})
 
-  it("Generate OTP again", async() => {
 
-    const res = await app.request("/api/otp/create", {
-      method: "POST",
-      body: `"${Math.random().toString(36)}"`,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
 
-    cookies = getCookies(res)
+describe("OTP 2", () => {
 
-    const data = await res.json()
-    
-    const dateNow = Date.now()
+  let cookies: string | null
 
-    expect(data.resendBlockDate).toBeGreaterThan(dateNow)
-    expect(data.expires).toBeGreaterThan(dateNow)
+
+  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
+
+    cookies = await fetchOtpCookies()
 
   })
 
@@ -191,7 +192,7 @@ describe("Tests with the same cookie", () => {
         }
       })
 
-      cookies = getCookies(res)
+      cookies = getCookiesFromResponse(res)
 
       const data = await res.json()
       const dateNow = Date.now()
@@ -256,6 +257,21 @@ describe("Tests with the same cookie", () => {
 
   })
 
+})
+
+
+
+describe("OTP 3", () => {
+
+  let cookies: string | null
+
+
+  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
+
+    cookies = await fetchOtpCookies()
+
+  })
+
 
   async function sendInvalidOtp() {
 
@@ -268,7 +284,7 @@ describe("Tests with the same cookie", () => {
       }
     })
 
-    cookies = getCookies(res)
+    cookies = getCookiesFromResponse(res)
 
     const data = await res.json()
     
@@ -279,18 +295,21 @@ describe("Tests with the same cookie", () => {
   }
 
 
-  for (let i = 1; i < MAX_ATTEMPTS - 2; i++) {
+  const ATTEMPTS_WITHOUT_BLOCK = MAX_ATTEMPTS - ATTEMPTS_BLOCK
+
+
+  for (let i = 1; i < ATTEMPTS_WITHOUT_BLOCK; i++) {
     it(`Send an invalid OTP - attempt: ${i}`, sendInvalidOtp)
   }
 
 
-  it(`Send an invalid OTP - attempt: ${MAX_ATTEMPTS - 2}`, async() => {
+  it(`Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
     expect(data.blockedUntil).toBeGreaterThan(Date.now())
   })
 
 
-  it(`Send an invalid OTP - attempt: ${MAX_ATTEMPTS - 1}`, async() => {
+  it(`Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
 
     const res = await app.request("/api/otp/verify", {
       method: "POST",
