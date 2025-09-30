@@ -1,3 +1,11 @@
+/**
+ * A simple in-memory KMS implementation.
+ * 
+ * - This implementation does not persist keys, so all keys will be lost when the server restarts.
+ * - Does not work well in distributed systems (e.g., multiple server instances behind a load balancer).
+ * - Does not work well in serverless environments, because they are constantly closing and opening (Cloudflare Workers KV, Vercel KV, Redis or similar are the best alternatives).
+ */
+
 import { MAX_DURATION_SECONDS } from "@/custom/otp"
 import getReducedTimePrecision from "@/lib/time"
 
