@@ -68,7 +68,7 @@ See [`sample.env`](sample.env) for an example.
 - OTP generation logic: [`src/custom/otp.ts`](src/custom/otp.ts)
 - Input validation: [`src/custom/input.ts`](src/custom/input.ts)
 - OTP sending logic: [`src/custom/send.ts`](src/custom/send.ts)
-- KMS storage: [`src/custom/kms.ts`](src/custom/send.ts)
+- KMS storage: [`src/custom/kms.ts`](src/custom/kms.ts)
 - Final action after verification: [`src/custom/final.ts`](src/custom/final.ts)
 
 ## License
