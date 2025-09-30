@@ -2,6 +2,7 @@
  * You can customize the length of OTPs.
  * 
  * - It is recommended to set it between 6 and 10.
+ * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
  */
 export const OTP_LENGTH = 8
 
