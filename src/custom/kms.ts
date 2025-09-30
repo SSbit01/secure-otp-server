@@ -1,9 +1,10 @@
 /**
- * A simple in-memory KMS implementation.
+ * A simple in-memory KMS implementation using a JavaScript Map.
  * 
+ * - It is the cheapest and easiest implementation and works fine if the server is always on.
  * - This implementation does not persist keys, so all keys will be lost when the server restarts.
- * - Does not work well in distributed systems (e.g., multiple server instances behind a load balancer).
- * - Does not work well in serverless environments, because they are constantly closing and opening (Cloudflare Workers KV, Vercel KV, Redis or similar are the best alternatives).
+ * - In-memory implementations do not work well in distributed systems (e.g., multiple server instances behind a load balancer).
+ * - In-memory implementations do not work well in serverless environments, because they are constantly closing and opening (Cloudflare Workers KV, Vercel KV, Redis or similar are the best alternatives).
  */
 
 import { MAX_DURATION_SECONDS } from "@/custom/otp"
