@@ -14,12 +14,12 @@ import otpValueValidator from "@/lib/validators/value"
 
 import inputValidator from "@/custom/input"
 import { deleteEncryptionKey } from "@/custom/kms"
-import { RESEND_BLOCK_SECONDS, ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INALID_BLOCK_SECONDS } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS } from "@/custom/otp"
 import finalAction from "@/custom/final"
 
 
 
-const otpInvalidBlockMs = INALID_BLOCK_SECONDS * 1000
+const otpInvalidBlockMs = INVALID_BLOCK_SECONDS * 1000
 
 
 

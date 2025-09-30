@@ -29,7 +29,7 @@ export const ALLOW_ONLY_ONE_RESENDING = true
 export const MAX_ATTEMPTS = 6
 
 /**
- * When the user enters the code incorrectly many times and reaches this number of attempts, a timeout of seconds defined in `INALID_BLOCK_SECONDS` can be set.
+ * When the user enters the code incorrectly many times and reaches this number of attempts, a timeout of seconds defined in `INVALID_BLOCK_SECONDS` can be set.
  * 
  * - It needs to be lower than `MAX_ATTEMPTS`.
  * - Disable OTP blocking by setting it to `0`.
@@ -41,7 +41,7 @@ export const ATTEMPTS_BLOCK = 2
  * 
  * - It is recommended to set it to 30 seconds.
  */
-export const INALID_BLOCK_SECONDS = 30
+export const INVALID_BLOCK_SECONDS = 30
 
 
 /**

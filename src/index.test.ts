@@ -1,7 +1,7 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 
 import app from "@/index"
 
@@ -115,7 +115,7 @@ describe("OTP 1", () => {
     const res = await app.request("/api/otp/resend", {
       method: "POST",
       headers: {
-        cookie: cookieArray.join("")
+        cookie: cookieArray.join("; ")
       }
     })
 
@@ -137,7 +137,7 @@ describe("OTP 1", () => {
     const res = await app.request("/api/otp/resend", {
       method: "POST",
       headers: {
-        cookie: cookieArray.join("")
+        cookie: cookieArray.join("; ")
       }
     })
 
@@ -257,6 +257,90 @@ describe("OTP 2", () => {
 
   })
 
+
+  it("Send an OTP without a key", async() => {
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `otp=${createOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie: (cookies || "").split("; ")[0]
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Send an OTP without the encrypted data", async() => {
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `otp=${createOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie: (cookies || "").split("; ")[1]
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Send an OTP with a wrong key", async() => {
+
+    const cookieArray = (cookies || "").split("; ")
+
+    const partToBeReplaced = cookieArray[1].substring(5, 10)
+
+    cookieArray[1] = cookieArray[1].replace(partToBeReplaced, "aaaaa")
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `otp=${createOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie: cookieArray.join("; ")
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
+
+  it("Send an OTP with wrong data", async() => {
+
+    const cookieArray = (cookies || "").split("; ")
+
+    const partToBeReplaced = cookieArray[0].substring(5, 10)
+
+    cookieArray[0] = cookieArray[0].replace(partToBeReplaced, "aaaaa")
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `otp=${createOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie: cookieArray.join("; ")
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_COOKIE")
+
+  })
+
 })
 
 
@@ -327,10 +411,10 @@ describe("OTP 3", () => {
   })
 
 
-  if (INALID_BLOCK_SECONDS < 5) {
+  if (INVALID_BLOCK_SECONDS < 5) {
 
     it("Wait and send an invalid OTP", async() => {
-      await sleep(INALID_BLOCK_SECONDS * 1000)
+      await sleep(INVALID_BLOCK_SECONDS * 1000)
       const data = await sendInvalidOtp()
       expect(data.blockedUntil).toBeGreaterThan(Date.now())
     })
