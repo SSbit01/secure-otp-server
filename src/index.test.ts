@@ -232,7 +232,7 @@ describe("OTP 1", () => {
   })
 
 
-  it("Resend OTP with invalid data", async() => {
+  it("Resend OTP with invalid body", async() => {
 
     const cookieArray = cookie.split("; ")
 
@@ -459,6 +459,64 @@ describe("OTP 3", () => {
   it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
 
     cookie = await fetchOtpcookie()
+
+  })
+
+
+  it("Verify with an invalid `Content-Type`", async() => {
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_FORMAT")
+
+    return data
+
+  })
+
+
+  it("Verify without body", async() => {
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_FORMAT")
+
+    return data
+
+  })
+
+
+  it("Verify with invalid body", async() => {
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `ot=${createOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("OTP:INVALID_FORMAT")
+
+    return data
 
   })
 
