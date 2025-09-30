@@ -1,15 +1,12 @@
 import createRandomID from "@/lib/crypto/id"
 import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto/symmetric"
+import { textEncoder, textDecoder } from "@/lib/text"
 
 import { doesEncryptionKeyExist, storeEncryptionKey, getEncryptionKey } from "@/custom/kms"
 
 /**
  * @import { Context } from "hono"
  */
-
-
-const textEncoder = new TextEncoder()
-const textDecoder = new TextDecoder()
 
 
 /**
