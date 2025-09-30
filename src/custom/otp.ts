@@ -1,8 +1,9 @@
 /**
  * You can customize the length of OTPs.
- * I
+ * 
+ * - It is recommended to set it between 6 and 10.
  */
-export const OTP_LENGTH = 6
+export const OTP_LENGTH = 8
 
 /**
  * You can customize the format of OTPs.
