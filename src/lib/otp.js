@@ -116,20 +116,25 @@ export async function createOtpAndSend(
 /**
  * 
  * @param {Context} c
- * @param {string} keyID
  */
-export async function deleteOtpData(c, keyID) {
+export async function deleteOtpData(c) {
+
   deleteCookie(c, COOKIE_OTP)
-  deleteCookie(c, COOKIE_KEY_ID)
-  await deleteEncryptionKey(c, keyID)
+
+  const keyID = deleteCookie(c, COOKIE_KEY_ID)
+
+  if (keyID) {
+    await deleteEncryptionKey(c, keyID)
+  }
+
 }
 
 
 /**
  * 
- * @param   {Context} c 
- * @param   {string} keyID 
- * @param   {string} token 
+ * @param   {Context} c
+ * @param   {string} keyID
+ * @param   {string} token
  * @returns {Promise<[credential:string,expires:string,resendBlockDate:string,otp:string,attempts:string,otpBlockDate?:string]|undefined>}
  */
 export async function getOtpTokenData(
@@ -137,18 +142,21 @@ export async function getOtpTokenData(
   keyID,
   token
 ) {
-  
-  if (keyID && token) {
-    try {
-      // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-      const result = await decryptOtp(c, token, keyID)
-      if (result) {
-        // @ts-expect-error
-        return result.split(SEPARATOR)
-      }
-    } catch {}
-  }
 
-  await deleteOtpData(c, keyID)
+  try {
+    // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
+    const result = await decryptOtp(c, token, keyID)
+
+    if (result) {
+      // @ts-expect-error
+      return result.split(SEPARATOR)
+    }
+
+  } catch {
+    /**
+     * The error occurs when the key is valid and the token invalid.
+     */
+    await deleteOtpData(c)
+  }
 
 }

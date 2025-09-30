@@ -2,12 +2,12 @@ import { Hono } from "hono"
 
 import { bodyLimit } from "hono/body-limit"
 import { cors } from "hono/cors"
+import { HTTPException } from "hono/http-exception"
 import { secureHeaders } from "hono/secure-headers"
 
 import { env } from "hono/adapter"
 
 import { ERR_SERVER } from "@/lib/errors"
-import errorHandler from "@/custom/error"
 
 
 
@@ -45,8 +45,16 @@ app.use(cors({
  * Error handler.
  */
 app.onError(async(err, c) => {
-  await errorHandler(err, c)
+  
+  if (err instanceof HTTPException) {
+    return c.json({
+      error: "GENERIC",
+      message: err.message
+    }, 400)
+  }
+
   return c.json(ERR_SERVER, 500)
+
 })
 
 

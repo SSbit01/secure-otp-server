@@ -1,6 +1,6 @@
 import { validator } from "hono/validator"
 
-import { ERR_ID_INVALID } from "@/lib/errors.js"
+import { ERR_CREDENTIAL_INVALID } from "@/lib/errors.js"
 
 
 /**
@@ -10,6 +10,17 @@ import { ERR_ID_INVALID } from "@/lib/errors.js"
  * The validation target must be `json` and return a credential/ID (not shared with the client) of type `string` or `number` to later confirm that the credentials have been verified.
  */
 const inputValidator = validator("json", (body, c) => {
+
+  /**
+   * Is the body invalid?
+   */
+  if (
+    !body ||
+    body === true ||
+    (typeof body !== "number" && (!body?.length || !Object.keys(body).length))
+  ) {
+    return c.json(ERR_CREDENTIAL_INVALID, 400)
+  }
 
   return JSON.stringify(body)
 

@@ -1,6 +1,6 @@
-export const ERR_ID_INVALID = {
-  error: "ID:INVALID",
-  message: "Invalid ID."
+export const ERR_CREDENTIAL_INVALID = {
+  error: "CREDENTIAL:INVALID",
+  message: "Invalid credential."
 }
 
 export const ERR_OTP_ALREADY_RESENT = {

@@ -1,5 +1,6 @@
 /**
  * You can customize the length of OTPs.
+ * I
  */
 export const OTP_LENGTH = 6
 
@@ -26,7 +27,7 @@ export const ALLOW_ONLY_ONE_RESENDING = true
 /**
  * The maximum number of attempts a user can verify an OTP.
  */
-export const MAX_ATTEMPTS = 6
+export const MAX_ATTEMPTS = 3
 
 /**
  * When the user enters the code incorrectly many times and reaches this number of attempts, a timeout of seconds defined in `INVALID_BLOCK_SECONDS` can be set.
@@ -34,7 +35,7 @@ export const MAX_ATTEMPTS = 6
  * - It needs to be lower than `MAX_ATTEMPTS`.
  * - Disable OTP blocking by setting it to `0`.
  */
-export const ATTEMPTS_BLOCK = 2
+export const ATTEMPTS_BLOCK = 1
 
 /**
  * When the user enters the code incorrectly many times and reaches the number of attempts defined in `ATTEMPTS_BLOCK`, a timeout of a few seconds can be set.
@@ -47,7 +48,7 @@ export const INVALID_BLOCK_SECONDS = 30
 /**
  * The maximum validity period of an OTP token in seconds.
  */
-export const MAX_DURATION_SECONDS = 1800  // 30 minutes
+export const MAX_DURATION_SECONDS = 300  // 5 minutes
 
 
 /**

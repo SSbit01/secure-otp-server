@@ -7,7 +7,7 @@ import app from "@/index"
 
 
 
-function getCookiesFromResponse(res: Response) {
+function getcookieFromResponse(res: Response) {
 
   const arr = res.headers.getSetCookie()
 
@@ -23,7 +23,7 @@ function getCookiesFromResponse(res: Response) {
 
 
 
-async function fetchOtpCookies() {
+async function fetchOtpcookie() {
 
   const res = await app.request("/api/otp/create", {
     method: "POST",
@@ -40,7 +40,7 @@ async function fetchOtpCookies() {
   expect(data.resendBlockDate).toBeGreaterThan(dateNow)
   expect(data.expires).toBeGreaterThan(dateNow)
 
-  return getCookiesFromResponse(res)
+  return getcookieFromResponse(res)
 
 }
 
@@ -48,12 +48,118 @@ async function fetchOtpCookies() {
 
 describe("OTP 1", () => {
 
-  let cookies: string | null
+  let cookie: string
+
+
+  it("Generate OTP without `Content-Type` and body", async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      headers: {
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("CREDENTIAL:INVALID")
+
+  })
+
+
+  it("Generate OTP without body", async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("GENERIC")
+
+  })
+
+
+  it("Generate OTP with an invalid `Content-Type`", async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      body: '["test"]',
+      headers: {
+        "Content-Type": "text/plain",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("CREDENTIAL:INVALID")
+
+  })
+
+
+  it("Generate OTP with an invalid credential type", async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      body: 'test',
+      headers: {
+        "Content-Type": "application/json",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("GENERIC")
+
+  })
+
+
+  it("Generate OTP with an invalid credential", async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      body: 'false',
+      headers: {
+        "Content-Type": "application/json",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("CREDENTIAL:INVALID")
+
+  })
 
 
   it("Generate OTP", async() => {
 
-    cookies = await fetchOtpCookies()
+    cookie = await fetchOtpcookie()
+
+  })
+
+
+
+  it(`Generate OTP with the same credentials`, async() => {
+
+    const res = await app.request("/api/otp/create", {
+      method: "POST",
+      body: "",
+      headers: {
+        "Content-Type": "application/json",
+        cookie
+      }
+    })
+
+    const data = await res.json()
+    
+    expect(data.error).toBe("GENERIC")
 
   })
 
@@ -77,7 +183,7 @@ describe("OTP 1", () => {
     const res = await app.request("/api/otp/resend", {
       method: "POST",
       headers: {
-        cookie: (cookies || "").split("; ")[0]
+        cookie: cookie.split("; ")[0]
       }
     })
 
@@ -93,7 +199,7 @@ describe("OTP 1", () => {
     const res = await app.request("/api/otp/resend", {
       method: "POST",
       headers: {
-        cookie: (cookies || "").split("; ")[1]
+        cookie: cookie.split("; ")[1]
       }
     })
 
@@ -106,7 +212,7 @@ describe("OTP 1", () => {
 
   it("Resend OTP with a wrong key", async() => {
 
-    const cookieArray = (cookies || "").split("; ")
+    const cookieArray = cookie.split("; ")
 
     const partToBeReplaced = cookieArray[1].substring(5, 10)
 
@@ -126,9 +232,9 @@ describe("OTP 1", () => {
   })
 
 
-  it("Resend OTP with wrong data", async() => {
+  it("Resend OTP with invalid data", async() => {
 
-    const cookieArray = (cookies || "").split("; ")
+    const cookieArray = cookie.split("; ")
 
     const partToBeReplaced = cookieArray[0].substring(5, 10)
 
@@ -153,12 +259,12 @@ describe("OTP 1", () => {
 
 describe("OTP 2", () => {
 
-  let cookies: string | null
+  let cookie: string
 
 
   it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
 
-    cookies = await fetchOtpCookies()
+    cookie = await fetchOtpcookie()
 
   })
 
@@ -168,7 +274,7 @@ describe("OTP 2", () => {
     const res = await app.request("/api/otp/resend", {
       method: "POST",
       headers: {
-        cookie: cookies || ""
+        cookie
       }
     })
 
@@ -188,11 +294,11 @@ describe("OTP 2", () => {
       const res = await app.request("/api/otp/resend", {
         method: "POST",
         headers: {
-          cookie: cookies || ""
+          cookie
         }
       })
 
-      cookies = getCookiesFromResponse(res)
+      cookie = getcookieFromResponse(res)
 
       const data = await res.json()
       const dateNow = Date.now()
@@ -208,7 +314,7 @@ describe("OTP 2", () => {
       const res = await app.request("/api/otp/resend", {
         method: "POST",
         headers: {
-          cookie: cookies || ""
+          cookie
         }
       })
 
@@ -230,7 +336,7 @@ describe("OTP 2", () => {
       body: `otp=${Math.random().toString(36)}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        cookie: cookies || ""
+        cookie
       }
     })
 
@@ -265,7 +371,7 @@ describe("OTP 2", () => {
       body: `otp=${createOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        cookie: (cookies || "").split("; ")[0]
+        cookie: cookie.split("; ")[0]
       }
     })
 
@@ -283,7 +389,7 @@ describe("OTP 2", () => {
       body: `otp=${createOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        cookie: (cookies || "").split("; ")[1]
+        cookie: cookie.split("; ")[1]
       }
     })
 
@@ -296,7 +402,7 @@ describe("OTP 2", () => {
 
   it("Send an OTP with a wrong key", async() => {
 
-    const cookieArray = (cookies || "").split("; ")
+    const cookieArray = cookie.split("; ")
 
     const partToBeReplaced = cookieArray[1].substring(5, 10)
 
@@ -318,9 +424,9 @@ describe("OTP 2", () => {
   })
 
 
-  it("Send an OTP with wrong data", async() => {
+  it("Send an OTP with invalid data", async() => {
 
-    const cookieArray = (cookies || "").split("; ")
+    const cookieArray = cookie.split("; ")
 
     const partToBeReplaced = cookieArray[0].substring(5, 10)
 
@@ -347,12 +453,12 @@ describe("OTP 2", () => {
 
 describe("OTP 3", () => {
 
-  let cookies: string | null
+  let cookie: string
 
 
   it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
 
-    cookies = await fetchOtpCookies()
+    cookie = await fetchOtpcookie()
 
   })
 
@@ -364,11 +470,11 @@ describe("OTP 3", () => {
       body: `otp=${createOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        cookie: cookies || ""
+        cookie
       }
     })
 
-    cookies = getCookiesFromResponse(res)
+    cookie = getcookieFromResponse(res)
 
     const data = await res.json()
     
@@ -400,7 +506,7 @@ describe("OTP 3", () => {
       body: `otp=${createOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        cookie: cookies || ""
+        cookie
       }
     })
 
