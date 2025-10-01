@@ -2,12 +2,8 @@ import { getCookie } from "hono/cookie"
 
 import app from "@/setup"
 
-import {
-  ERR_OTP_ALREADY_RESENT,
-  ERR_OTP_EXPIRED_COOKIE,
-  ERR_OTP_RESENT_NOT_ALLOWED,
-  ERR_OTP_TOO_MANY_ATTEMPTS
-} from "@/lib/errors"
+import { ERR_OTP_ALREADY_RESENT, ERR_OTP_EXPIRED_COOKIE, ERR_OTP_RESENT_NOT_ALLOWED, ERR_OTP_TOO_MANY_ATTEMPTS } from "@/lib/error/static"
+import { OTP_BLOCKED, OTP_INCORRECT } from "@/lib/error/names"
 import { COOKIE_KEY_ID, COOKIE_OTP, createOtpCookie, createOtpAndSend, deleteOtpData, getOtpTokenData } from "@/lib/otp"
 import getReducedTimePrecision from "@/lib/time"
 
@@ -99,7 +95,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
     if (timeDifference < 0) {
       return c.json({
-        error: "OTP:BLOCKED",
+        error: OTP_BLOCKED,
         message: `You are blocked from verifying the OTP until ${Math.ceil(timeDifference / 1000)} seconds have passed.`,
       }, 400)
     }
@@ -130,7 +126,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
     await createOtpCookie(c, otpValid, credential, expiresNumber, resendBlockDate, currentAttempts, newOtpDateBlocked)
 
     return c.json({
-      error: "OTP:INCORRECT",
+      error: OTP_INCORRECT,
       message: "Incorrect OTP value.",
       blockedUntil: newOtpDateBlocked
     }, 400)

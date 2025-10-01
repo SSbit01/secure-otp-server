@@ -1,6 +1,6 @@
 import { validator } from "hono/validator"
 
-import { ERR_CREDENTIAL_INVALID } from "@/lib/errors.js"
+import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static"
 
 
 /**

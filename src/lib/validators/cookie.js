@@ -2,7 +2,7 @@ import { deleteCookie } from "hono/cookie"
 import { validator } from "hono/validator"
 
 import { COOKIE_KEY_ID, COOKIE_OTP, getOtpTokenData } from "@/lib/otp"
-import { ERR_OTP_INVALID_COOKIE } from "@/lib/errors"
+import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 
 
 

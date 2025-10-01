@@ -8,7 +8,8 @@ import { secureHeaders } from "hono/secure-headers"
 import { env } from "hono/adapter"
 import { HTTPException } from "hono/http-exception"
 
-import { ERR_SERVER } from "@/lib/errors"
+import { ERR_SERVER } from "@/lib/error/static"
+import { GENERIC } from "@/lib/error/names"
 
 
 
@@ -53,7 +54,7 @@ app.onError(async(err, c) => {
   
   if (err instanceof HTTPException) {
     return c.json({
-      error: "GENERIC",
+      error: GENERIC,
       message: err.message
     }, 400)
   }

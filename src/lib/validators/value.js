@@ -1,7 +1,7 @@
 import { validator } from "hono/validator"
 
-import { OTP_LENGTH, OTP_REGEX } from "../../custom/otp.js"
-import { ERR_OTP_INVALID_FORMAT } from "../errors.js"
+import { ERR_OTP_INVALID_FORMAT } from "@/lib/error/static"
+import { OTP_LENGTH, OTP_REGEX } from "@/custom/otp"
 
 
 
