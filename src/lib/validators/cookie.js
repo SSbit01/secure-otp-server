@@ -6,7 +6,7 @@ import { ERR_OTP_INVALID_COOKIE } from "@/lib/errors"
 
 
 
-export const otpCookieValidator = validator("cookie", async(cookies, c) => {
+const otpCookieValidator = validator("cookie", async(cookies, c) => {
 
   const keyID = cookies[COOKIE_KEY_ID]
 
@@ -36,3 +36,7 @@ export const otpCookieValidator = validator("cookie", async(cookies, c) => {
   }
 
 })
+
+
+
+export default otpCookieValidator

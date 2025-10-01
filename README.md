@@ -66,7 +66,7 @@ See [`sample.env`](sample.env) for an example.
 ## Customization
 
 - OTP generation logic: [`src/custom/otp.ts`](src/custom/otp.ts)
-- Input validation: [`src/custom/input.ts`](src/custom/input.ts)
+- Credential validation: [`src/custom/credential.ts`](src/custom/credential.ts)
 - OTP sending logic: [`src/custom/send.ts`](src/custom/send.ts)
 - KMS storage: [`src/custom/kms.ts`](src/custom/kms.ts)
 - Final action after verification: [`src/custom/final.ts`](src/custom/final.ts)

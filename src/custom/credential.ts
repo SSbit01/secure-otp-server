@@ -9,7 +9,7 @@ import { ERR_CREDENTIAL_INVALID } from "@/lib/errors.js"
  * Customize this validator as you like.
  * The validation target must be `json` and return a credential/ID (not shared with the client) of type `string` or `number` to later confirm that the credentials have been verified.
  */
-const inputValidator = validator("json", (body, c) => {
+const credentialValidator = validator("json", (body, c) => {
 
   /**
    * Is the body invalid?
@@ -27,4 +27,4 @@ const inputValidator = validator("json", (body, c) => {
 })
 
 
-export default inputValidator
+export default credentialValidator

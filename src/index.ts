@@ -1,4 +1,4 @@
-import { getCookie, deleteCookie } from "hono/cookie"
+import { getCookie } from "hono/cookie"
 
 import app from "@/setup"
 
@@ -11,10 +11,10 @@ import {
 import { COOKIE_KEY_ID, COOKIE_OTP, createOtpCookie, createOtpAndSend, deleteOtpData, getOtpTokenData } from "@/lib/otp"
 import getReducedTimePrecision from "@/lib/time"
 
-import { otpCookieValidator } from "@/lib/validators/cookie"
-import { otpValueValidator } from "@/lib/validators/value"
+import otpCookieValidator from "@/lib/validators/cookie"
+import otpValueValidator from "@/lib/validators/value"
 
-import inputValidator from "@/custom/input"
+import credentialValidator from "@/custom/credential"
 import { deleteEncryptionKey } from "@/custom/kms"
 import { RESEND_BLOCK_SECONDS, ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS } from "@/custom/otp"
 import finalAction from "@/custom/final"
@@ -25,7 +25,7 @@ const otpInvalidBlockMs = INVALID_BLOCK_SECONDS * 1000
 
 
 
-app.post("/api/otp/create", inputValidator, async(c) => {
+app.post("/api/otp/create", credentialValidator, async(c) => {
 
   const { [COOKIE_KEY_ID]: keyID, [COOKIE_OTP]: token } = getCookie(c) as Record<string, string | undefined>
 

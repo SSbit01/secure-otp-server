@@ -5,7 +5,7 @@ import { ERR_OTP_INVALID_FORMAT } from "../errors.js"
 
 
 
-export const otpValueValidator = validator("form", async({ otp }, c) => {
+const otpValueValidator = validator("form", async({ otp }, c) => {
 
   if (typeof otp !== "string") {
     return c.json(ERR_OTP_INVALID_FORMAT, 400)
@@ -20,3 +20,7 @@ export const otpValueValidator = validator("form", async({ otp }, c) => {
   return otp.toLowerCase()
 
 })
+
+
+
+export default otpValueValidator
