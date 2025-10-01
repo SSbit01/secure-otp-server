@@ -3,14 +3,15 @@ import { Context } from "hono"
 
 /**
  * This function runs when the OTP and the credential/ID have been verified.
+ * 
  * Customize this function as you like.
- * It should accept the Hono context and the user's credential/ID.
- * It should return a Response using the Hono context.
+ * 
+ * @async
+ * @param {Context} c - Hono context.
+ * @param {string} credential - Client credential/ID directly taken from the token (that's why it can be only a string).
+ * @returns {Promise<Response>} [Hono Response using the Hono context](https://hono.dev/docs/getting-started/basic#return-json).
  */
-export default async function finalAction(
-  c: Context,
-  credential: string
-) {
+export default async function finalAction(c: Context, credential: string) {
 
   return c.json({
     message: `"${credential}" successfully verified.`

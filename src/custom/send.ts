@@ -1,19 +1,18 @@
 import type { Context } from "hono"
+import type { createOtp } from "@/custom/otp"
+
+type Otp = ReturnType<typeof createOtp>
 
 /**
  * Implement here the sending of the OTP code to the credential/ID.
- * It only needs to accept the Hono context.
  * 
- * @param   {Context}       c          - Hono context.
- * @param   {(string|number)} credential - Client identification string.
- * @param   {string}        otp        - Otp string code.
+ * @async
+ * @param {Context} c - Hono context.
+ * @param {(string|number)} credential - Client credential/ID.
+ * @param {Otp} otp - OTP string code.
  */
-export default async function sendOtp(
-  c: Context,
-  credential: string | number,
-  otp: string | number
-) {
+export default async function sendOtp(c: Context, credential: string | number, otp: Otp) {
 
-  return 1
+  return null
 
 }

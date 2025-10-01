@@ -10,6 +10,6 @@ import base64ToBytes from "@/lib/base64"
  * 
  * @returns {string} A 24-character Base64-encoded random ID.
  */
-export default function createRandomID() {
+export default function createRandomId() {
   return base64ToBytes.encode(crypto.getRandomValues(new Uint8Array(18)))
 }

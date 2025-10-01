@@ -1,5 +1,8 @@
 /**
- * A simple in-memory KMS implementation using a JavaScript Map.
+ * This server generates keys with their IDs constantly, and it needs to store them somewhere.
+ * This file defines functions for storing keys.
+ * 
+ * Therefore, a simple in-memory KMS implementation has been defined using a JavaScript Map.
  * 
  * - It is the cheapest and easiest implementation and works fine if the server is always on.
  * - This implementation does not persist keys, so all keys will be lost when the server restarts.
@@ -18,14 +21,33 @@ const keyStorage = new Map<string, [key: CryptoKey, expires: number]>()
 
 
 
-export async function doesEncryptionKeyExist(c: Context, keyID: string) {
+/**
+ * Checks if an encryption key with the given ID exists.
+ * 
+ * @async
+ * @function doesEncryptionKeyExist
+ * @param {Context} c - Hono context.
+ * @param {string} keyId - The ID of the encryption key to check.
+ * @return {Promise<boolean>} A promise that resolves to `true` if the key exists, otherwise `false`.
+ */
+export async function doesEncryptionKeyExist(c: Context, keyId: string) {
 
-  return keyStorage.has(keyID)
+  return keyStorage.has(keyId)
 
 }
 
 
-export async function storeEncryptionKey(c: Context, keyID: string, key: CryptoKey, expires: number) {
+/**
+ * Stores an encryption key with the given ID and expiration time.
+ * 
+ * @async
+ * @function storeEncryptionKey
+ * @param {Context} c - Hono context.
+ * @param {string} keyId - The ID of the encryption key to store.
+ * @param {CryptoKey} key - The encryption key to store.
+ * @param {number} expires - The expiration time in milliseconds since the epoch.
+ */
+export async function storeEncryptionKey(c: Context, keyId: string, key: CryptoKey, expires: number) {
 
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
@@ -37,19 +59,36 @@ export async function storeEncryptionKey(c: Context, keyID: string, key: CryptoK
     }
   }
 
-  keyStorage.set(keyID, [key, expires])
+  keyStorage.set(keyId, [key, expires])
 
 }
 
 
-export async function getEncryptionKey(c: Context, keyID: string): Promise<CryptoKey | undefined> {
+/**
+ * Retrieves an encryption key by its ID.
+ * 
+ * @async
+ * @function getEncryptionKey
+ * @param {Context} c - Hono context.
+ * @param {string} keyId - The ID of the encryption key to retrieve.
+ * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
+ */
+export async function getEncryptionKey(c: Context, keyId: string): Promise<CryptoKey | undefined> {
 
-  return keyStorage.get(keyID)?.[0]
+  return keyStorage.get(keyId)?.[0]
 
 }
 
 
-export async function deleteEncryptionKey(c: Context, keyID: string) {
+/**
+ * Deletes an encryption key by its ID.
+ * 
+ * @async
+ * @function deleteEncryptionKey
+ * @param {Context} c - Hono context.
+ * @param {string} keyId - The ID of the encryption key to delete.
+ */
+export async function deleteEncryptionKey(c: Context, keyId: string) {
 
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
@@ -61,6 +100,6 @@ export async function deleteEncryptionKey(c: Context, keyID: string) {
     }
   }
 
-  return keyStorage.delete(keyID)
+  return keyStorage.delete(keyId)
   
 }

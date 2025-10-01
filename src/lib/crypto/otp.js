@@ -1,4 +1,4 @@
-import createRandomID from "@/lib/crypto/id"
+import createRandomId from "@/lib/crypto/id"
 import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import { textEncoder, textDecoder } from "@/lib/text"
 
@@ -11,10 +11,11 @@ import { doesEncryptionKeyExist, storeEncryptionKey, getEncryptionKey } from "@/
 
 /**
  * @async
+ * @function encryptOtp
  * @param {Context} c
  * @param {string} value
  * @param {number} expires
- * @returns {Promise<[result:string,keyID:string]>}
+ * @returns {Promise<[result:string,keyId:string]>}
  */
 export async function encryptOtp(c, value, expires) {
 
@@ -26,29 +27,30 @@ export async function encryptOtp(c, value, expires) {
     textEncoder
   )
 
-  let keyID
+  let keyId
   
   do {
-    keyID = createRandomID()
-  } while (await doesEncryptionKeyExist(c, keyID))
+    keyId = createRandomId()
+  } while (await doesEncryptionKeyExist(c, keyId))
 
-  await storeEncryptionKey(c, keyID, key, expires)
+  await storeEncryptionKey(c, keyId, key, expires)
 
-  return [result, keyID]
+  return [result, keyId]
 
 }
 
 
 /**
  * @async
+ * @function decryptOtp
  * @param {Context} c
  * @param {string} value
- * @param {string} keyID
+ * @param {string} keyId
  * @returns {Promise<string|undefined>}
  */
-export async function decryptOtp(c, value, keyID) {
+export async function decryptOtp(c, value, keyId) {
 
-  const key = await getEncryptionKey(c, keyID)
+  const key = await getEncryptionKey(c, keyId)
 
   return key && await decryptSymmetricallyText(
     value,

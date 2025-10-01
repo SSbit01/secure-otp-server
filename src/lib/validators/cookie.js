@@ -8,9 +8,9 @@ import { ERR_OTP_INVALID_COOKIE } from "@/lib/errors"
 
 const otpCookieValidator = validator("cookie", async(cookies, c) => {
 
-  const keyID = cookies[COOKIE_KEY_ID]
+  const keyId = cookies[COOKIE_KEY_ID]
 
-  if (!keyID) {
+  if (!keyId) {
     deleteCookie(c, COOKIE_OTP)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -24,14 +24,14 @@ const otpCookieValidator = validator("cookie", async(cookies, c) => {
   }
 
   // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-  const otpTokenData = await getOtpTokenData(c, keyID, cookies[COOKIE_OTP])
+  const otpTokenData = await getOtpTokenData(c, keyId, cookies[COOKIE_OTP])
 
   if (!otpTokenData) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   return {
-    keyID,
+    keyId,
     value: otpTokenData
   }
 

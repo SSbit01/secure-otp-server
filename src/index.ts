@@ -27,18 +27,18 @@ const otpInvalidBlockMs = INVALID_BLOCK_SECONDS * 1000
 
 app.post("/api/otp/create", credentialValidator, async(c) => {
 
-  const { [COOKIE_KEY_ID]: keyID, [COOKIE_OTP]: token } = getCookie(c) as Record<string, string | undefined>
+  const { [COOKIE_KEY_ID]: keyId, [COOKIE_OTP]: token } = getCookie(c) as Record<string, string | undefined>
 
   const credential = c.req.valid("json")
 
-  if (!keyID || !token) {
+  if (!keyId || !token) {
     return c.json(
       await createOtpAndSend(c, credential)
     )
   }
   
   // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-  const otpTokenData = await getOtpTokenData(c, keyID, token)
+  const otpTokenData = await getOtpTokenData(c, keyId, token)
 
   if (!otpTokenData || otpTokenData[0] !== credential) {
     return c.json(
@@ -65,7 +65,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
-  await deleteEncryptionKey(c, keyID)
+  await deleteEncryptionKey(c, keyId)
 
   return c.json(await createOtpAndSend(c, credential, ALLOW_ONLY_ONE_RESENDING, dateNow))
 
@@ -76,7 +76,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
 app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
   const {
-    keyID,
+    keyId,
     // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
     value: [credential, expires, resendBlockDate, otpValid, attempts, otpBlockDate]
   } = c.req.valid("cookie")
@@ -125,7 +125,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
       newOtpDateBlocked = dateNow + otpInvalidBlockMs
     }
 
-    await deleteEncryptionKey(c, keyID)
+    await deleteEncryptionKey(c, keyId)
 
     await createOtpCookie(c, otpValid, credential, expiresNumber, resendBlockDate, currentAttempts, newOtpDateBlocked)
 
@@ -149,7 +149,7 @@ if (RESEND_BLOCK_SECONDS) {
   app.post("/api/otp/resend", otpCookieValidator, async(c) => {
   
     const {
-      keyID,
+      keyId,
       // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
       value: [credential, expires, resendBlockDate]
     } = c.req.valid("cookie")
@@ -174,7 +174,7 @@ if (RESEND_BLOCK_SECONDS) {
     }
 
 
-    await deleteEncryptionKey(c, keyID)
+    await deleteEncryptionKey(c, keyId)
 
     return c.json(await createOtpAndSend(c, credential, ALLOW_ONLY_ONE_RESENDING, dateNow))
 

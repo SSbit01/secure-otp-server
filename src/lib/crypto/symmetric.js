@@ -17,6 +17,8 @@ export const keyUsages = ["encrypt", "decrypt"]
 /**
  * Before encrypting and decrypting values, a symmetric `CryptoKey` must be created.
  * 
+ * @async
+ * @function createSymmetricKey
  * @returns {Promise<CryptoKey>} A `CryptoKey` containing a SHA-256 hash used to encrypt and decrypt strings.
  */
 export async function createSymmetricKey() {
@@ -35,6 +37,8 @@ export async function createSymmetricKey() {
 /**
  * Encrypts a string value.
  * 
+ * @async
+ * @function encryptSymmetricallyText
  * @param {string} value - String value to be encrypted.
  * @param {CryptoKey} key - Symmetric key for AES-GCM encryption.
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
@@ -67,6 +71,8 @@ export async function encryptSymmetricallyText(
 /**
  * Decrypts a value into a string.
  * 
+ * @async
+ * @function decryptSymmetricallyText
  * @param {string} value - Encrypted value to be decrypted.
  * @param {CryptoKey} key - Symmetric key used to encrypt the value.
  * @param {TextDecoder} [textDecoder] - If you have an instance of a `TextDecoder`, you can reuse it.

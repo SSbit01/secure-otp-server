@@ -26,6 +26,8 @@ export const COOKIE_OTP = "t"
 
 /**
  * 
+ * @async
+ * @function createOtpCookie
  * @param {Context} c
  * @param {(string|number)} otp
  * @param {(string|number)} credential
@@ -64,26 +66,27 @@ export async function createOtpCookie(
     partitioned: false
   }
   
-  const [result, keyID] = await encryptOtp(c, value, expires)
+  const [result, keyId] = await encryptOtp(c, value, expires)
 
   setCookie(c, COOKIE_OTP, result, cookieOptions)
-  setCookie(c, COOKIE_KEY_ID, keyID, cookieOptions)
+  setCookie(c, COOKIE_KEY_ID, keyId, cookieOptions)
 
 }
 
 
 /**
- * @typedef  {Object} DataExpire
+ * @typedef {Object} DataExpire
  * @property {number} expires
  * @property {number} [resendBlockDate]
  */
 
 /**
  * @async
- * @param   {Context} c
- * @param   {(string|number)} credential
- * @param   {boolean} resent
- * @param   {number} [dateNow]
+ * @function createOtpAndSend
+ * @param {Context} c
+ * @param {(string|number)} credential
+ * @param {boolean} resent
+ * @param {number} [dateNow]
  * @returns {Promise<DataExpire>}
  */
 export async function createOtpAndSend(
@@ -114,38 +117,40 @@ export async function createOtpAndSend(
 
 
 /**
- * 
+ * @async
+ * @function deleteOtpData
  * @param {Context} c
  */
 export async function deleteOtpData(c) {
 
   deleteCookie(c, COOKIE_OTP)
 
-  const keyID = deleteCookie(c, COOKIE_KEY_ID)
+  const keyId = deleteCookie(c, COOKIE_KEY_ID)
 
-  if (keyID) {
-    await deleteEncryptionKey(c, keyID)
+  if (keyId) {
+    await deleteEncryptionKey(c, keyId)
   }
 
 }
 
 
 /**
- * 
- * @param   {Context} c
- * @param   {string} keyID
- * @param   {string} token
+ * @async
+ * @function getOtpTokenData
+ * @param {Context} c
+ * @param {string} keyId
+ * @param {string} token
  * @returns {Promise<[credential:string,expires:string,resendBlockDate:string,otp:string,attempts:string,otpBlockDate?:string]|undefined>}
  */
 export async function getOtpTokenData(
   c,
-  keyID,
+  keyId,
   token
 ) {
 
   try {
     // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-    const result = await decryptOtp(c, token, keyID)
+    const result = await decryptOtp(c, token, keyId)
 
     if (result) {
       // @ts-expect-error

@@ -14,7 +14,7 @@ let production
 /**
  * Returns whether the server is running in a production environment or not.
  * 
- * @param   {Context} c
+ * @param {Context} c
  * @returns {boolean}
  */
 export default function isProduction(c) {
