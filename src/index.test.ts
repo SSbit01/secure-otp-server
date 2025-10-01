@@ -7,6 +7,10 @@ import app from "@/index"
 
 
 
+const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
+
+
+
 function getcookieFromResponse(res: Response) {
 
   const arr = res.headers.getSetCookie()
@@ -451,7 +455,7 @@ describe("OTP 2", () => {
 
 
 
-describe("OTP 3", () => {
+describe("OTP 3", async() => {
 
   let cookie: string
 
@@ -557,7 +561,10 @@ describe("OTP 3", () => {
   })
 
 
-  it(`Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
+  let attempts = ATTEMPTS_WITHOUT_BLOCK + 1
+
+
+  it(`Send an invalid OTP - attempt: ${attempts}`, async() => {
 
     const res = await app.request("/api/otp/verify", {
       method: "POST",
@@ -577,10 +584,35 @@ describe("OTP 3", () => {
 
   if (INVALID_BLOCK_SECONDS < 5) {
 
-    it("Wait and send an invalid OTP", async() => {
-      await sleep(INVALID_BLOCK_SECONDS * 1000)
-      const data = await sendInvalidOtp()
-      expect(data.blockedUntil).toBeGreaterThan(Date.now())
+    while (attempts < MAX_ATTEMPTS) {
+      it(`Wait and send an invalid OTP - attempt: ${attempts + 1}`, async() => {
+        await sleep(INVALID_BLOCK_MS)
+        const data = await sendInvalidOtp()
+        expect(data.blockedUntil).toBeGreaterThan(Date.now())
+      })
+      attempts++
+    }
+
+
+    it(`Wait and send an invalid OTP (expect too many attempts)`, async() => {
+
+      await sleep(INVALID_BLOCK_MS)
+
+      const res = await app.request("/api/otp/verify", {
+        method: "POST",
+        body: `otp=${createOtp()}`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          cookie
+        }
+      })
+
+      cookie = getcookieFromResponse(res)
+
+      const data = await res.json()
+      
+      expect(data.error).toBe("OTP:TOO_MANY_ATTEMPTS")
+
     })
 
   } else {

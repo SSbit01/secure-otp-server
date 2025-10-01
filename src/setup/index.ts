@@ -2,10 +2,11 @@ import { Hono } from "hono"
 
 import { bodyLimit } from "hono/body-limit"
 import { cors } from "hono/cors"
-import { HTTPException } from "hono/http-exception"
+import { logger } from "hono/logger"
 import { secureHeaders } from "hono/secure-headers"
 
 import { env } from "hono/adapter"
+import { HTTPException } from "hono/http-exception"
 
 import { ERR_SERVER } from "@/lib/errors"
 
@@ -21,12 +22,11 @@ const app = new Hono()
 /**
  * === MIDDLEWARES ===
  */
+
+app.use(logger())
+
+
 app.use(secureHeaders())
-
-
-app.use(bodyLimit({
-  maxSize: 102400  // 100 KiB
-})) 
 
 
 app.use(cors({
@@ -37,6 +37,11 @@ app.use(cors({
 
   allowMethods: ["GET", "HEAD", "POST"],
 
+}))
+
+
+app.use(bodyLimit({
+  maxSize: 102400  // 100 KiB
 }))
 
 
