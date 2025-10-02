@@ -65,4 +65,8 @@ app.onError(async(err, c) => {
 
 
 
+app.get(c => c.body(null, 404))
+
+
+
 export default app

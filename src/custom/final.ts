@@ -14,7 +14,8 @@ import { Context } from "hono"
 export default async function finalAction(c: Context, credential: string) {
 
   return c.json({
-    message: `"${credential}" successfully verified.`
+    credential,
+    message: `successfully verified`
   })
 
 }
