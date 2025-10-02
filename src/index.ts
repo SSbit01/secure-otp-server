@@ -136,6 +136,9 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   }
 
 
+  /**
+   * The OTP and the credential/ID have been verified, so delete all related data.
+   */
   deleteOtpData(c)
 
   
