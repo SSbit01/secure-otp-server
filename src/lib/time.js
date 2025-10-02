@@ -21,11 +21,12 @@ export function isLessThanDelay(time, dateNow = Date.now(), delay = MINIMUM_DELA
  * 
  * @function getReducedTimePrecision
  * @param {number} [time] - The time value in milliseconds to reduce precision for. Defaults to the current time.
+ * @param {(x:number)=>number} [roundFunction] - The rounding function to use (e.g., Math.floor, Math.ceil, Math.round). Defaults to Math.floor.
  * @param {number} [precision=1000] - The precision in milliseconds to which the time value should be reduced. Defaults to 1000 ms (1 second).
  * @returns {number} - The time value with reduced precision.
  */
-export function getReducedTimePrecision(time = Date.now(), precision = 1000) {
+export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.floor, precision = 1000) {
 
-  return Math.floor(time / precision) * precision
+  return roundFunction(time / precision) * precision
   
 }

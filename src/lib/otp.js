@@ -116,7 +116,7 @@ export async function createOtpAndSend(
 
   return {
     expires: await createOtpCookie(c, otp, credential, expires, resendBlockDate),
-    resendBlockDate: getReducedTimePrecision(resendBlockDate)
+    resendBlockDate: getReducedTimePrecision(resendBlockDate, Math.ceil)
   }
 
 }
