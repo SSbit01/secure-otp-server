@@ -2,38 +2,33 @@ import { deleteCookie } from "hono/cookie"
 import { validator } from "hono/validator"
 
 import { COOKIE_KEY_ID, COOKIE_OTP, getOtpTokenData } from "@/lib/otp"
-import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
+import { ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
+import { isLessThanDelay } from "@/lib/time"
 
 
 
-const otpCookieValidator = validator("cookie", async(cookies, c) => {
+const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [COOKIE_OTP]: token }, c) => {
 
-  const keyId = cookies[COOKIE_KEY_ID]
-
-  if (!keyId) {
-    deleteCookie(c, COOKIE_OTP)
+  if (!keyId || !token) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const token = cookies[COOKIE_OTP]
-
-  if (!token) {
-    deleteCookie(c, COOKIE_KEY_ID)
-    deleteCookie(c, COOKIE_OTP)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  // credential:expires:resendBlockDate:otp:attempts:otpBlockDate(optional)
-  const otpTokenData = await getOtpTokenData(c, keyId, cookies[COOKIE_OTP])
+  // lastAccessDate:expires:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
+  const otpTokenData = await getOtpTokenData(c, keyId, token)
 
   if (!otpTokenData) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  return {
-    keyId,
-    value: otpTokenData
+  const [lastAccessDate, ...restOtpTokenData] = otpTokenData
+
+  const dateNow = Date.now()
+
+  if (isLessThanDelay(+lastAccessDate, dateNow)) {
+    return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
+
+  return /** @type {const} */ ([restOtpTokenData, keyId, dateNow])  // as const
 
 })
 

@@ -1,4 +1,5 @@
 import {
+  BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   OTP_ALREADY_RESENT,
   OTP_EXPIRED,
@@ -6,9 +7,15 @@ import {
   OTP_INVALID_FORMAT,
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS,
+  OTP_TOO_MANY_REQUESTS,
   SERVER
 } from "@/lib/error/names"
 
+
+export const ERR_BODY_TOO_LARGE = {
+  error: BODY_TOO_LARGE,
+  message: "The body of your request is too large."
+}
 
 export const ERR_CREDENTIAL_INVALID = {
   error: CREDENTIAL_INVALID,
@@ -43,6 +50,11 @@ export const ERR_OTP_RESENT_NOT_ALLOWED = {
 export const ERR_OTP_TOO_MANY_ATTEMPTS = {
   error: OTP_TOO_MANY_ATTEMPTS,
   message: "Too many attempts, you have to retry again."
+}
+
+export const ERR_OTP_TOO_MANY_REQUESTS = {
+  error: OTP_TOO_MANY_REQUESTS,
+  message: "Too many requests, please slow down."
 }
 
 export const ERR_SERVER = {

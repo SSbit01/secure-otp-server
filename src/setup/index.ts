@@ -8,7 +8,7 @@ import { secureHeaders } from "hono/secure-headers"
 import { env } from "hono/adapter"
 import { HTTPException } from "hono/http-exception"
 
-import { ERR_SERVER } from "@/lib/error/static"
+import { ERR_BODY_TOO_LARGE, ERR_SERVER } from "@/lib/error/static"
 import { GENERIC } from "@/lib/error/names"
 
 
@@ -42,7 +42,13 @@ app.use(cors({
 
 
 app.use(bodyLimit({
-  maxSize: 102400  // 100 KiB
+
+  maxSize: 102400,  // 100 KiB,
+
+  onError(c) {
+    return c.json(ERR_BODY_TOO_LARGE, 413)
+  }
+
 }))
 
 
@@ -65,6 +71,9 @@ app.onError(async(err, c) => {
 
 
 
+/**
+ * GET requests are customizable.
+ */
 app.get(c => c.body(null, 404))
 
 

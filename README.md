@@ -11,11 +11,6 @@ A template server for generating, encrypting, and verifying OTP (One-Time Passwo
 >
 > If you find any vulnerabilities, please feel free to report them. The best way is to email them before publishing, in case derivative works of this template are used in production. You can find my email address in my profile or in the `author` field of the `package.json`.
 
-## Urgent To-Do list
-
-- Add rate limiting using token metadata, as a second line of defense.
-  - 400 ms as default between each OTP verification (configurable).
-
 ## Features
 
 - Built on Web Standards. It works on any JavaScript runtime.
@@ -49,6 +44,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `POST /api/otp/create` – Generate and send a new OTP
 - `POST /api/otp/resend` – Resend OTP (with cookie)
 - `POST /api/otp/verify` – Verify OTP code
+
+## Errors
+
+The errors have the following format:
+
+```typescript
+{
+  error: string;
+  message: string;
+}
+```
+
+The `error` field is the error code. You can check all the error codes in `src/lib/error/names.js`.
 
 ## Configuration
 

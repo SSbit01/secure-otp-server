@@ -11,7 +11,6 @@
  */
 
 import { MAX_DURATION_SECONDS } from "@/custom/otp"
-import getReducedTimePrecision from "@/lib/time"
 
 import type { Context } from "hono"
 
@@ -52,7 +51,7 @@ export async function storeEncryptionKey(c: Context, keyId: string, key: CryptoK
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
    */
-  const dateNow = getReducedTimePrecision()
+  const dateNow = Date.now()
   for (const [id, [, expires]] of keyStorage) {
     if (dateNow >= expires) {
       keyStorage.delete(id)
@@ -83,6 +82,8 @@ export async function getEncryptionKey(c: Context, keyId: string): Promise<Crypt
 /**
  * Deletes an encryption key by its ID.
  * 
+ * Don't throw errors in this function, because it's used in a "fire and forget" manner.
+ * 
  * @async
  * @function deleteEncryptionKey
  * @param {Context} c - Hono context.
@@ -93,7 +94,7 @@ export async function deleteEncryptionKey(c: Context, keyId: string) {
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
    */
-  const dateNow = getReducedTimePrecision()
+  const dateNow = Date.now()
   for (const [id, [, expires]] of keyStorage) {
     if (dateNow >= expires) {
       keyStorage.delete(id)
