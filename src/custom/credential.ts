@@ -20,7 +20,7 @@ const credentialValidator = validator("json", (body, c) => {
   if (
     !body ||
     body === true ||
-    (typeof body !== "number" && (!body?.length || !Object.keys(body).length))
+    (typeof body !== "number" && !(body?.length || Object.keys(body).length))
   ) {
     return c.json(ERR_CREDENTIAL_INVALID, 400)
   }
