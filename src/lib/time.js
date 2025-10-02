@@ -1,4 +1,4 @@
-import { MINIMUM_DELAY_BETWEEN_VERIFICATIONS_MS } from "@/custom/otp"
+import { MINIMUM_DELAY_BETWEEN_REQUESTS_MS } from "@/custom/otp"
 
 
 /**
@@ -9,7 +9,7 @@ import { MINIMUM_DELAY_BETWEEN_VERIFICATIONS_MS } from "@/custom/otp"
  * @param {number} [dateNow]
  * @param {number} [delay]
  */
-export function isLessThanDelay(time, dateNow = Date.now(), delay = MINIMUM_DELAY_BETWEEN_VERIFICATIONS_MS) {
+export function isLessThanDelay(time, dateNow = Date.now(), delay = MINIMUM_DELAY_BETWEEN_REQUESTS_MS) {
 
   return (dateNow - time) < delay
   

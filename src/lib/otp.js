@@ -28,18 +28,20 @@ export const COOKIE_OTP = "t"
  * @async
  * @function createOtpCookie
  * @param {Context} c
- * @param {(string|number)} otp
  * @param {(string|number)} credential
+ * @param {(string|number)} otp
+ * @param {number} lastAccessDate
  * @param {number} expires
  * @param {(string|number)} [resendBlockDate]
- * @param {number} [attempts]
+ * @param {(string|number)} [attempts]
  * @param {(string|number|false|null|undefined)} [otpBlockDate]
  * @returns {Promise<number>} When the OTP expires.
  */
 export async function createOtpCookie(
   c,
-  otp,
   credential,
+  otp,
+  lastAccessDate,
   expires,
   resendBlockDate = "",
   attempts = MAX_ATTEMPTS,
@@ -49,8 +51,8 @@ export async function createOtpCookie(
   /**
    * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
    */
-  // lastAccessDate:expires:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-  let value = `${Date.now()}${SEPARATOR}${expires}${SEPARATOR}${resendBlockDate}${SEPARATOR}${credential}${SEPARATOR}${otp}${SEPARATOR}${attempts}`
+  // expires:lastAccessDate:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
+  let value = `${expires}${SEPARATOR}${lastAccessDate}${SEPARATOR}${resendBlockDate}${SEPARATOR}${credential}${SEPARATOR}${otp}${SEPARATOR}${attempts}`
 
   if (otpBlockDate) {
     value += `${SEPARATOR}${otpBlockDate}`
@@ -108,14 +110,14 @@ export async function createOtpAndSend(
 
   if (resent) {
     return {
-      expires: await createOtpCookie(c, otp, credential, expires)
+      expires: await createOtpCookie(c, credential, otp, dateNow, expires)
     }
   }
 
   const resendBlockDate = dateNow + RESEND_BLOCK_MS
 
   return {
-    expires: await createOtpCookie(c, otp, credential, expires, resendBlockDate),
+    expires: await createOtpCookie(c, credential, otp, dateNow, expires, resendBlockDate),
     resendBlockDate: getReducedTimePrecision(resendBlockDate, Math.ceil)
   }
 
@@ -149,7 +151,7 @@ export function deleteOtpData(c) {
  * @param {Context} c
  * @param {string} keyId
  * @param {string} token
- * @returns {Promise<[lastAccessDate:string,expires:string,resendBlockDate:string,credential:string,otp:string,attempts:string,otpBlockDate?:string]|undefined>}
+ * @returns {Promise<[expires:string,lastAccessDate:string,resendBlockDate:string,credential:string,otp:string,attempts:string,otpBlockDate?:string]|undefined>}
  */
 export async function getOtpTokenData(
   c,
@@ -158,7 +160,7 @@ export async function getOtpTokenData(
 ) {
 
   try {
-    // lastAccessDate:expires:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
+    // expires:lastAccessDate:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
     const result = await decryptOtp(c, token, keyId)
 
     if (result) {
