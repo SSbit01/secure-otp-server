@@ -33,9 +33,6 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
   }
 
   if (isLessThanDelay(+lastAccessDate, dateNow)) {
-    // resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-    const [resendBlockDate, credential, otp, attempts, otpBlockDate] = restOtpTokenData
-    await createOtpCookie(c, credential, otp, dateNow, expiresNum, resendBlockDate, attempts, otpBlockDate)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
