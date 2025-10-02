@@ -1,7 +1,7 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS, createOtp } from "@/custom/otp"
 
 import app from "@/index"
 
@@ -58,10 +58,7 @@ describe("OTP 1", () => {
   it("Generate OTP without `Content-Type` and body", async() => {
 
     const res = await app.request("/api/otp/create", {
-      method: "POST",
-      headers: {
-        cookie
-      }
+      method: "POST"
     })
 
     const data = await res.json()
@@ -76,8 +73,7 @@ describe("OTP 1", () => {
     const res = await app.request("/api/otp/create", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        cookie
+        "Content-Type": "application/json"
       }
     })
 
@@ -94,8 +90,7 @@ describe("OTP 1", () => {
       method: "POST",
       body: '["test"]',
       headers: {
-        "Content-Type": "text/plain",
-        cookie
+        "Content-Type": "text/plain"
       }
     })
 
@@ -112,8 +107,7 @@ describe("OTP 1", () => {
       method: "POST",
       body: 'test',
       headers: {
-        "Content-Type": "application/json",
-        cookie
+        "Content-Type": "application/json"
       }
     })
 
@@ -130,8 +124,7 @@ describe("OTP 1", () => {
       method: "POST",
       body: 'false',
       headers: {
-        "Content-Type": "application/json",
-        cookie
+        "Content-Type": "application/json"
       }
     })
 
@@ -151,6 +144,8 @@ describe("OTP 1", () => {
 
 
   it(`Generate OTP with the same credentials`, async() => {
+
+    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
     const res = await app.request("/api/otp/create", {
       method: "POST",
@@ -236,7 +231,7 @@ describe("OTP 1", () => {
   })
 
 
-  it("Resend OTP with invalid body", async() => {
+  it("Resend OTP with invalid token", async() => {
 
     const cookieArray = cookie.split("; ")
 
@@ -274,6 +269,8 @@ describe("OTP 2", () => {
 
 
   it("Resend OTP without waiting", async() => {
+
+    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
     const res = await app.request("/api/otp/resend", {
       method: "POST",
@@ -314,6 +311,8 @@ describe("OTP 2", () => {
 
 
     it("Resend OTP again (it is expected to not work)", async() => {
+
+      await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
       const res = await app.request("/api/otp/resend", {
         method: "POST",
@@ -527,6 +526,8 @@ describe("OTP 3", async() => {
 
   async function sendInvalidOtp() {
 
+    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
+
     const res = await app.request("/api/otp/verify", {
       method: "POST",
       body: `otp=${createOtp()}`,
@@ -565,6 +566,8 @@ describe("OTP 3", async() => {
 
 
   it(`Send an invalid OTP - attempt: ${attempts}`, async() => {
+
+    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
     const res = await app.request("/api/otp/verify", {
       method: "POST",

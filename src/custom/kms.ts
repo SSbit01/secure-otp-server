@@ -82,7 +82,8 @@ export async function getEncryptionKey(c: Context, keyId: string): Promise<Crypt
 /**
  * Deletes an encryption key by its ID.
  * 
- * Don't throw errors in this function, because it's used in a "fire and forget" manner.
+ * - If your database or data storage supports TTL (Time To Live) or automatic expiration, you can leave this function blank (don't delete it).
+ * - Don't throw errors in this function, because it's used in a "fire and forget" manner.
  * 
  * @async
  * @function deleteEncryptionKey
