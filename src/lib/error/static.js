@@ -54,7 +54,7 @@ export const ERR_OTP_TOO_MANY_ATTEMPTS = {
 
 export const ERR_OTP_TOO_MANY_REQUESTS = {
   error: OTP_TOO_MANY_REQUESTS,
-  message: "Too many requests, incorrect use of the systems, token invalidated."
+  message: "Incorrect use of the systems, token invalidated."
 }
 
 export const ERR_SERVER = {
