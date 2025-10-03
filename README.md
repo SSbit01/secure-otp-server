@@ -79,6 +79,8 @@ See [`sample.env`](sample.env) for an example.
 - KMS storage: [`src/custom/kms.ts`](src/custom/kms.ts)
 - Final action after verification: [`src/custom/final.ts`](src/custom/final.ts)
 
+The tests were written using Bun.
+
 ## License
 
 This server template is [MIT licensed](./LICENSE).

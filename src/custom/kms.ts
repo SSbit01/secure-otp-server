@@ -42,7 +42,7 @@ export async function doesEncryptionKeyExist(c: Context, keyId: string) {
  * @async
  * @function storeEncryptionKey
  * @param {Context} c - Hono context.
- * @param {string} keyId - The ID of the encryption key to store.
+ * @param {string} keyId - The ID of the encryption key to store. Created using `/lib/crypto/id.js`.
  * @param {CryptoKey} key - The encryption key to store.
  * @param {number} expires - The expiration time in milliseconds since the epoch.
  */
