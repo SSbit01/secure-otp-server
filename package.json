@@ -1,15 +1,16 @@
 {
   "name": "secure-otp-server",
   "version": "1.0.0",
+  "description": "A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.",
   "author": "Stefan Samson <ss42701@outlook.com> (https://ssbit01.github.io/)",
+  "license": "MIT",
   "repository": "github:SSbit01/secure-otp-server",
+  "homepage": "https://github.com/SSbit01/secure-otp-server#readme",
   "bugs": {
     "url": "https://github.com/SSbit01/secure-otp-server/issues"
   },
+  "type": "module",
   "main": "./src/index.ts",
-  "description": "A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.",
-  "homepage": "https://github.com/SSbit01/secure-otp-server#readme",
-  "license": "MIT",
   "scripts": {
     "bun:dev": "bun run --hot ./src/index.ts",
     "bun:test": "bun test --bail",
@@ -24,7 +25,6 @@
     "vercel:dev": "vercel dev",
     "vercel:deploy": "vercel deploy"
   },
-  "type": "module",
   "dependencies": {
     "hono": "^4.9.9"
   },
