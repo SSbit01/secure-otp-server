@@ -5,6 +5,7 @@
 A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.
 
 > [!CAUTION]
+>
 > This server implements several security best practices, but it is not a complete security solution on its own. Additional measures such as DDoS protection, rate limiting, and request throttling are necessary for a production environment. It is recommended to add these externally via a CDN, proxy, or API gateway.
 >
 > If you discover a vulnerability, please report it by email; the address is located in the `"author"` field of [`package.json`](/package.json).
@@ -109,11 +110,11 @@ Each file contains detailed comments explaining how to modify the code.
 
 ### Advanced
 
-You can configure the server’s middleware behavior in [`src/setup/index.ts`](/src/setup/index.ts).
+You can configure the server's middleware behavior in [`src/setup/index.ts`](/src/setup/index.ts).
 
 Default settings include:
 
-- All GET requests return a 404 error with an empty response body.
+- All other requests return a 404 error with an empty response body.
 - Request body size is capped at 100 KiB.
 
 These defaults are fully customizable within the same file.

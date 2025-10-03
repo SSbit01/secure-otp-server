@@ -71,10 +71,7 @@ app.onError(async(err, c) => {
 
 
 
-/**
- * GET requests are customizable.
- */
-app.get(c => c.body(null, 404))
+app.notFound(c => c.body(null, 404))
 
 
 
