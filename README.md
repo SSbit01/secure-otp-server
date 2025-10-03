@@ -1,3 +1,5 @@
+![Logo](/logo.png "Secure OTP Server")
+
 # Secure OTP Server
 
 A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.
