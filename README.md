@@ -70,7 +70,7 @@ NODE_ENV="production"
 ORIGIN="https://your-app.com"
 ```
 
-See [`sample.env`](/sample.env) for all available options.
+See [`sample.env`](/sample.env).
 
 ### 3. Running the Server
 
