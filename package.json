@@ -1,5 +1,6 @@
 {
   "name": "secure-otp-server",
+  "version": "1.0.0",
   "author": "Stefan Samson <ss42701@outlook.com> (https://ssbit01.github.io/)",
   "repository": "github:SSbit01/secure-otp-server",
   "bugs": {

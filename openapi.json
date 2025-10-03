@@ -1,0 +1,177 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Secure OTP Server",
+    "version": "1.0.0",
+    "description": "API for generating, resending and verifying OTP codes. Generated from project source files."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/api/otp/create": {
+      "post": {
+        "summary": "Generate and send a new OTP",
+        "description": "Validate credential (JSON) and create an OTP. Returns Set-Cookie headers containing the encrypted OTP and key id.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "number" },
+                  { "type": "object" }
+                ],
+                "description": "Credential payload validated by the credential validator."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP created and (optionally) resentBlockDate returned",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Set-Cookie headers for OTP payload and key id.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "expires": { "type": "integer", "format": "int64", "description": "timestamp ms when OTP cookie expires" },
+                    "resendBlockDate": { "type": "integer", "format": "int64", "description": "timestamp ms until resending is blocked (optional)" }
+                  },
+                  "required": ["expires"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error (invalid credential, already resent, not allowed, etc.)",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          },
+          "429": {
+            "description": "Too many requests (rate/delay limit)",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        },
+        "tags": ["OTP"]
+      }
+    },
+    "/api/otp/resend": {
+      "post": {
+        "summary": "Resend OTP",
+        "description": "Resend a previously created OTP when allowed. This route is conditional on configuration (see RESEND_BLOCK_SECONDS). Requires OTP cookies.",
+        "requestBody": {
+          "required": false,
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "OTP resent (new cookies returned)",
+            "headers": {
+              "Set-Cookie": { "description": "Set-Cookie headers for OTP payload and key id.", "schema": { "type": "string" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "expires": { "type": "integer", "format": "int64" },
+                    "resendBlockDate": { "type": "integer", "format": "int64" }
+                  },
+                  "required": ["expires"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid cookie or resend not allowed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        },
+        "tags": ["OTP"]
+      }
+    },
+    "/api/otp/verify": {
+      "post": {
+        "summary": "Verify OTP",
+        "description": "Verify an OTP submitted as application/x-www-form-urlencoded (field `otp`). Uses cookie validation and OTP value validator.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "otp": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 8,
+                    "pattern": "^\\w+$",
+                    "description": "OTP value. Length driven by OTP_LENGTH and format driven by OTP_REGEX."
+                  }
+                },
+                "required": ["otp"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP verified; final action executed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "credential": { "type": "string" },
+                    "message": { "type": "string" }
+                  },
+                  "required": ["credential", "message"]
+                },
+                "example": { "credential": "user-id", "message": "successfully verified" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid format, invalid cookie, blocked or incorrect OTP",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "429": {
+            "description": "Too many requests (rate/delay limit)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        },
+        "tags": ["OTP"]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "required": ["error", "message"]
+      }
+    }
+  }
+}
