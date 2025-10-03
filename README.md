@@ -93,7 +93,7 @@ Verifies an OTP code. Each verification attempt updates the session token.
 
 ## Customization
 
-This template is designed to be easily extended. Key logic is separated into the following modules:
+Key logic is separated into the following modules:
 
 -   [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry).
 -   [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
@@ -101,7 +101,7 @@ This template is designed to be easily extended. Key logic is separated into the
 -   [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for single-use encryption keys (defaults to in-memory).
 -   [`src/custom/final.ts`](/src/custom/final.ts): Action to perform after successful OTP verification.
 
-Each file contains detailed comments explaining the available options and how to modify the code.
+Each file contains detailed comments explaining how to modify the code.
 
 ### Advanced
 

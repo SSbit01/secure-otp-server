@@ -1,7 +1,7 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, ALLOW_ONLY_ONE_RESENDING, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS, createOtp } from "@/custom/otp"
 
 import app from "@/index"
 
@@ -288,7 +288,7 @@ describe("OTP 2", () => {
 
   if (RESEND_BLOCK_SECONDS < 5) {
 
-    it(`Waiting the resend block seconds (${RESEND_BLOCK_SECONDS}s) and try to resend OTP again`, async() => {
+    it(`Wait the resend block seconds (${RESEND_BLOCK_SECONDS}s) and try to resend OTP again`, async() => {
 
       await sleep(RESEND_BLOCK_SECONDS * 1000)
 
@@ -304,31 +304,39 @@ describe("OTP 2", () => {
       const data = await res.json()
       const dateNow = Date.now()
 
-      expect(data).not.toHaveProperty("resendBlockDate")
+      if (ALLOW_ONLY_ONE_RESENDING) {
+        expect(data).not.toHaveProperty("resendBlockDate")
+      } else {
+        expect(data.resendBlockDate).toBeGreaterThan(dateNow)
+      }
       expect(data.expires).toBeGreaterThan(dateNow)
 
     })
 
 
-    it("Resend OTP again (it is expected to not work)", async() => {
+    if (ALLOW_ONLY_ONE_RESENDING) {
 
-      await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
+      it("Resend OTP again (it is expected to not work)", async() => {
 
-      const res = await app.request("/api/otp/resend", {
-        method: "POST",
-        headers: {
-          cookie
-        }
+        await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
+
+        const res = await app.request("/api/otp/resend", {
+          method: "POST",
+          headers: {
+            cookie
+          }
+        })
+
+        const data = await res.json()
+        
+        expect(data.error).toBe("OTP:ALREADY_RESENT")
+
       })
 
-      const data = await res.json()
-      
-      expect(data.error).toBe("OTP:ALREADY_RESENT")
-
-    })
+    }
 
   } else {
-    console.log("'Waiting the resend block seconds' test skipped because it is set to more than 5 seconds.")
+    console.warn("'Wait the resend block seconds' tests skipped because they are set to more than 5 seconds.")
   }
 
 
@@ -619,7 +627,7 @@ describe("OTP 3", async() => {
     })
 
   } else {
-    console.log("'Wait and send invalid OTP' tests skipped because they are set to more than 5 seconds.")
+    console.warn("'Wait and send invalid OTP' tests skipped because they are set to more than 5 seconds.")
   }
 
 })
