@@ -7,7 +7,7 @@
     "url": "https://github.com/SSbit01/secure-otp-server/issues"
   },
   "main": "./src/index.ts",
-  "description": "A template server for generating, encrypting, and verifying OTP (One-Time Password) codes. Ideal for microservices and authentication flows.",
+  "description": "A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.",
   "homepage": "https://github.com/SSbit01/secure-otp-server#readme",
   "license": "MIT",
   "scripts": {

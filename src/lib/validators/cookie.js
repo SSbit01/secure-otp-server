@@ -33,6 +33,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
   }
 
   if (isLessThanDelay(+lastAccessDate, dateNow)) {
+    deleteOtpData(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 

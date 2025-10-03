@@ -42,7 +42,7 @@ export async function doesEncryptionKeyExist(c: Context, keyId: string) {
  * @async
  * @function storeEncryptionKey
  * @param {Context} c - Hono context.
- * @param {string} keyId - The ID of the encryption key to store. Created using `/lib/crypto/id.js`.
+ * @param {string} keyId - The ID of the encryption key to store. Created using `/src/lib/crypto/id.js`.
  * @param {CryptoKey} key - The encryption key to store.
  * @param {number} expires - The expiration time in milliseconds since the epoch.
  */
@@ -82,7 +82,6 @@ export async function getEncryptionKey(c: Context, keyId: string): Promise<Crypt
 /**
  * Deletes an encryption key by its ID.
  * 
- * - If your database or data storage supports TTL (Time To Live) or automatic expiration, you can leave this function blank (don't delete it).
  * - Don't throw errors in this function, because it's used in a "fire and forget" manner.
  * 
  * @async
