@@ -74,7 +74,7 @@ See [`sample.env`](/sample.env).
 
 ### 3. Running the Server
 
-You can run the server in development mode with hot-reloading.
+You can run the server in development mode.
 
 ```sh
 # Using Bun
