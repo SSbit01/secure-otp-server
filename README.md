@@ -40,7 +40,7 @@ For additional deployment targets such as [Fastly Compute](https://www.fastly.co
 
 This server uses a hybrid design to provide stateful security without the overhead of a traditional database.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is encrypted into a token using AES-GCM. This token is sent to the client in a secure, `HttpOnly` cookie.
+1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is encrypted into a token using AES-256-GCM. This token is sent to the client in a secure, `HttpOnly` cookie.
 2. The encryption key is not stored directly. Instead, a random, single-use ID is generated and stored on the server, pointing to the key.
 3. When the client attempts to verify an OTP, it sends back the encrypted token. The server uses the ID to retrieve the correct key. After each verification attempt, the key and its ID are deleted from the server's key management system (KMS).
 
