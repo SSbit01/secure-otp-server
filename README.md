@@ -14,7 +14,7 @@ A template server for generating, encrypting, and verifying One-Time Passwords (
 
 ### Secure by Design
 
-Generates cryptographically secure OTPs and encrypts session data using [AES-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode).
+Generates cryptographically secure OTPs and encrypts session data using [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode).
 
 ### Customizable
 
