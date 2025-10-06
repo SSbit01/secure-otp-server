@@ -15,7 +15,7 @@ export default async function finalAction(c: Context, credential: string) {
 
   return c.json({
     credential,
-    message: `successfully verified`
+    message: "successfully verified"
   })
 
 }
