@@ -125,15 +125,26 @@ export async function createOtpAndSend(
 
 
 /**
- * @async
+ * @function deleteOtpCookies
+ * @param {Context} c
+ * @returns {(string|undefined)} Key ID value.
+ */
+export function deleteOtpCookies(c) {
+
+  deleteCookie(c, COOKIE_OTP)
+
+  return deleteCookie(c, COOKIE_KEY_ID)
+
+}
+
+
+/**
  * @function deleteOtpData
  * @param {Context} c
  */
 export function deleteOtpData(c) {
 
-  deleteCookie(c, COOKIE_OTP)
-
-  const keyId = deleteCookie(c, COOKIE_KEY_ID)
+  const keyId = deleteOtpCookies(c)
 
   if (keyId) {
     /**
@@ -151,7 +162,7 @@ export function deleteOtpData(c) {
  * @param {Context} c
  * @param {string} keyId
  * @param {string} token
- * @returns {Promise<[expires:string,lastAccessDate:string,resendBlockDate:string,credential:string,otp:string,attempts:string,otpBlockDate?:string]|undefined>}
+ * @returns {Promise<[expires:string,lastAccessDate:string,resendBlockDate:string,credential:string,otp:string,attempts:string,otpBlockDate?:string]|undefined|null>}
  */
 export async function getOtpTokenData(
   c,
@@ -169,10 +180,7 @@ export async function getOtpTokenData(
     }
 
   } catch {
-    /**
-     * The error occurs when the key is valid and the token invalid.
-     */
-    await deleteOtpData(c)
+    return null
   }
 
 }

@@ -2,6 +2,7 @@ import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   OTP_ALREADY_RESENT,
+  OTP_BLOCKED,
   OTP_EXPIRED,
   OTP_INVALID_COOKIE,
   OTP_INVALID_FORMAT,
@@ -24,7 +25,12 @@ export const ERR_CREDENTIAL_INVALID = {
 
 export const ERR_OTP_ALREADY_RESENT = {
   error: OTP_ALREADY_RESENT,
-  message: "The cookie that contains the encrypted OTP has been already resent."
+  message: "Incorrect use of the systems, token invalidated."
+}
+
+export const ERR_OTP_BLOCKED = {
+  error: OTP_BLOCKED,
+  message: "Incorrect use of the systems, token invalidated."
 }
 
 export const ERR_OTP_EXPIRED_COOKIE = {
@@ -34,17 +40,17 @@ export const ERR_OTP_EXPIRED_COOKIE = {
 
 export const ERR_OTP_INVALID_COOKIE = {
   error: OTP_INVALID_COOKIE,
-  message: "The cookie that contains the encrypted OTP data is invalid."
+  message: "The OTP cookies are invalid."
 }
 
 export const ERR_OTP_INVALID_FORMAT = {
   error: OTP_INVALID_FORMAT,
-  message: "The OTP value you sent has an invalid format."
+  message: "Incorrect use of the systems, token invalidated."
 }
 
 export const ERR_OTP_RESENT_NOT_ALLOWED = {
   error: OTP_RESENT_NOT_ALLOWED,
-  message: "You are still not allowed to resend the OTP."
+  message: "Incorrect use of the systems, token invalidated."
 }
 
 export const ERR_OTP_TOO_MANY_ATTEMPTS = {
