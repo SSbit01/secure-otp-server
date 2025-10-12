@@ -2,7 +2,7 @@ import { getCookie } from "hono/cookie"
 
 import app from "@/setup"
 
-import { ERR_OTP_ALREADY_RESENT, ERR_OTP_BLOCKED, ERR_OTP_RESENT_NOT_ALLOWED, ERR_OTP_TOO_MANY_ATTEMPTS, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
+import { ERR_OTP_BLOCKED, ERR_OTP_RESENT_NOT_ALLOWED, ERR_OTP_TOO_MANY_ATTEMPTS, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 import { OTP_INCORRECT } from "@/lib/error/names"
 import { COOKIE_KEY_ID, COOKIE_OTP, createOtpCookie, createOtpAndSend, deleteOtpData, getOtpTokenData } from "@/lib/otp"
 import { isLessThanDelay } from "@/lib/time"
@@ -25,7 +25,7 @@ interface ResponseOtpIncorrect {
 
 
 
-const otpInvalidBlockMs = INVALID_BLOCK_SECONDS * 1000
+const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
 
 
 
@@ -80,12 +80,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  if (!resendBlockDate) {
-    deleteOtpData(c)
-    return c.json(ERR_OTP_ALREADY_RESENT, 400)
-  }
-
-  if (dateNow < +resendBlockDate) {
+  if (!resendBlockDate || dateNow < +resendBlockDate) {
     deleteOtpData(c)
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
@@ -106,12 +101,7 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
   // resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
   const [[resendBlockDate, credential], keyId, dateNow] = c.req.valid("cookie")
 
-  if (!resendBlockDate) {
-    deleteOtpData(c)
-    return c.json(ERR_OTP_ALREADY_RESENT, 400)
-  }
-
-  if (dateNow < +resendBlockDate) {
+  if (!resendBlockDate || dateNow < +resendBlockDate) {
     deleteOtpData(c)
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
@@ -164,8 +154,8 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
     let newOtpDateBlocked = 0
 
-    if (currentAttempts <= ATTEMPTS_BLOCK) {
-      newOtpDateBlocked = dateNow + otpInvalidBlockMs
+    if (INVALID_BLOCK_MS && currentAttempts <= ATTEMPTS_BLOCK) {
+      newOtpDateBlocked = dateNow + INVALID_BLOCK_MS
       res.blockedUntil = newOtpDateBlocked
     }
 

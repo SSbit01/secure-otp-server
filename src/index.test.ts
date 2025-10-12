@@ -296,7 +296,7 @@ describe("OTP 2", () => {
   })
 
 
-  if (RESEND_BLOCK_SECONDS < 5) {
+  if (RESEND_BLOCK_SECONDS && RESEND_BLOCK_SECONDS < 5) {
 
     it(`Wait the resend block seconds (${RESEND_BLOCK_SECONDS}s) and try to resend OTP again`, async() => {
 
@@ -339,7 +339,7 @@ describe("OTP 2", () => {
 
         const data = await res.json()
         
-        expect(data.error).toBe("OTP:ALREADY_RESENT")
+        expect(data.error).toBe("OTP:RESENT_NOT_ALLOWED")
 
       })
 
@@ -588,28 +588,32 @@ describe("OTP 4", () => {
 
   it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
-    expect(data.blockedUntil).toBeGreaterThan(Date.now())
+    if (INVALID_BLOCK_SECONDS) {
+      expect(data.blockedUntil).toBeGreaterThan(Date.now())
+    }
   })
 
 
-  it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
+  if (INVALID_BLOCK_SECONDS) {
+    it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
 
-    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
+      await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
-    const res = await app.request("/api/otp/verify", {
-      method: "POST",
-      body: `otp=${createOtp()}`,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        cookie
-      }
+      const res = await app.request("/api/otp/verify", {
+        method: "POST",
+        body: `otp=${createOtp()}`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          cookie
+        }
+      })
+
+      const data = await res.json()
+
+      expect(data.error).toBe("OTP:BLOCKED")
+
     })
-
-    const data = await res.json()
-
-    expect(data.error).toBe("OTP:BLOCKED")
-
-  })
+  }
 
 })
 
@@ -658,7 +662,9 @@ describe("OTP 5", () => {
 
   it(`(2) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
-    expect(data.blockedUntil).toBeGreaterThan(Date.now())
+    if (INVALID_BLOCK_SECONDS) {
+      expect(data.blockedUntil).toBeGreaterThan(Date.now())
+    }
   })
 
   
@@ -668,10 +674,12 @@ describe("OTP 5", () => {
   if (INVALID_BLOCK_SECONDS < 5) {
 
     while (attempts < MAX_ATTEMPTS) {
-      it(`Wait and send an invalid OTP - attempt: ${attempts + 1}`, async() => {
+      it(`Wait and send an invalid OTP - attempt: ${attempts}`, async() => {
         await sleep(INVALID_BLOCK_MS || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
         const data = await sendInvalidOtp()
-        expect(data.blockedUntil).toBeGreaterThan(Date.now())
+        if (INVALID_BLOCK_SECONDS) {
+          expect(data.blockedUntil).toBeGreaterThan(Date.now())
+        }
       })
       attempts++
     }

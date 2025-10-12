@@ -1,7 +1,6 @@
 import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
-  OTP_ALREADY_RESENT,
   OTP_BLOCKED,
   OTP_EXPIRED,
   OTP_INVALID_COOKIE,
@@ -21,11 +20,6 @@ export const ERR_BODY_TOO_LARGE = {
 export const ERR_CREDENTIAL_INVALID = {
   error: CREDENTIAL_INVALID,
   message: "Invalid credential."
-}
-
-export const ERR_OTP_ALREADY_RESENT = {
-  error: OTP_ALREADY_RESENT,
-  message: "Incorrect use of the systems, token invalidated."
 }
 
 export const ERR_OTP_BLOCKED = {
