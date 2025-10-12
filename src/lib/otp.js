@@ -14,7 +14,7 @@ import sendOtp from "@/custom/send"
  */
 
 
-const SEPARATOR = ":"
+const SEPARATOR = "; "
 const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
 const DISABLE_RESENDING = !RESEND_BLOCK_SECONDS
 const RESEND_BLOCK_MS = RESEND_BLOCK_SECONDS * 1000
@@ -117,7 +117,7 @@ export async function createOtpAndSend(
   const resendBlockDate = dateNow + RESEND_BLOCK_MS
 
   return {
-    expires: await createOtpCookie(c, credential, otp, dateNow, expires, resendBlockDate),
+    expires: await createOtpCookie(c, encodeURI(credential.toString()), otp, dateNow, expires, resendBlockDate),
     resendBlockDate: getReducedTimePrecision(resendBlockDate, Math.ceil)
   }
 

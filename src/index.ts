@@ -177,7 +177,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   deleteOtpData(c)
 
   
-  return await finalAction(c, credential)
+  return await finalAction(c, decodeURI(credential))
 
 })
 
