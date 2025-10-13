@@ -39,16 +39,16 @@ export async function createSymmetricKey() {
  * 
  * @async
  * @function encryptSymmetricallyText
- * @param {string} value - String value to be encrypted.
  * @param {CryptoKey} key - Symmetric key for AES-GCM encryption.
+ * @param {string} value - String value to be encrypted.
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
  * - The operation failed (e.g., AES-GCM plaintext longer than 2^39−256 bytes).
  */
 export async function encryptSymmetricallyText(
-  value,
   key,
+  value,
   textEncoder = new TextEncoder()
 ) {
 
@@ -73,8 +73,8 @@ export async function encryptSymmetricallyText(
  * 
  * @async
  * @function decryptSymmetricallyText
- * @param {string} value - Encrypted value to be decrypted.
  * @param {CryptoKey} key - Symmetric key used to encrypt the value.
+ * @param {string} value - Encrypted value to be decrypted.
  * @param {TextDecoder} [textDecoder] - If you have an instance of a `TextDecoder`, you can reuse it.
  * @returns {Promise<string>} The value decrypted.
  * @throws {TypeError} Thrown if `value` is not a string.
@@ -84,8 +84,8 @@ export async function encryptSymmetricallyText(
  * - The operation failed.
  */
 export async function decryptSymmetricallyText(
-  value,
   key,
+  value,
   textDecoder = new TextDecoder()
 ) {
 

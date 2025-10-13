@@ -172,7 +172,7 @@ export async function getOtpTokenData(
 
   try {
     // expires:lastAccessDate:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-    const result = await decryptOtp(c, token, keyId)
+    const result = await decryptOtp(c, keyId, token)
 
     if (result) {
       // @ts-expect-error

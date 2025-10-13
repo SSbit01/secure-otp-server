@@ -22,8 +22,8 @@ export async function encryptOtp(c, value, expires) {
   const key = await createSymmetricKey()
 
   const result = await encryptSymmetricallyText(
-    value,
     key,
+    value,
     textEncoder
   )
 
@@ -44,17 +44,17 @@ export async function encryptOtp(c, value, expires) {
  * @async
  * @function decryptOtp
  * @param {Context} c
- * @param {string} value
  * @param {string} keyId
+ * @param {string} token
  * @returns {Promise<string|undefined>}
  */
-export async function decryptOtp(c, value, keyId) {
+export async function decryptOtp(c, keyId, token) {
 
   const key = await getEncryptionKey(c, keyId)
 
   return key && await decryptSymmetricallyText(
-    value,
     key,
+    token,
     textDecoder
   )
 
