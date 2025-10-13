@@ -50,7 +50,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     )
   }
 
-  if (otpTokenData === null || otpTokenData[3] !== credential) {
+  if (otpTokenData === null) {
     /**
      * Fire and forget - delete old key
      */
@@ -61,7 +61,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
   }
 
   // expires:lastAccessDate:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-  const [expires, lastAccessDate, resendBlockDate] = otpTokenData  // Skipping credential
+  const [expires, lastAccessDate, resendBlockDate, storedCredential] = otpTokenData  // Skipping credential
 
   const dateNow = Date.now()
 
@@ -78,6 +78,16 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
   if (isLessThanDelay(+lastAccessDate, dateNow)) {
     deleteOtpData(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  }
+
+  if (storedCredential !== credential) {
+    /**
+     * Fire and forget - delete old key
+     */
+    deleteEncryptionKey(c, keyId)
+    return c.json(
+      await createOtpAndSend(c, credential)
+    )
   }
 
   if (!resendBlockDate || dateNow < +resendBlockDate) {
