@@ -174,7 +174,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
      */
     deleteEncryptionKey(c, keyId)
 
-    await createOtpCookie(c, otpValid, credential, dateNow, expiresNumber, resendBlockDate, currentAttempts, newOtpDateBlocked)
+    await createOtpCookie(c, credential, otpValid, dateNow, expiresNumber, resendBlockDate, currentAttempts, newOtpDateBlocked)
 
     return c.json(res, 400)
 
