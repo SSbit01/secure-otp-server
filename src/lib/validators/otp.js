@@ -21,7 +21,7 @@ const otpValueValidator = validator("form", async({ otp }, c) => {
     return c.json(ERR_OTP_INVALID_FORMAT, 400)
   }
 
-  return otp.toLowerCase()
+  return otp
 
 })
 
