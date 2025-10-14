@@ -61,7 +61,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
   }
 
   // expires:lastAccessDate:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-  const [expires, lastAccessDate, resendBlockDate, storedCredential] = otpTokenData  // Skipping credential
+  const [expires, lastAccessDate, resendBlockDate, storedCredential] = otpTokenData
 
   const dateNow = Date.now()
 
