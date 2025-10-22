@@ -58,10 +58,10 @@ export const MAX_DURATION_SECONDS: number = 300  // 5 minutes
 /**
  * Delay based rate limiting between OTP requests.
  * 
- * - It is recommended to set it to 300 milliseconds or higher.
+ * - It is recommended to set it to 200 milliseconds or higher.
  * - Also, you can add external rate limiting using Cloudflare or other services.
  */
-export const MINIMUM_DELAY_BETWEEN_REQUESTS_MS: number = 300  // 0.3 seconds
+export const MINIMUM_DELAY_BETWEEN_REQUESTS_MS: number = 200  // 0.2 seconds
 
 
 /**

@@ -2,6 +2,7 @@ import { getCookie } from "hono/cookie"
 
 import app from "@/setup"
 
+import { isRandomIdValid } from "@/lib/crypto/id"
 import { ERR_OTP_BLOCKED, ERR_OTP_RESENT_NOT_ALLOWED, ERR_OTP_TOO_MANY_ATTEMPTS, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 import { OTP_INCORRECT } from "@/lib/error/names"
 import { COOKIE_KEY_ID, COOKIE_OTP, createOtpCookie, createOtpAndSend, deleteOtpData, getOtpTokenData } from "@/lib/otp"
@@ -35,7 +36,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
 
   const credential = c.req.valid("json")
 
-  if (!keyId || !token) {
+  if (!keyId || !isRandomIdValid(keyId) || !token) {
     return c.json(
       await createOtpAndSend(c, credential)
     )

@@ -1,6 +1,27 @@
 import base64ToBytes from "@/lib/base64"
 
 
+const LENGTH_IN_BYTES = 18
+
+
+/**
+ * Each Base64 character is 6-bits. So the total length would be `lengthInBytes * 8 / 6`.
+ */
+const RANDOM_ID_LENGTH = LENGTH_IN_BYTES * 4 / 3
+
+const PROFILE_PUBLIC_ID_REGEX = /[\w\+\\]+/
+
+
+/**
+ * @function isRandomIdValid
+ * @param {string} id 
+ * @returns {boolean} ID validity.
+ */
+export function isRandomIdValid(id) {
+  return id.length === RANDOM_ID_LENGTH && PROFILE_PUBLIC_ID_REGEX.test(id)
+}
+
+
 /**
  * This implementation generates a cryptographically secure 144-bit random value, encoded in Base64 for a fixed 24-character output.
  * 
@@ -8,8 +29,9 @@ import base64ToBytes from "@/lib/base64"
  * - Collision probability is much lower than UUIDv4, though not zero (2⁻¹⁴⁴ < 2⁻¹²²).
  * - Unlike UUIDv7 or ULID, this ID is not time-based, mitigating risks of timing attacks and timestamp leakage.
  * 
+ * @function 
  * @returns {string} A 24-character Base64-encoded random ID.
  */
 export default function createRandomId() {
-  return base64ToBytes.encode(crypto.getRandomValues(new Uint8Array(18)))
+  return base64ToBytes.encode(crypto.getRandomValues(new Uint8Array(LENGTH_IN_BYTES)))
 }

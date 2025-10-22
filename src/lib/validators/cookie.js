@@ -1,14 +1,15 @@
 import { validator } from "hono/validator"
 
-import { COOKIE_KEY_ID, COOKIE_OTP, deleteOtpCookies, deleteOtpData, getOtpTokenData } from "@/lib/otp"
+import { isRandomIdValid } from "@/lib/crypto/id"
 import { ERR_OTP_EXPIRED_COOKIE, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
+import { COOKIE_KEY_ID, COOKIE_OTP, deleteOtpCookies, deleteOtpData, getOtpTokenData } from "@/lib/otp"
 import { isLessThanDelay } from "@/lib/time"
 
 
 
 const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [COOKIE_OTP]: token }, c) => {
 
-  if (!keyId || !token) {
+  if (!keyId || !isRandomIdValid(keyId) || !token) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 

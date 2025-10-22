@@ -3,8 +3,8 @@ const base64ToBytes = {
   /**
    * Encode an Uint8Array to Base64.
    * 
-   * @param   {Uint8Array} bytes - An array of unsigned 8-bit numbers to be Base64 encoded.
-   * @returns {string}     A Base64 string.
+   * @param {Uint8Array} bytes - An array of unsigned 8-bit numbers to be Base64 encoded.
+   * @returns {string} A Base64 string.
    */
   encode(bytes) {
 
@@ -16,7 +16,7 @@ const base64ToBytes = {
   /**
    * Converts a Base64 string into a Uint8Array.
    * 
-   * @param   {string}                  base64String - A Base64 string.
+   * @param {string} base64String - A Base64 string.
    * @returns {Uint8Array<ArrayBuffer>} An Uint8Array.
    */
   decode(base64String) {
