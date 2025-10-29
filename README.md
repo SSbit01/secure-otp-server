@@ -1,6 +1,6 @@
-![Logo](/logo.png "Secure OTP Server")
-
 # Secure OTP Server
+
+![Logo](/logo.png "Secure OTP Server")
 
 A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.
 
@@ -115,11 +115,11 @@ Verifies an OTP code. Each verification attempt updates the session token.
 
 Key logic is separated into the following modules:
 
--   [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry).
--   [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
--   [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
--   [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for single-use encryption keys (defaults to in-memory).
--   [`src/custom/final.ts`](/src/custom/final.ts): Action to perform after successful OTP verification.
+- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry).
+- [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
+- [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
+- [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for single-use encryption keys (defaults to in-memory).
+- [`src/custom/final.ts`](/src/custom/final.ts): Action to perform after successful OTP verification.
 
 Each file contains detailed comments explaining how to modify the code.
 
