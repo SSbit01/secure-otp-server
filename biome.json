@@ -26,7 +26,10 @@
     "actions": {
       "recommended": true,
       "source": {
-        "organizeImports": "on"
+        "organizeImports": "on",
+        "useSortedAttributes": "off",
+        "useSortedKeys": "off",
+        "useSortedProperties": "off"
       }
     }
   },
