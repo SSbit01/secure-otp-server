@@ -17,7 +17,7 @@ function getCookieFromResponse(res: Response) {
 
   const arr = res.headers.getSetCookie()
 
-  let result = []
+  const result = []
 
   for (const cookie of arr) {
     result.push(cookie.split(";")[0])

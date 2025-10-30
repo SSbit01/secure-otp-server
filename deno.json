@@ -5,5 +5,36 @@
   },
   "imports": {
     "@/": "./src/"
-  }
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["require-await", "no-unused-vars"]
+    },
+    "exclude": [
+      "node_modules",
+      "build",
+      "dist",
+      ".astro",
+      ".next"
+    ]
+  },
+  "fmt": {
+    "useTabs": false,
+    "indentWidth": 2,
+    "lineWidth": 140,
+    "semiColons": false,
+    "singleQuote": false,
+    "proseWrap": "preserve",
+    "exclude": [
+      "node_modules",
+      "build",
+      "dist"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist"
+  ]
 }

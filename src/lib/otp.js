@@ -175,7 +175,7 @@ export async function getOtpTokenData(
     const result = await decryptOtp(c, keyId, token)
 
     if (result) {
-      // @ts-expect-error
+      // @ts-expect-error: TS doesn't detect that result is compatible with the return type.
       return result.split(SEPARATOR)
     }
 

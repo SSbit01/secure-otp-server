@@ -78,14 +78,16 @@ You can run the server in development mode.
 
 ```sh
 # Using Bun
-bun run dev
+bun run bun:dev
 
 # Using Deno
-deno task dev
+deno task deno:dev
 
 # Using Wrangler for Cloudflare Workers
 bun run cf:dev
 ```
+
+Check the `package.json` `"scripts"` field for other built-in scripts (build, lint, format...).
 
 ## API Reference
 
