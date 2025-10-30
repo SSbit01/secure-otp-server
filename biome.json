@@ -1,0 +1,162 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
+  "files": {
+    "includes": ["**", "!node_modules", "!build", "!dist", "!.astro", "!.next"],
+    "ignoreUnknown": true
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "off"
+      },
+      "suspicious": {
+        "noAsyncPromiseExecutor": "off"
+      }
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "recommended": true,
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 140,
+    "attributePosition": "auto",
+    "bracketSpacing": true,
+    "expand": "auto",
+    "useEditorconfig": false
+  },
+  "javascript": {
+    "parser": {
+      "jsxEverywhere": false
+    },
+    "formatter": {
+      "quoteStyle": "double",
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "none",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "asNeeded",
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 140,
+      "bracketSameLine": false,
+      "bracketSpacing": true,
+      "attributePosition": "auto",
+      "expand": "auto",
+      "operatorLinebreak": "after"
+    },
+    "jsxRuntime": "transparent",
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
+      "enabled": true
+    }
+  },
+  "json": {
+    "parser": {
+      "allowTrailingCommas": false
+    },
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 140,
+      "trailingCommas": "none",
+      "bracketSpacing": true,
+      "expand": "auto"
+    },
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
+      "enabled": true
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    },
+    "formatter": {
+      "enabled": true,
+      "indentWidth": 2,
+      "lineWidth": 140,
+      "quoteStyle": "double"
+    },
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
+      "enabled": true
+    }
+  },
+  "graphql": {
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 140,
+      "quoteStyle": "double"
+    },
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
+      "enabled": true
+    }
+  },
+  "grit": {
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 140
+    },
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
+      "enabled": true
+    }
+  },
+  "html": {
+    "parser": {
+      "interpolation": false
+    },
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 140,
+      "attributePosition": "auto",
+      "bracketSameLine": false,
+      "whitespaceSensitivity": "strict",
+      "indentScriptAndStyle": false,
+      "selfCloseVoidElements": "never"
+    },
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
+      "enabled": true
+    }
+  }
+}
