@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json bun.lockb* ./
 
 # Install deps
-RUN bun install --omit=dev --omit=peer --omit=optional --frozen-lockfile
+RUN bun install --omit=dev --frozen-lockfile
 
 # Copy all project files
 COPY . .
