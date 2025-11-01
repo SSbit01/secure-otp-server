@@ -147,12 +147,18 @@ storybook-static
 # Extras
 .git
 .gitignore
+backup
+COPYING
+LICENSE.*
 COPYING.md
 COPYING.*.md
 biome.json
 LICENSE
+LICENSE.*
+LICENSE.md
+LICENSE.*.md
+README
 README.md
-README.*.md
 sample.env
 
 # Specific
