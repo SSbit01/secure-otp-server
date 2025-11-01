@@ -14,7 +14,7 @@
   "scripts": {
     "bun:dev": "bun run --hot ./src/index.ts",
     "bun:test": "bun test --bail",
-    "bun:build": "bun build ./src/index.js --production --bytecode --target bun --outdir ./dist",
+    "bun:build": "bun build ./src/index.ts --production --bytecode --target bun --outdir ./dist",
     "bun:start": "bun run ./dist/index.js",
     "deno:dev": "deno serve --sloppy-imports --watch ./src/index.ts",
     "deno:build": "deno bundle --minify ./src/index.ts --outdir ./dist",
