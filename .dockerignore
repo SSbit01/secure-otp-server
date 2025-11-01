@@ -148,11 +148,11 @@ storybook-static
 .git
 .gitignore
 backup
+biome.json
 COPYING
-LICENSE.*
+COPYING.*
 COPYING.md
 COPYING.*.md
-biome.json
 LICENSE
 LICENSE.*
 LICENSE.md
