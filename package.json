@@ -1,6 +1,6 @@
 {
   "name": "secure-otp-server",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.",
   "author": "Stefan Samson <ss42701@outlook.com> (https://ssbit01.github.io/)",
   "license": "MIT",
@@ -14,7 +14,7 @@
   "scripts": {
     "bun:dev": "bun run --hot ./src/index.ts",
     "bun:test": "bun test --bail",
-    "bun:build": "bun build --minify ./src/index.ts --outdir ./dist",
+    "bun:build": "bun build ./src/index.js --production --bytecode --target bun --outdir ./dist",
     "bun:start": "bun run ./dist/index.js",
     "deno:dev": "deno serve --sloppy-imports --watch ./src/index.ts",
     "deno:build": "deno bundle --minify ./src/index.ts --outdir ./dist",

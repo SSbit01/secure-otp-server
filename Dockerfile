@@ -30,4 +30,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 3000
 
 # Start the server with Bun
-CMD ["bun", "run", "./dist/index.js"]
+CMD ["bun", "./dist/index.js"]
