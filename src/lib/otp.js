@@ -10,13 +10,11 @@ import sendOtp from "@/custom/send"
 
 /**
  * @import { Context } from "hono"
- * @import { CookieOptions } from "hono/utils/cookie"
  */
 
 
-const SEPARATOR = "; "
+const SEPARATOR = "|"
 const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
-const DISABLE_RESENDING = !RESEND_BLOCK_SECONDS
 const RESEND_BLOCK_MS = RESEND_BLOCK_SECONDS * 1000
 
 
@@ -60,7 +58,9 @@ export async function createOtpCookie(
 
   const lessPreciseExpiresDate = getReducedTimePrecision(expires)
 
-  /** @type {CookieOptions} */
+  /**
+   * @type {import("hono/utils/cookie").CookieOptions}
+   */
   const cookieOptions = {
     expires: new Date(lessPreciseExpiresDate),
     httpOnly: true,
@@ -97,7 +97,7 @@ export async function createOtpCookie(
 export async function createOtpAndSend(
   c,
   credential,
-  resent = DISABLE_RESENDING
+  resent = false
 ) {
 
   const otp = createOtp()
@@ -117,7 +117,7 @@ export async function createOtpAndSend(
   const resendBlockDate = dateNow + RESEND_BLOCK_MS
 
   return {
-    expires: await createOtpCookie(c, encodeURIComponent(credential), otp, dateNow, expires, resendBlockDate),
+    expires: await createOtpCookie(c, encodeURI(credential.toString()), otp, dateNow, expires, resendBlockDate),
     resendBlockDate: getReducedTimePrecision(resendBlockDate, Math.ceil)
   }
 

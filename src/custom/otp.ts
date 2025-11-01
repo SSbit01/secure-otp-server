@@ -17,7 +17,6 @@ export const OTP_REGEX: RegExp = /\w+/
  * When sending an OTP for the first time, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
  * 
  * - It is recommended to set it to 30 seconds.
- * - When it is `0` or falsy, the resend route is disabled.
  */
 export const RESEND_BLOCK_SECONDS: number = 30
 
