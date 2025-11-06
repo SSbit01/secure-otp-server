@@ -10,14 +10,7 @@
     "rules": {
       "tags": ["recommended"],
       "exclude": ["require-await", "no-unused-vars"]
-    },
-    "exclude": [
-      "node_modules",
-      "build",
-      "dist",
-      ".astro",
-      ".next"
-    ]
+    }
   },
   "fmt": {
     "useTabs": false,
@@ -25,16 +18,13 @@
     "lineWidth": 140,
     "semiColons": false,
     "singleQuote": false,
-    "proseWrap": "preserve",
-    "exclude": [
-      "node_modules",
-      "build",
-      "dist"
-    ]
+    "proseWrap": "preserve"
   },
   "exclude": [
     "node_modules",
     "build",
-    "dist"
+    "dist",
+    ".astro",
+    ".next"
   ]
 }
