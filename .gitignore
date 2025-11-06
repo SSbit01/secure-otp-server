@@ -1,11 +1,21 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
-
-# compiled output
+# Compiled output
 /build
 /dist
 /tmp
 /out
 /out-tsc
+.output
+
+# Framework-specific
+.astro
+.next
+.nuxt
+.vercel
+.svelte-kit
+.vitepress/cache
+.vitepress/dist
+.turbo
+.netlify
 
 # Runtime data
 pids
@@ -18,8 +28,7 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 /coverage
-
-# nyc test coverage
+*.lcov
 .nyc_output
 
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
@@ -31,23 +40,7 @@ bower_components
 # node-waf configuration
 .lock-wscript
 
-# IDEs and editors
-.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
+# Misc
 .sass-cache
 connect.lock
 typings
@@ -58,8 +51,8 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
+pnpm-debug.log*
+lerna-debug.log*
 
 # Dependency directories
 node_modules/
@@ -71,40 +64,65 @@ jspm_packages/
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-.wrangler
+!.yarn/sdks
+!.yarn/versions
 
-# Yarn Integrity file
+# Yarn
 .yarn-integrity
 
-# Optional npm cache directory
+# Package manager caches
 .npm
-
-# Optional eslint cache
 .eslintcache
-
-# Optional REPL history
 .node_repl_history
+.pnpm-store
 
 # Output of 'npm pack'
 *.tgz
 
-# dotenv environment variables file
-.env*
+# Bun
+.bun
+
+# Deno
+.deno/
+
+# Environment variables
+.env
+.env.*
 .env*.local
+!.env.example
+!.env.template
 .dev.vars
 
-# next.js build output
-.next
-.vercel
-
-# Lerna
-lerna-debug.log
-
-# System Files
-.DS_Store
-Thumbs.db
-*.pem
+# Cloudflare Workers
+.wrangler
+.dev.vars
+wrangler.toml
 
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+*.tgz
+
+# System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.pem
+*.key
+*.cert
+
+# Test files
+.vitest
+.playwright
+playwright-report/
+test-results/
+
+# Storybook
+storybook-static
+
+# Sentry
+.sentryclirc
