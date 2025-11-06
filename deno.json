@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
@@ -13,12 +14,25 @@
     }
   },
   "fmt": {
-    "useTabs": false,
+    "bracePosition": "sameLine",
+    "jsx.bracketPosition": "sameLine",
+    "jsx.forceNewLineSurroundingContent": false,
+    "jsx.multiLineParens": "prefer",
     "indentWidth": 2,
     "lineWidth": 140,
+    "nextControlFlowPosition": "sameLine",
     "semiColons": false,
+    "operatorPosition": "sameLine",
+    "proseWrap": "preserve",
+    "quoteProps": "consistent",
+    "singleBodyPosition": "sameLineUnlessHanging",
     "singleQuote": false,
-    "proseWrap": "preserve"
+    "spaceAround": true,
+    "spaceSurroundingProperties": true,
+    "trailingCommas": "never",
+    "typeLiteral.separatorKind": "semiColon",
+    "useTabs": false,
+    "useBraces": "always"
   },
   "exclude": [
     "node_modules",
