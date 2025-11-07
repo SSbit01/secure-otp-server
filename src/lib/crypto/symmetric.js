@@ -10,8 +10,10 @@ const ivBytesLength = 12
 
 
 
-/** @type {KeyUsage[]} */
-export const keyUsages = ["encrypt", "decrypt"]
+/**
+ * @type {readonly KeyUsage[]}
+ */
+export const keyUsages = Object.freeze(["encrypt", "decrypt"])
 
 
 /**
