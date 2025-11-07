@@ -50,10 +50,10 @@ export async function createOtpCookie(
    * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
    */
   // expires:lastAccessDate:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-  let value = `${expires}${SEPARATOR}${lastAccessDate}${SEPARATOR}${resendBlockDate}${SEPARATOR}${credential}${SEPARATOR}${otp}${SEPARATOR}${attempts}`
+  let value = expires + SEPARATOR + lastAccessDate + SEPARATOR + resendBlockDate + SEPARATOR + credential + SEPARATOR + otp + SEPARATOR + attempts
 
   if (otpBlockDate) {
-    value += `${SEPARATOR}${otpBlockDate}`
+    value += SEPARATOR + otpBlockDate
   }
 
   const lessPreciseExpiresDate = getReducedTimePrecision(expires)
