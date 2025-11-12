@@ -2,7 +2,6 @@ import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   OTP_BLOCKED,
-  OTP_EXPIRED,
   OTP_INVALID_COOKIE,
   OTP_INVALID_FORMAT,
   OTP_RESENT_NOT_ALLOWED,
@@ -25,11 +24,6 @@ export const ERR_CREDENTIAL_INVALID = {
 export const ERR_OTP_BLOCKED = {
   error: OTP_BLOCKED,
   message: "Incorrect use of the systems, token invalidated."
-}
-
-export const ERR_OTP_EXPIRED_COOKIE = {
-  error: OTP_EXPIRED,
-  message: "The OTP is expired."
 }
 
 export const ERR_OTP_INVALID_COOKIE = {

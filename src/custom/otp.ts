@@ -50,6 +50,8 @@ export const INVALID_BLOCK_SECONDS: number = 30
 
 /**
  * The maximum validity period of an OTP token in seconds.
+ * 
+ * - If it is too low, tests may fail.
  */
 export const MAX_DURATION_SECONDS: number = 300  // 5 minutes
 

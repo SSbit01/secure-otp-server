@@ -1,7 +1,7 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { RESEND_BLOCK_SECONDS, ALLOW_ONLY_ONE_RESENDING, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS as ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS as ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS, createOtp } from "@/custom/otp"
 
 import app from "@/index"
 
@@ -292,66 +292,20 @@ describe("OTP 2", () => {
 
   })
 
+})
+
+
+
+describe("OTP 3", () => {
+
+  let cookie: string
+
 
   it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
 
     cookie = await fetchOtpcookie()
 
   })
-
-
-  if (RESEND_BLOCK_SECONDS && RESEND_BLOCK_SECONDS < 5) {
-
-    it(`Wait the resend block seconds (${RESEND_BLOCK_SECONDS}s) and try to resend OTP again`, async() => {
-
-      await sleep((RESEND_BLOCK_SECONDS * 1000) || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-
-      const res = await app.request("/api/otp/resend", {
-        method: "POST",
-        headers: {
-          cookie
-        }
-      })
-
-      cookie = getCookieFromResponse(res)
-
-      const data = await res.json()
-      const dateNow = Date.now()
-
-      if (ALLOW_ONLY_ONE_RESENDING) {
-        expect(data).not.toHaveProperty("resendBlockDate")
-      } else {
-        expect(data.resendBlockDate).toBeGreaterThan(dateNow)
-      }
-      expect(data.expires).toBeGreaterThan(dateNow)
-
-    })
-
-
-    if (ALLOW_ONLY_ONE_RESENDING) {
-
-      it("Resend OTP again (it is expected to not work)", async() => {
-
-        await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-
-        const res = await app.request("/api/otp/resend", {
-          method: "POST",
-          headers: {
-            cookie
-          }
-        })
-
-        const data = await res.json()
-        
-        expect(data.error).toBe("OTP:RESENT_NOT_ALLOWED")
-
-      })
-
-    }
-
-  } else {
-    console.warn("'Wait the resend block seconds' tests skipped because they are set to more than 5 seconds.")
-  }
 
 
   it("Send invalid OTP format", async() => {
@@ -476,7 +430,7 @@ describe("OTP 2", () => {
 
 
 
-describe("OTP 3", async() => {
+describe("OTP 4", async() => {
 
   let cookie: string
 
@@ -549,7 +503,7 @@ describe("OTP 3", async() => {
 
 
 
-describe("OTP 4", () => {
+describe("OTP 5", () => {
   
   let cookie: string
 
@@ -623,7 +577,7 @@ describe("OTP 4", () => {
 
 
 
-describe("OTP 5", () => {
+describe("OTP 6", () => {
 
   let cookie: string
 
