@@ -195,8 +195,6 @@ export async function getOtpData(
 
   const currentOtpToken = otpTokens.shift()?.split(SEPARATOR)
 
-  console.log(currentOtpToken)
-
   if (!currentOtpToken?.[1]) {
     return null
   }
