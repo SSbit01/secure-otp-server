@@ -202,4 +202,3 @@ sample.env
 # Specific
 logo.png
 openapi.json
-wrangler.jsonc
