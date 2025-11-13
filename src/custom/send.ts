@@ -8,10 +8,10 @@ type Otp = ReturnType<typeof createOtp>
  * 
  * @async
  * @param {Context} c - Hono context.
- * @param {(string|number)} credential - Client credential/ID.
+ * @param {string} credential - Client credential / ID.
  * @param {Otp} otp - OTP string code.
  */
-export default async function sendOtp(c: Context, credential: string | number, otp: Otp) {
+export default async function sendOtp(c: Context, credential: string, otp: Otp) {
 
   return null
 

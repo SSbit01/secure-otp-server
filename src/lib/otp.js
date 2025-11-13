@@ -11,6 +11,18 @@ import sendOtp from "@/custom/send"
  * @import { Context } from "hono"
  */
 
+/**
+ * @typedef {[credential:string,otp:string,attempts:number,expires:number,resendBlockDate:number,otpBlockDate?:number]} OtpToken
+ */
+
+
+const CREDENTIAL = 0
+const OTP = 1
+const ATTEMPTS = 2
+const EXPIRES = 3
+const RESEND_BLOCK_DATE = 4
+const OTP_BLOCK_DATE = 5
+
 
 const ARRAY_SEPARATOR = ","
 const OTP_SEPARATOR = "|"
@@ -25,10 +37,30 @@ export const COOKIE_OTP = "t"
 
 
 /**
+ * @function encodeCredential
+ * @param {(string|number)} credential
+ * @returns {string}
+ */
+function encodeCredential(credential) {
+  return encodeURI(credential.toString())
+}
+
+
+/**
+ * @function decodeCredential
+ * @param {string} encodedCredential
+ * @returns {string}
+ */
+function decodeCredential(encodedCredential) {
+  return decodeURI(encodedCredential)
+}
+
+
+/**
  * @async
  * @function createOtpAndSend
  * @param {Context} c
- * @param {(string|number)} credential
+ * @param {string} credential
  */
 export async function createOtpAndSend(c, credential) {
 
@@ -37,7 +69,7 @@ export async function createOtpAndSend(c, credential) {
   await sendOtp(c, credential, otp)
 
   return {
-    expires: await new OtpData(c, [encodeURI(credential.toString()), otp]).save()
+    expires: await new OtpData(c, [encodeCredential(credential), otp]).save()
   }
 
 }
@@ -53,79 +85,197 @@ export function deleteOtpCookies(c) {
 }
 
 
-class OtpData {
+// class OtpToken {
   
-  #attempts
+//   #attempts
+//   #credential
+//   #expires
+//   #otp
+//   #otpBlockDate
+//   #resendBlockDate
+
+
+//   constructor(credential, otp, attempts = MAX_ATTEMPTS, expires = Date.now() + MAX_DURATION_MS, resendBlockDate = 0, otpBlockDate = 0) {
+
+//     this.#attempts = attempts
+//     this.#credential = credential
+//     this.#expires = expires
+//     this.#otp = otp
+//     this.#otpBlockDate = otpBlockDate
+//     this.#resendBlockDate = resendBlockDate
+
+//   }
+
+
+//   get encodedCredential() {
+//     return this.#credential
+//   }
+
+
+//   /**
+//    * @param {Context} c
+//    * @param {string} otp
+//    * @returns {Promise<false|string|number>}
+//    */
+//   async check(c, otp, dateNow = Date.now()) {
+
+//     if (this.#otpBlockDate > dateNow) {
+//       deleteOtpCookies(c)
+//       return false
+//     }
+
+//     if (this.#otp === otp) {
+//       return decodeCredential(this.#credential)
+//     }
+
+//     this.#attempts--
+  
+//     /**
+//      * Is `attempts` 0?
+//      */
+//     if (!this.#attempts) {
+//       deleteOtpCookies(c)
+//       return false
+//     }
+
+//     if (INVALID_BLOCK_MS && this.#attempts <= ATTEMPTS_BLOCK) {
+//       this.#otpBlockDate = dateNow + INVALID_BLOCK_MS
+//     }
+
+//     await this.save(dateNow)
+
+//     return this.#otpBlockDate
+
+//   }
+
+
+//   /**
+//    * @param {Context} c
+//    */
+//   async resend(c) {
+
+//     if (!this.#resendBlockDate || Date.now() < this.#resendBlockDate) {
+//       deleteOtpCookies(this.#context)
+//       return false
+//     }
+
+//     this.#otp = createOtp()
+
+//     await sendOtp(this.#context, decodeCredential(this.#credential), this.#otp)
+
+//     return {
+//       expires: await this.save(),
+//       resendBlockDate: getReducedTimePrecision(Date.now() + RESEND_BLOCK_MS, Math.ceil)
+//     }
+
+//   }
+
+
+//   toString() {
+
+//     /**
+//      * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
+//      */
+//     // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
+//     let currentOtpToken = this.#expires + OTP_SEPARATOR + this.#credential + OTP_SEPARATOR + this.#otp + OTP_SEPARATOR + this.#attempts + OTP_SEPARATOR + this.#resendBlockDate
+
+//     if (this.#otpBlockDate) {
+//       currentOtpToken += OTP_SEPARATOR + this.#otpBlockDate
+//     }
+
+//     return currentOtpToken
+
+//   }
+
+// }
+
+
+/**
+ * @function isOtpTokenValid
+ * @this {number}
+ * @param {OtpToken} otpToken
+ * @returns {boolean}
+ */
+function isOtpTokenValid(otpToken) {
+
+  return this < otpToken[EXPIRES]
+
+}
+
+
+
+class OtpTokenList {
+
   #context
-  #credential
-  #expires
-  #otherTokens
-  #otp
-  #otpBlockDate
-  #resendBlockDate
+  #tokens
 
 
-  constructor(c, [credential, otp, attempts = MAX_ATTEMPTS, expires = Date.now() + MAX_DURATION_MS, resendBlockDate = 0, otpBlockDate = 0], ...otherTokens) {
+  /**
+   * @param {Context} c
+   * @param {OtpToken[]} tokens
+   */
+  constructor(c, tokens) {
 
-    this.#attempts = attempts
     this.#context = c
-    this.#credential = credential
-    this.#expires = expires
-    this.#otherTokens = otherTokens
-    this.#otp = otp
-    this.#otpBlockDate = otpBlockDate
-    this.#resendBlockDate = resendBlockDate
+    this.#tokens = tokens
 
+  }
+
+
+  get current() {
+    return this.#tokens[0]
   }
 
 
   /**
    * 
-   * @param {string} otp
-   * @returns {Promise<false|string|number>}
+   * @param {string} otp 
+   * @param {number} dateNow 
+   * @returns {Promise<false|string|number|undefined>}
    */
   async check(otp, dateNow = Date.now()) {
 
-    if (this.#otpBlockDate > dateNow) {
+    if (this.current[OTP_BLOCK_DATE] && this.current[OTP_BLOCK_DATE] > dateNow) {
       deleteOtpCookies(this.#context)
       return false
     }
 
-    if (this.#otp === otp) {
-      return decodeURI(this.#credential)
+    if (this.current[OTP] === otp) {
+      return decodeCredential(this.current[CREDENTIAL])
     }
 
-    this.#attempts--
+    // attempts
+    this.current[ATTEMPTS]--
   
     /**
      * Is `attempts` 0?
      */
-    if (!this.#attempts) {
+    if (!this.current[ATTEMPTS]) {
       deleteOtpCookies(this.#context)
       return false
     }
 
-    if (INVALID_BLOCK_MS && this.#attempts <= ATTEMPTS_BLOCK) {
-      this.#otpBlockDate = dateNow + INVALID_BLOCK_MS
+    if (INVALID_BLOCK_MS && this.current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
+      this.current[OTP_BLOCK_DATE] = dateNow + INVALID_BLOCK_MS
     }
 
     await this.save(dateNow)
 
-    return this.#otpBlockDate
+    return this.current[OTP_BLOCK_DATE]
 
   }
 
 
-  async resend() {
+  async resend(dateNow = Date.now()) {
 
-    if (!this.#resendBlockDate || Date.now() < this.#resendBlockDate) {
+    if (!this.current[4] || dateNow < this.current[RESEND_BLOCK_DATE]) {
       deleteOtpCookies(this.#context)
       return false
     }
 
-    this.#otp = createOtp()
+    this.current[OTP] = createOtp()
 
-    await sendOtp(this.#context, decodeURI(this.#credential), this.#otp)
+    await sendOtp(this.#context, decodeCredential(this.current[CREDENTIAL]), this.current[OTP])
 
     return {
       expires: await this.save(),
@@ -137,7 +287,23 @@ class OtpData {
 
   async save(dateNow = Date.now()) {
 
-    const lessPreciseExpiresDate = getReducedTimePrecision(this.#expires)
+    const tokens = []
+
+    let expires = 0
+
+    for (const otpToken of this.#tokens) {
+      const otpTokenExpires = otpToken[EXPIRES]
+      if (dateNow < otpTokenExpires) {
+        if (otpTokenExpires > expires) {
+          expires = otpTokenExpires
+        }
+        tokens.push(otpToken.join(OTP_SEPARATOR))
+      }
+    }
+
+    const [result, keyId] = await encryptOtp(this.#context, tokens.join(ARRAY_SEPARATOR), expires)
+
+    const lessPreciseExpiresDate = getReducedTimePrecision(this.current[EXPIRES])
 
     /**
      * @type {import("hono/utils/cookie").CookieOptions}
@@ -150,30 +316,6 @@ class OtpData {
       sameSite: "strict",
       partitioned: false
     }
-
-    /**
-     * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
-     */
-    // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
-    let currentOtpToken = this.#expires + OTP_SEPARATOR + this.#credential + OTP_SEPARATOR + this.#otp + OTP_SEPARATOR + this.#attempts + OTP_SEPARATOR + this.#resendBlockDate
-
-    if (this.#otpBlockDate) {
-      currentOtpToken += OTP_SEPARATOR + this.#otpBlockDate
-    }
-
-    for (let i = 1; i < this.#otherTokens.length; i++) {
-      // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
-      const expires = this.#otherTokens[i].split(OTP_SEPARATOR)?.[3]
-      if (!expires || dateNow >= +expires) {
-        this.#otherTokens.splice(i, 1)
-      }
-    }
-
-    const [result, keyId] = await encryptOtp(
-      this.#context,
-      dateNow + ARRAY_SEPARATOR + currentOtpToken + ARRAY_SEPARATOR + this.#otherTokens.join(OTP_SEPARATOR),
-      this.#expires
-    )
 
     setCookie(this.#context, COOKIE_OTP, result, cookieOptions)
     setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
@@ -191,13 +333,9 @@ class OtpData {
  * @param {Context} c
  * @param {string} keyId
  * @param {string} token
- * @returns {Promise<Readonly<OtpData>|undefined|false>}
+ * @returns {Promise<Readonly<OtpTokenList>|undefined|false>}
  */
-export async function getOtpInstance(
-  c,
-  keyId,
-  token
-) {
+export async function getOtpInstance(c, keyId, token) {
 
   /**
    * @type {(string|undefined)}
@@ -252,6 +390,6 @@ export async function getOtpInstance(
   }
 
   
-  return Object.freeze(new OtpData(c, ...otpTokens))
+  return Object.freeze(new OtpTokenList(c, otpTokens))
 
 }
