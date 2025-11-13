@@ -4,8 +4,7 @@ import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
-import { deleteEncryptionKey } from "@/custom/kms"
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, createOtp } from "@/custom/otp"
+import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 /**
@@ -13,71 +12,16 @@ import sendOtp from "@/custom/send"
  */
 
 
-const SEPARATOR = "|"
+const ARRAY_SEPARATOR = ","
+const OTP_SEPARATOR = "|"
+
+const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
 const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
 const RESEND_BLOCK_MS = RESEND_BLOCK_SECONDS * 1000
 
 
 export const COOKIE_KEY_ID = "e"
 export const COOKIE_OTP = "t"
-
-
-/**
- * @async
- * @function createOtpCookie
- * @param {Context} c
- * @param {(string|number)} credential
- * @param {(string|number)} otp
- * @param {number} lastAccessDate
- * @param {number} expires
- * @param {(string|number)} [resendBlockDate]
- * @param {(string|number)} [attempts]
- * @param {(string|number|false|null|undefined)} [otpBlockDate]
- * @returns {Promise<number>} When the OTP expires.
- */
-export async function createOtpCookie(
-  c,
-  credential,
-  otp,
-  expires,
-  lastAccessDate = Date.now(),
-  resendBlockDate = "",
-  attempts = MAX_ATTEMPTS,
-  otpBlockDate = false
-) {
-
-  /**
-   * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
-   */
-  // lastAccessDate:expires:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-  let value = lastAccessDate + SEPARATOR + expires + SEPARATOR + resendBlockDate + SEPARATOR + credential + SEPARATOR + otp + SEPARATOR + attempts
-
-  if (otpBlockDate) {
-    value += SEPARATOR + otpBlockDate
-  }
-
-  const lessPreciseExpiresDate = getReducedTimePrecision(expires)
-
-  /**
-   * @type {import("hono/utils/cookie").CookieOptions}
-   */
-  const cookieOptions = {
-    expires: new Date(lessPreciseExpiresDate),
-    httpOnly: true,
-    maxAge: MAX_DURATION_SECONDS,
-    secure: isProduction(c),
-    sameSite: "strict",
-    partitioned: false
-  }
-  
-  const [result, keyId] = await encryptOtp(c, value, expires)
-
-  setCookie(c, COOKIE_OTP, result, cookieOptions)
-  setCookie(c, COOKIE_KEY_ID, keyId, cookieOptions)
-
-  return lessPreciseExpiresDate
-
-}
 
 
 /**
@@ -129,30 +73,133 @@ export async function createOtpAndSend(
 /**
  * @function deleteOtpCookies
  * @param {Context} c
- * @returns {(string|undefined)} Key ID value.
  */
 export function deleteOtpCookies(c) {
-
   deleteCookie(c, COOKIE_OTP)
-
-  return deleteCookie(c, COOKIE_KEY_ID)
-
+  deleteCookie(c, COOKIE_KEY_ID)
 }
 
 
-/**
- * @function deleteOtpData
- * @param {Context} c
- */
-export function deleteOtpData(c) {
+class OtpData {
+  
+  #attempts
+  #context
+  #credential
+  #expires
+  #otherTokens
+  #otp
+  #otpBlockDate
+  #resendBlockDate
 
-  const keyId = deleteOtpCookies(c)
 
-  if (keyId) {
+  constructor(c, [expires, credential, otp, attempts = MAX_ATTEMPTS, resendBlockDate = "", otpBlockDate = 0], ...otherTokens) {
+
+    this.#attempts = attempts
+    this.#context = c
+    this.#credential = credential
+    this.#expires = expires
+    this.#otherTokens = otherTokens
+    this.#otp = otp
+    this.#otpBlockDate = otpBlockDate
+    this.#resendBlockDate = resendBlockDate
+
     /**
-     * Fire and forget - delete old key
+     * Make functions immutable
      */
-    deleteEncryptionKey(c, keyId)
+    Object.defineProperties(this, {
+      check: {
+        configurable: false,
+        enumerable: false,
+        value: this.check,
+        writable: false
+      },
+      save: {
+        configurable: false,
+        enumerable: false,
+        value: this.save,
+        writable: false
+      }
+    })
+
+  }
+
+
+  /**
+   * 
+   * @param {string} otp
+   * @returns {Promise<boolean|number>}
+   */
+  async check(otp, dateNow = Date.now()) {
+
+    if (this.#otp === otp) {
+      return true
+    }
+
+    this.#attempts--
+  
+    /**
+     * Is `attempts` 0?
+     */
+    if (!this.#attempts) {
+      deleteOtpCookies(this.#context)
+      return false
+    }
+
+    if (INVALID_BLOCK_MS && this.#attempts <= ATTEMPTS_BLOCK) {
+      this.#otpBlockDate = dateNow + INVALID_BLOCK_MS
+    }
+
+    await this.save(dateNow)
+
+    return this.#otpBlockDate
+
+  }
+
+
+  async save(dateNow = Date.now()) {
+
+    const lessPreciseExpiresDate = getReducedTimePrecision(this.#expires)
+
+    /**
+     * @type {import("hono/utils/cookie").CookieOptions}
+     */
+    const cookieOptions = {
+      expires: new Date(lessPreciseExpiresDate),
+      httpOnly: true,
+      maxAge: MAX_DURATION_SECONDS,
+      secure: isProduction(this.#context),
+      sameSite: "strict",
+      partitioned: false
+    }
+
+    /**
+     * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
+     */
+    // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
+    let currentOtpToken = this.#expires + OTP_SEPARATOR + this.#credential + OTP_SEPARATOR + this.#otp + OTP_SEPARATOR + this.#attempts + OTP_SEPARATOR + this.#resendBlockDate
+
+    if (this.#otpBlockDate) {
+      currentOtpToken += OTP_SEPARATOR + this.#otpBlockDate
+    }
+
+    for (let i = 1; i < this.#otherTokens.length; i++) {
+      const expires = this.#otherTokens[i].split(OTP_SEPARATOR)?.[0]
+      if (!expires || dateNow >= +expires) {
+        this.#otherTokens.splice(i, 1)
+      }
+    }
+
+    const [result, keyId] = await encryptOtp(
+      this.#context,
+      dateNow + ARRAY_SEPARATOR + currentOtpToken + ARRAY_SEPARATOR + this.#otherTokens.join(OTP_SEPARATOR),
+      this.#expires
+    )
+
+    setCookie(this.#context, COOKIE_OTP, result, cookieOptions)
+    setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
+
+    return lessPreciseExpiresDate
+
   }
 
 }
@@ -160,13 +207,13 @@ export function deleteOtpData(c) {
 
 /**
  * @async
- * @function getOtpData
+ * @function getOtpInstance
  * @param {Context} c
  * @param {string} keyId
  * @param {string} token
  * @returns {Promise<[expires:number,resendBlockDate:string,credential:string,otp:string,attempts:string,otpBlockDate?:string]|undefined|null|false>}
  */
-export async function getOtpData(
+export async function getOtpInstance(
   c,
   keyId,
   token
@@ -187,39 +234,39 @@ export async function getOtpData(
     return
   }
 
-  const otpTokens = otpToken.split(",")
+  const otpTokens = otpToken.split(ARRAY_SEPARATOR)
 
-  if (!otpTokens.length) {
+  if (otpTokens.length < 2) {
     return null
   }
 
-  const currentOtpToken = otpTokens.shift()?.split(SEPARATOR)
+  const lastValidAccess = otpTokens.shift()
 
-  if (!currentOtpToken?.[1]) {
+  if (!lastValidAccess) {
     return null
   }
-
-  // @ts-expect-error: TS doesn't detect that `expires` must be a number.
-  currentOtpToken[1] = +currentOtpToken[1]
 
   const dateNow = Date.now()
 
-  // @ts-expect-error: TS doesn't detect that `expires` must be a number.
-  if (dateNow >= currentOtpToken[1]) {
-    return null
-  }
-
-  const lastValidAccess = currentOtpToken.shift()
-
-  if (lastValidAccess && isLessThanDelay(+lastValidAccess, dateNow)) {
+  if (isLessThanDelay(+lastValidAccess, dateNow)) {
     return false
   }
 
-  for (let i = 1; i < otpTokens.length; i++) {
-    const expires = otpTokens[i].split(SEPARATOR)?.[0]
-    if (!expires || dateNow >= +expires) {
-      otpTokens.splice(i, 1)
-    }
+  const currentOtpToken = otpTokens[0]?.split(OTP_SEPARATOR)
+
+  // @ts-expect-error: TS doesn't detect that the current token must be a `string[]`.
+  otpTokens[0] = currentOtpToken
+
+  if (!currentOtpToken[0]) {
+    return null
+  }
+
+  // @ts-expect-error: TS doesn't detect that `expires` must be a number.
+  currentOtpToken[0] = +currentOtpToken[0]
+
+  // @ts-expect-error: TS doesn't detect that `expires` must be a number.
+  if (dateNow >= currentOtpToken[0]) {
+    return null
   }
 
   // @ts-expect-error: TS doesn't detect that result is compatible with the return type.

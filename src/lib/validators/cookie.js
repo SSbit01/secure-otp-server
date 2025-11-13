@@ -2,7 +2,7 @@ import { validator } from "hono/validator"
 
 import { isRandomIdValid } from "@/lib/crypto/id"
 import { ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
-import { COOKIE_KEY_ID, COOKIE_OTP, deleteOtpCookies, deleteOtpData, getOtpData } from "@/lib/otp"
+import { COOKIE_KEY_ID, COOKIE_OTP, deleteOtpCookies, deleteOtpData, getOtpInstance } from "@/lib/otp"
 
 
 
@@ -12,8 +12,8 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  // lastAccessDate:expires:resendBlockDate:credential:otp:attempts:otpBlockDate(optional)
-  const otpTokenData = await getOtpData(c, keyId, token)
+  // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
+  const otpTokenData = await getOtpInstance(c, keyId, token)
 
   switch (otpTokenData) {
     case false:
