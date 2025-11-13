@@ -12,7 +12,7 @@ import sendOtp from "@/custom/send"
  */
 
 /**
- * @typedef {[credential:string,otp:string,attempts:number,expires:number,resendBlockDate:number,otpBlockDate?:number]} OtpToken
+ * @typedef {[credential:string,otp:string,attempts:number,expires:number,resendBlockDate?:number,otpBlockDate?:number]} OtpToken
  */
 
 
@@ -38,7 +38,7 @@ export const COOKIE_OTP = "t"
 
 /**
  * @function encodeCredential
- * @param {(string|number)} credential
+ * @param {string} credential
  * @returns {string}
  */
 function encodeCredential(credential) {
@@ -85,124 +85,6 @@ export function deleteOtpCookies(c) {
 }
 
 
-// class OtpToken {
-  
-//   #attempts
-//   #credential
-//   #expires
-//   #otp
-//   #otpBlockDate
-//   #resendBlockDate
-
-
-//   constructor(credential, otp, attempts = MAX_ATTEMPTS, expires = Date.now() + MAX_DURATION_MS, resendBlockDate = 0, otpBlockDate = 0) {
-
-//     this.#attempts = attempts
-//     this.#credential = credential
-//     this.#expires = expires
-//     this.#otp = otp
-//     this.#otpBlockDate = otpBlockDate
-//     this.#resendBlockDate = resendBlockDate
-
-//   }
-
-
-//   get encodedCredential() {
-//     return this.#credential
-//   }
-
-
-//   /**
-//    * @param {Context} c
-//    * @param {string} otp
-//    * @returns {Promise<false|string|number>}
-//    */
-//   async check(c, otp, dateNow = Date.now()) {
-
-//     if (this.#otpBlockDate > dateNow) {
-//       deleteOtpCookies(c)
-//       return false
-//     }
-
-//     if (this.#otp === otp) {
-//       return decodeCredential(this.#credential)
-//     }
-
-//     this.#attempts--
-  
-//     /**
-//      * Is `attempts` 0?
-//      */
-//     if (!this.#attempts) {
-//       deleteOtpCookies(c)
-//       return false
-//     }
-
-//     if (INVALID_BLOCK_MS && this.#attempts <= ATTEMPTS_BLOCK) {
-//       this.#otpBlockDate = dateNow + INVALID_BLOCK_MS
-//     }
-
-//     await this.save(dateNow)
-
-//     return this.#otpBlockDate
-
-//   }
-
-
-//   /**
-//    * @param {Context} c
-//    */
-//   async resend(c) {
-
-//     if (!this.#resendBlockDate || Date.now() < this.#resendBlockDate) {
-//       deleteOtpCookies(this.#context)
-//       return false
-//     }
-
-//     this.#otp = createOtp()
-
-//     await sendOtp(this.#context, decodeCredential(this.#credential), this.#otp)
-
-//     return {
-//       expires: await this.save(),
-//       resendBlockDate: getReducedTimePrecision(Date.now() + RESEND_BLOCK_MS, Math.ceil)
-//     }
-
-//   }
-
-
-//   toString() {
-
-//     /**
-//      * When resendBlockDate is empty, another OTP has been resent and the client is not allowed to resend it again.
-//      */
-//     // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
-//     let currentOtpToken = this.#expires + OTP_SEPARATOR + this.#credential + OTP_SEPARATOR + this.#otp + OTP_SEPARATOR + this.#attempts + OTP_SEPARATOR + this.#resendBlockDate
-
-//     if (this.#otpBlockDate) {
-//       currentOtpToken += OTP_SEPARATOR + this.#otpBlockDate
-//     }
-
-//     return currentOtpToken
-
-//   }
-
-// }
-
-
-/**
- * @function isOtpTokenValid
- * @this {number}
- * @param {OtpToken} otpToken
- * @returns {boolean}
- */
-function isOtpTokenValid(otpToken) {
-
-  return this < otpToken[EXPIRES]
-
-}
-
-
 
 class OtpTokenList {
 
@@ -244,7 +126,6 @@ class OtpTokenList {
       return decodeCredential(this.current[CREDENTIAL])
     }
 
-    // attempts
     this.current[ATTEMPTS]--
   
     /**
@@ -292,10 +173,9 @@ class OtpTokenList {
     let expires = 0
 
     for (const otpToken of this.#tokens) {
-      const otpTokenExpires = otpToken[EXPIRES]
-      if (dateNow < otpTokenExpires) {
-        if (otpTokenExpires > expires) {
-          expires = otpTokenExpires
+      if (dateNow < otpToken[EXPIRES]) {
+        if (otpToken[EXPIRES] > expires) {
+          expires = otpToken[EXPIRES]
         }
         tokens.push(otpToken.join(OTP_SEPARATOR))
       }
@@ -321,6 +201,16 @@ class OtpTokenList {
     setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
 
     return lessPreciseExpiresDate
+
+  }
+
+
+  /**
+   * @param {string} credential
+   */
+  search(credential) {
+
+    const encodedCredential = encodeCredential(credential)
 
   }
 
@@ -352,13 +242,13 @@ export async function getOtpInstance(c, keyId, token) {
     return
   }
 
-  const otpTokens = otpToken.split(ARRAY_SEPARATOR)
+  const otpStringTokens = otpToken.split(ARRAY_SEPARATOR)
 
-  if (otpTokens.length < 2) {
+  if (otpStringTokens.length < 2) {
     return
   }
 
-  const lastValidAccess = otpTokens.shift()
+  const lastValidAccess = otpStringTokens.shift()
 
   if (!lastValidAccess) {
     return
@@ -371,22 +261,24 @@ export async function getOtpInstance(c, keyId, token) {
     return false
   }
 
-  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
-  const currentOtpToken = otpTokens[0]?.split(OTP_SEPARATOR)
+  /**
+   * @type {OtpToken[]}
+   */
+  const otpTokens = []
 
-  // @ts-expect-error: TS doesn't detect that the current token must be a `string[]`.
-  otpTokens[0] = currentOtpToken
-
-  if (!currentOtpToken[3]) {
-    return
-  }
-
-  // @ts-expect-error: TS doesn't detect that `expires` must be a number.
-  currentOtpToken[3] = +currentOtpToken[3]
-
-  // @ts-expect-error: TS doesn't detect that `expires` must be a number.
-  if (dateNow >= currentOtpToken[3]) {
-    return
+  for (const otpStringToken of otpStringTokens) {
+    /**
+     * @type {OtpToken}
+     */
+    // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
+    const otpToken = otpStringToken.split(OTP_SEPARATOR)
+    otpToken[EXPIRES] = +otpToken[EXPIRES]
+    if (dateNow < otpToken[EXPIRES]) {
+      otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
+      otpToken[RESEND_BLOCK_DATE] = otpToken[RESEND_BLOCK_DATE] ? +otpToken[RESEND_BLOCK_DATE] : undefined
+      otpToken[OTP_BLOCK_DATE] = otpToken[OTP_BLOCK_DATE] ? +otpToken[OTP_BLOCK_DATE] : undefined
+      otpTokens.push(otpToken)
+    }
   }
 
   
