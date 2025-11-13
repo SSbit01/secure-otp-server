@@ -5,7 +5,7 @@ import app from "@/setup"
 import { isRandomIdValid } from "@/lib/crypto/id"
 import { ERR_OTP_BLOCKED, ERR_OTP_RESENT_NOT_ALLOWED, ERR_OTP_TOO_MANY_ATTEMPTS, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 import { OTP_INCORRECT } from "@/lib/error/names"
-import { COOKIE_KEY_ID, COOKIE_OTP, createOtpCookie, createOtpAndSend, deleteOtpData, getOtpInstance } from "@/lib/otp"
+import { COOKIE_KEY_ID, COOKIE_OTP, createOtpAndSend, deleteOtpData, getOtpInstance } from "@/lib/otp"
 
 import otpCookieValidator from "@/lib/validators/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -37,53 +37,24 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     )
   }
   
-  // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
-  const otpTokenData = await getOtpInstance(c, keyId, token)
+  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
+  const otpData = await getOtpInstance(c, keyId, token)
 
-  switch (otpTokenData) {
+  switch (otpData) {
     case false:
-      deleteOtpData(c)
       return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
     case undefined:
       return c.json(
         await createOtpAndSend(c, credential)
       )
-    case null:
-      /**
-       * Fire and forget - delete old key
-       */
-      deleteEncryptionKey(c, keyId)
-      return c.json(
-        await createOtpAndSend(c, credential)
-      )
   }
 
-  if (otpTokenData === undefined) {
-    return c.json(
-      await createOtpAndSend(c, credential)
-    )
-  }
-
-  if (otpTokenData === null) {
-    /**
-     * Fire and forget - delete old key
-     */
-    deleteEncryptionKey(c, keyId)
-    return c.json(
-      await createOtpAndSend(c, credential)
-    )
-  }
-
-  // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
-  const [, resendBlockDate, storedCredential] = otpTokenData
+  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
+  const [, resendBlockDate, storedCredential] = otpData
 
   const dateNow = Date.now()
 
   if (storedCredential !== credential) {
-    /**
-     * Fire and forget - delete old key
-     */
-    deleteEncryptionKey(c, keyId)
     return c.json(
       await createOtpAndSend(c, credential)
     )
@@ -94,11 +65,6 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
-  /**
-   * Fire and forget - delete old key
-   */
-  deleteEncryptionKey(c, keyId)
-
   return c.json(await createOtpAndSend(c, credential, ALLOW_ONLY_ONE_RESENDING))
 
 })
@@ -107,7 +73,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
 
 app.post("/api/otp/resend", otpCookieValidator, async(c) => {
     
-  // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
+  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
   const [, resendBlockDate, credential] = c.req.valid("cookie")
 
   if (!resendBlockDate || Date.now() < +resendBlockDate) {
@@ -123,7 +89,7 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
 
 app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
-  // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
+  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
   const [expires, resendBlockDate, credential, otpValid, attempts, otpBlockDate] = c.req.valid("cookie")
 
 

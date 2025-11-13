@@ -12,7 +12,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  // expires:credential:otp:attempts:resendBlockDate:otpBlockDate(optional)
+  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
   const otpTokenData = await getOtpInstance(c, keyId, token)
 
   switch (otpTokenData) {
