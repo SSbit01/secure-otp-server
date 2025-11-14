@@ -380,17 +380,12 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
     return
   }
 
-  const dateNow = Date.now()
-
-  if (isLessThanDelay(+lastValidAccess, dateNow)) {
-    deleteOtpData(c)
-    return false
-  }
-
   /**
    * @type {OtpToken[]}
    */
   const otpTokens = []
+
+  const dateNow = Date.now()
 
   for (const otpStringToken of otpStringTokens) {
     /**
@@ -405,6 +400,16 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
       otpToken[OTP_BLOCK_UNTIL] = otpToken[OTP_BLOCK_UNTIL] ? +otpToken[OTP_BLOCK_UNTIL] : undefined
       otpTokens.push(otpToken)
     }
+  }
+
+  if (!otpTokens.length) {
+    deleteOtpData(c)
+    return
+  }
+
+  if (isLessThanDelay(+lastValidAccess, dateNow)) {
+    deleteOtpData(c)
+    return false
   }
   
   return Object.freeze(new OtpTokenList(c, otpTokens))
