@@ -18,7 +18,7 @@ import sendOtp from "@/custom/send"
  */
 
 /**
- * @typedef {Object} OtpTokenResponse
+ * @typedef {Object} OtpTokenTime
  * @property {OtpToken[EXPIRES]} expires
  * @property {OtpToken[RESEND_BLOCK_DATE]} [resendBlockDate]
  * @property {OtpToken[OTP_BLOCK_DATE]} [otpBlockDate]
@@ -62,34 +62,6 @@ function decodeCredential(encodedCredential) {
 }
 
 
-/**
- * @function getOtpTokenResponse
- * @param {OtpToken} otpToken
- * @returns {OtpTokenResponse}
- */
-function getOtpTokenResponse(otpToken) {
-
-  /**
-   * @type {OtpTokenResponse}
-   */
-
-  const res = {
-    expires: otpToken[EXPIRES]
-  }
-
-  if (otpToken[RESEND_BLOCK_DATE]) {
-    res.resendBlockDate = otpToken[RESEND_BLOCK_DATE]
-  }
-
-  if (otpToken[OTP_BLOCK_DATE]) {
-    res.otpBlockDate = otpToken[OTP_BLOCK_DATE]
-  }
-
-  return res
-
-}
-
-
 
 export const COOKIE_KEY_ID = "e"
 export const COOKIE_OTP = "t"
@@ -116,6 +88,28 @@ class OtpTokenList {
 
   get #current() {
     return this.#tokens[0]
+  }
+
+
+  get #time() {
+
+    /**
+     * @type {OtpTokenTime}
+     */
+    const time = {
+      expires: this.#current[EXPIRES]
+    }
+
+    if (this.#current[RESEND_BLOCK_DATE]) {
+      time.resendBlockDate = this.#current[RESEND_BLOCK_DATE]
+    }
+
+    if (this.#current[OTP_BLOCK_DATE]) {
+      time.otpBlockDate = this.#current[OTP_BLOCK_DATE]
+    }
+
+    return time
+
   }
 
 
@@ -209,27 +203,27 @@ class OtpTokenList {
     const dateNow = Date.now()
 
     /**
-     * @type {OtpTokenResponse}
+     * @type {OtpTokenTime}
      */
-    const res = { expires: dateNow + MAX_DURATION_MS }
+    const time = { expires: dateNow + MAX_DURATION_MS }
 
     if (ALLOW_ONLY_ONE_RESENDING) {
       delete this.#current[RESEND_BLOCK_DATE]
     } else {
       this.#current[RESEND_BLOCK_DATE] = dateNow + RESEND_BLOCK_MS
-      res.resendBlockDate = this.#current[RESEND_BLOCK_DATE]
+      time.resendBlockDate = this.#current[RESEND_BLOCK_DATE]
     }
 
     await this.#save(dateNow)
 
-    return res
+    return time
 
   }
 
 
   /**
    * @param {string} credential
-   * @returns {Promise<false|OtpTokenResponse>}
+   * @returns {Promise<false|OtpTokenTime>}
    */
   async set(credential) {
 
@@ -239,7 +233,7 @@ class OtpTokenList {
      * Don't need to save and encrypt the token list again if the current token contains the `credential`.
      */
     if (encodedCredential === this.#current?.[CREDENTIAL]) {
-      return getOtpTokenResponse(this.#current)
+      return this.#time
     }
 
     for (let i = 1; i < this.#tokens.length; i++) {
@@ -248,7 +242,7 @@ class OtpTokenList {
         this.#tokens[i] = this.#tokens[0]
         this.#tokens[0] = otpToken
         await this.#save()
-        return getOtpTokenResponse(otpToken)
+        return this.#time
       }
     }
 
