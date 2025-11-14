@@ -1,7 +1,14 @@
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS as ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS, createOtp } from "@/custom/otp"
+import {
+  RESEND_BLOCK_SECONDS,
+  MAX_ATTEMPTS,
+  ATTEMPTS_BLOCK,
+  INVALID_BLOCK_SECONDS,
+  MINIMUM_DELAY_BETWEEN_REQUESTS_MS as ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS,
+  createOtp
+} from "@/custom/otp"
 
 import app from "@/index"
 
