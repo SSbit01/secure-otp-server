@@ -10,7 +10,7 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { COOKIE_KEY_ID, COOKIE_ENCRYPTED_TOKENS, createOtpAndSend, getOtpInstance } from "@/lib/otp"
+import { COOKIE_KEY_ID, COOKIE_ENCRYPTED_TOKENS, deleteOtpData, createOtpAndSend, getOtpInstance } from "@/lib/otp"
 
 import otpCookieValidator from "@/lib/validators/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -61,23 +61,30 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   const otp = c.req.valid("form")
   const otpTokenList = c.req.valid("cookie")
 
-  const res = await otpTokenList.check(otp)
+  const result = await otpTokenList.check(otp)
 
-  switch (res) {
+  switch (result) {
     case false:
       return c.json(ERR_OTP_BLOCKED, 400)
     case undefined:
       return c.json(ERR_OTP_INCORRECT, 400)
   }
 
-  if (typeof res === "number") {
+  if (typeof result === "number") {
     return c.json({
       ...ERR_OTP_INCORRECT,
-      otpBlockedUntil: res
+      otpBlockedUntil: result
     }, 400)
   }
+
+  /**
+   * In case of error, don't delete OTP data
+   */
+  const res = await finalAction(c, result)
+
+  deleteOtpData(c)
   
-  return await finalAction(c, res)
+  return res
 
 })
 

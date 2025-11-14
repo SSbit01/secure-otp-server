@@ -1,16 +1,11 @@
 import { validator } from "hono/validator"
 
-import { isRandomIdValid } from "@/lib/crypto/id"
 import { ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 import { COOKIE_KEY_ID, COOKIE_ENCRYPTED_TOKENS, getOtpInstance } from "@/lib/otp"
 
 
 
 const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_TOKENS]: token }, c) => {
-
-  if (!token || !keyId || !isRandomIdValid(keyId)) {
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
 
   const otpTokenList = await getOtpInstance(c, keyId, token)
 

@@ -5,6 +5,8 @@ import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
+import { deleteEncryptionKey } from "@/custom/kms"
+
 import {
   ALLOW_ONLY_ONE_RESENDING,
   ATTEMPTS_BLOCK,
@@ -79,6 +81,35 @@ export const COOKIE_ENCRYPTED_TOKENS = "t"
 
 
 
+/**
+ * @function deleteOtpCookies
+ * @param {Context} c
+ */
+function deleteOtpCookies(c) {
+  deleteCookie(c, COOKIE_ENCRYPTED_TOKENS)
+  return deleteCookie(c, COOKIE_KEY_ID)
+}
+
+
+/**
+ * @function deleteOtpData
+ * @param {Context} c
+ */
+export function deleteOtpData(c) {
+
+  const keyId = deleteOtpCookies(c)
+
+  if (keyId) {
+    /**
+     * Fire and forget
+     */
+    deleteEncryptionKey(c, keyId)
+  }
+
+}
+
+
+
 class OtpTokenList {
 
   #context
@@ -125,6 +156,8 @@ class OtpTokenList {
 
 
   async #save(dateNow = Date.now()) {
+
+    deleteOtpData(this.#context)
 
     const tokens = []
 
@@ -174,6 +207,7 @@ class OtpTokenList {
   async check(otp) {
 
     if (this.#current[OTP_BLOCK_UNTIL] && this.#current[OTP_BLOCK_UNTIL] > Date.now()) {
+      deleteOtpData(this.#context)
       return false
     }
 
@@ -186,7 +220,7 @@ class OtpTokenList {
     /**
      * Is `attempts` 0?
      */
-    if (this.#current[ATTEMPTS] <= 1) {
+    if (this.#current[ATTEMPTS] <= 0) {
       return false
     }
 
@@ -208,6 +242,7 @@ class OtpTokenList {
   async resend() {
 
     if (!this.#current[RESEND_BLOCK_UNTIL] || Date.now() < this.#current[RESEND_BLOCK_UNTIL]) {
+      deleteOtpData(this.#context)
       return false
     }
 
@@ -311,11 +346,9 @@ export async function createOtpAndSend(c, credential) {
 export async function getOtpInstance(c, keyId, encryptedTokens) {
 
   if (!encryptedTokens || !keyId || !isRandomIdValid(keyId)) {
+    deleteOtpCookies(c)
     return
   }
-
-  deleteCookie(c, COOKIE_KEY_ID)
-  deleteCookie(c, COOKIE_ENCRYPTED_TOKENS)
 
   /**
    * @type {(string|undefined)}
@@ -329,24 +362,28 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
   }
 
   if (!tokens) {
+    deleteOtpCookies(c)
     return
   }
 
   const otpStringTokens = tokens.split(ARRAY_SEPARATOR)
 
   if (otpStringTokens.length < 2) {
+    deleteOtpData(c)
     return
   }
 
   const lastValidAccess = otpStringTokens.shift()
 
   if (!lastValidAccess) {
+    deleteOtpData(c)
     return
   }
 
   const dateNow = Date.now()
 
   if (isLessThanDelay(+lastValidAccess, dateNow)) {
+    deleteOtpData(c)
     return false
   }
 
