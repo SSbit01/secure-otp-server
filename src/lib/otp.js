@@ -235,6 +235,9 @@ class OtpTokenList {
 
     const encodedCredential = encodeCredential(credential)
 
+    /**
+     * Don't need to save and encrypt the token list again if the current token contains the `credential`.
+     */
     if (encodedCredential === this.#current?.[CREDENTIAL]) {
       return getOtpTokenResponse(this.#current)
     }
