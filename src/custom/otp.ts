@@ -1,29 +1,10 @@
 /**
- * You can customize the length of OTPs.
- * 
- * - It is recommended to set it between 6 and 10.
- * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
- */
-export const OTP_LENGTH: number = 8
-
-/**
- * When sending an OTP for the first time, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
- * 
- * - It is recommended to set it to 30 seconds.
- */
-export const RESEND_BLOCK_SECONDS: number = 30
-
-/**
  * By default, only one resending is allowed per session. You can enable unlimited resendings by setting this variable to `false`.
  * 
  * - It is recommended to set it to `true`.
  */
 export const ALLOW_ONLY_ONE_RESENDING: boolean = true
 
-/**
- * The maximum number of attempts a user can verify an OTP.
- */
-export const MAX_ATTEMPTS: number = 3
 
 /**
  * When the user enters the code incorrectly many times and reaches this number of attempts, a timeout of seconds defined in `INVALID_BLOCK_SECONDS` can be set.
@@ -32,6 +13,7 @@ export const MAX_ATTEMPTS: number = 3
  * - Disable OTP blocking by setting it to `0`.
  */
 export const ATTEMPTS_BLOCK: number = 1
+
 
 /**
  * When the user enters the code incorrectly many times and reaches the number of attempts defined in `ATTEMPTS_BLOCK`, a timeout of a few seconds can be set.
@@ -42,11 +24,25 @@ export const INVALID_BLOCK_SECONDS: number = 30
 
 
 /**
+ * The maximum number of attempts a user can verify an OTP.
+ */
+export const MAX_ATTEMPTS: number = 3
+
+
+/**
  * The maximum validity period of an OTP token in seconds.
  * 
  * - If it is too low, tests may fail.
  */
 export const MAX_DURATION_SECONDS: number = 300  // 5 minutes
+
+
+/**
+ * Limits the number of OTP tokens a user can submit within a single session.
+ *
+ * For instance, if a user initiates verification for one credential and then another, the system stores both OTP tokens. This allows the user to return to the original credential verification without creating a new token. This variable directly controls the maximum number of such tokens stored per session.
+ */
+export const MAX_OTP_TOKENS_SESSION: number = 3
 
 
 /**
@@ -59,11 +55,28 @@ export const MINIMUM_DELAY_BETWEEN_REQUESTS_MS: number = 200  // 0.2 seconds
 
 
 /**
+ * You can customize the length of OTPs.
+ * 
+ * - It is recommended to set it between 6 and 10.
+ * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
+ */
+export const OTP_LENGTH: number = 8
+
+
+/**
  * You can customize the OTP format using regular expressions.
  * 
  * This will be used to verify OTP values; it has no impact on their creation.
  */
 export const OTP_REGEX: RegExp = /\w+/
+
+
+/**
+ * When sending an OTP, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
+ * 
+ * - It is recommended to set it to 30 seconds.
+ */
+export const RESEND_BLOCK_SECONDS: number = 30
 
 
 /**

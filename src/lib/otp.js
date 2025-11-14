@@ -4,7 +4,7 @@ import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
-import { RESEND_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, createOtp } from "@/custom/otp"
+import { ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, MAX_OTP_TOKENS_SESSION, RESEND_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 /**
@@ -13,6 +13,13 @@ import sendOtp from "@/custom/send"
 
 /**
  * @typedef {[credential:string,otp:string,attempts:number,expires:number,resendBlockDate?:number,otpBlockDate?:number]} OtpToken
+ */
+
+/**
+ * @typedef {Object} OtpTokenResponse
+ * @property {OtpToken[EXPIRES]} expires
+ * @property {OtpToken[RESEND_BLOCK_DATE]} [resendBlockDate]
+ * @property {OtpToken[OTP_BLOCK_DATE]} [otpBlockDate]
  */
 
 
@@ -110,14 +117,12 @@ class OtpTokenList {
 
 
   /**
-   * 
-   * @param {string} otp 
-   * @param {number} dateNow 
+   * @param {string} otp
    * @returns {Promise<false|string|number|undefined>}
    */
-  async check(otp, dateNow = Date.now()) {
+  async check(otp) {
 
-    if (this.current[OTP_BLOCK_DATE] && this.current[OTP_BLOCK_DATE] > dateNow) {
+    if (this.current[OTP_BLOCK_DATE] && this.current[OTP_BLOCK_DATE] > Date.now()) {
       deleteOtpCookies(this.#context)
       return false
     }
@@ -137,19 +142,19 @@ class OtpTokenList {
     }
 
     if (INVALID_BLOCK_MS && this.current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
-      this.current[OTP_BLOCK_DATE] = dateNow + INVALID_BLOCK_MS
+      this.current[OTP_BLOCK_DATE] = Date.now() + INVALID_BLOCK_MS
     }
 
-    await this.save(dateNow)
+    await this.save()
 
     return this.current[OTP_BLOCK_DATE]
 
   }
 
 
-  async resend(dateNow = Date.now()) {
+  async resend() {
 
-    if (!this.current[4] || dateNow < this.current[RESEND_BLOCK_DATE]) {
+    if (!this.current[RESEND_BLOCK_DATE] || Date.now() < this.current[RESEND_BLOCK_DATE]) {
       deleteOtpCookies(this.#context)
       return false
     }
@@ -158,10 +163,23 @@ class OtpTokenList {
 
     await sendOtp(this.#context, decodeCredential(this.current[CREDENTIAL]), this.current[OTP])
 
-    return {
-      expires: await this.save(),
-      resendBlockDate: getReducedTimePrecision(Date.now() + RESEND_BLOCK_MS, Math.ceil)
+    const dateNow = Date.now()
+
+    /**
+     * @type {OtpTokenResponse}
+     */
+    const res = { expires: dateNow + MAX_DURATION_MS }
+
+    if (ALLOW_ONLY_ONE_RESENDING) {
+      delete this.current[RESEND_BLOCK_DATE]
+    } else {
+      this.current[RESEND_BLOCK_DATE] = dateNow + RESEND_BLOCK_MS
+      res.resendBlockDate = this.current[RESEND_BLOCK_DATE]
     }
+
+    await this.save(dateNow)
+
+    return res
 
   }
 
@@ -181,9 +199,13 @@ class OtpTokenList {
       }
     }
 
+    if (!tokens.length) {
+      return false
+    }
+
     const [result, keyId] = await encryptOtp(this.#context, tokens.join(ARRAY_SEPARATOR), expires)
 
-    const lessPreciseExpiresDate = getReducedTimePrecision(this.current[EXPIRES])
+    const lessPreciseExpiresDate = getReducedTimePrecision(expires)
 
     /**
      * @type {import("hono/utils/cookie").CookieOptions}
@@ -207,10 +229,38 @@ class OtpTokenList {
 
   /**
    * @param {string} credential
+   * @returns {(OtpTokenResponse|null)}
    */
-  search(credential) {
+  switch(credential, dateNow = Date.now()) {
 
     const encodedCredential = encodeCredential(credential)
+
+    for (let i = 0; i < this.#tokens.length; i++) {
+      const otpToken = this.#tokens[i]
+      if (otpToken[CREDENTIAL] === encodedCredential) {
+        this.#tokens[i] = this.#tokens[0]
+        this.#tokens[0] = otpToken
+        /**
+         * @type {OtpTokenResponse}
+         */
+        const res = {
+          expires: otpToken[EXPIRES]
+        }
+        if (otpToken[RESEND_BLOCK_DATE]) {
+          res.resendBlockDate = otpToken[RESEND_BLOCK_DATE]
+        }
+        if (otpToken[OTP_BLOCK_DATE]) {
+          res.otpBlockDate = otpToken[OTP_BLOCK_DATE]
+        }
+        return res
+      }
+    }
+
+    if (this.#tokens.length >= MAX_OTP_TOKENS_SESSION) {
+      return null
+    }
+
+    this.#tokens.unshift([encodedCredential])
 
   }
 
