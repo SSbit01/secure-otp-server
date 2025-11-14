@@ -70,15 +70,7 @@ function decodeCredential(encodedCredential) {
  * @param {string} credential
  */
 export async function createOtpAndSend(c, credential) {
-
-  const otp = createOtp()
-
-  await sendOtp(c, credential, otp)
-
-  return {
-    expires: await new OtpData(c, [encodeCredential(credential), otp]).save()
-  }
-
+  return await new OtpTokenList(c).set(credential)
 }
 
 
@@ -103,7 +95,7 @@ class OtpTokenList {
    * @param {Context} c
    * @param {OtpToken[]} tokens
    */
-  constructor(c, tokens) {
+  constructor(c, tokens = []) {
 
     this.#context = c
     this.#tokens = tokens
@@ -111,7 +103,7 @@ class OtpTokenList {
   }
 
 
-  get current() {
+  get #current() {
     return this.#tokens[0]
   }
 
@@ -122,46 +114,43 @@ class OtpTokenList {
    */
   async check(otp) {
 
-    if (this.current[OTP_BLOCK_DATE] && this.current[OTP_BLOCK_DATE] > Date.now()) {
-      deleteOtpCookies(this.#context)
+    if (this.#current[OTP_BLOCK_DATE] && this.#current[OTP_BLOCK_DATE] > Date.now()) {
       return false
     }
 
-    if (this.current[OTP] === otp) {
-      return decodeCredential(this.current[CREDENTIAL])
+    if (this.#current[OTP] === otp) {
+      return decodeCredential(this.#current[CREDENTIAL])
     }
 
-    this.current[ATTEMPTS]--
+    this.#current[ATTEMPTS]--
   
     /**
      * Is `attempts` 0?
      */
-    if (!this.current[ATTEMPTS]) {
-      deleteOtpCookies(this.#context)
+    if (this.#current[ATTEMPTS] <= 1) {
       return false
     }
 
-    if (INVALID_BLOCK_MS && this.current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
-      this.current[OTP_BLOCK_DATE] = Date.now() + INVALID_BLOCK_MS
+    if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
+      this.#current[OTP_BLOCK_DATE] = Date.now() + INVALID_BLOCK_MS
     }
 
     await this.save()
 
-    return this.current[OTP_BLOCK_DATE]
+    return this.#current[OTP_BLOCK_DATE]
 
   }
 
 
   async resend() {
 
-    if (!this.current[RESEND_BLOCK_DATE] || Date.now() < this.current[RESEND_BLOCK_DATE]) {
-      deleteOtpCookies(this.#context)
+    if (!this.#current[RESEND_BLOCK_DATE] || Date.now() < this.#current[RESEND_BLOCK_DATE]) {
       return false
     }
 
-    this.current[OTP] = createOtp()
+    this.#current[OTP] = createOtp()
 
-    await sendOtp(this.#context, decodeCredential(this.current[CREDENTIAL]), this.current[OTP])
+    await sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
 
     const dateNow = Date.now()
 
@@ -171,10 +160,10 @@ class OtpTokenList {
     const res = { expires: dateNow + MAX_DURATION_MS }
 
     if (ALLOW_ONLY_ONE_RESENDING) {
-      delete this.current[RESEND_BLOCK_DATE]
+      delete this.#current[RESEND_BLOCK_DATE]
     } else {
-      this.current[RESEND_BLOCK_DATE] = dateNow + RESEND_BLOCK_MS
-      res.resendBlockDate = this.current[RESEND_BLOCK_DATE]
+      this.#current[RESEND_BLOCK_DATE] = dateNow + RESEND_BLOCK_MS
+      res.resendBlockDate = this.#current[RESEND_BLOCK_DATE]
     }
 
     await this.save(dateNow)
@@ -229,9 +218,9 @@ class OtpTokenList {
 
   /**
    * @param {string} credential
-   * @returns {(OtpTokenResponse|null)}
+   * @returns {Promise<OtpTokenResponse|false>}
    */
-  switch(credential, dateNow = Date.now()) {
+  async set(credential) {
 
     const encodedCredential = encodeCredential(credential)
 
@@ -240,6 +229,7 @@ class OtpTokenList {
       if (otpToken[CREDENTIAL] === encodedCredential) {
         this.#tokens[i] = this.#tokens[0]
         this.#tokens[0] = otpToken
+        await this.save()
         /**
          * @type {OtpTokenResponse}
          */
@@ -257,10 +247,26 @@ class OtpTokenList {
     }
 
     if (this.#tokens.length >= MAX_OTP_TOKENS_SESSION) {
-      return null
+      return false
     }
 
-    this.#tokens.unshift([encodedCredential])
+    const otp = createOtp()
+
+    await sendOtp(this.#context, credential, otp)
+
+    const dateNow = Date.now()
+
+    const expires = dateNow + MAX_DURATION_MS
+    const resendBlockDate = dateNow + RESEND_BLOCK_MS
+
+    this.#tokens.unshift([encodedCredential, otp, MAX_ATTEMPTS, expires, resendBlockDate])
+
+    await this.save(dateNow)
+
+    return {
+      expires,
+      resendBlockDate
+    }
 
   }
 

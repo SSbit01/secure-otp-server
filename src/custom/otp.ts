@@ -18,9 +18,9 @@ export const ATTEMPTS_BLOCK: number = 1
 /**
  * When the user enters the code incorrectly many times and reaches the number of attempts defined in `ATTEMPTS_BLOCK`, a timeout of a few seconds can be set.
  * 
- * - It is recommended to set it to 30 seconds.
+ * - It is recommended to set it to 20 seconds.
  */
-export const INVALID_BLOCK_SECONDS: number = 30
+export const INVALID_BLOCK_SECONDS: number = 20
 
 
 /**
@@ -74,9 +74,9 @@ export const OTP_REGEX: RegExp = /\w+/
 /**
  * When sending an OTP, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
  * 
- * - It is recommended to set it to 30 seconds.
+ * - It is recommended to set it to 20 seconds.
  */
-export const RESEND_BLOCK_SECONDS: number = 30
+export const RESEND_BLOCK_SECONDS: number = 20
 
 
 /**
