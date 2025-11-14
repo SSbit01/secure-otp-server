@@ -4,7 +4,6 @@ import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
-import { deleteEncryptionKey } from "@/custom/kms"
 import { ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, MAX_OTP_TOKENS_SESSION, RESEND_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
@@ -60,6 +59,34 @@ function encodeCredential(credential) {
  */
 function decodeCredential(encodedCredential) {
   return decodeURI(encodedCredential)
+}
+
+
+/**
+ * @function getOtpTokenResponse
+ * @param {OtpToken} otpToken
+ * @returns {OtpTokenResponse}
+ */
+function getOtpTokenResponse(otpToken) {
+
+  /**
+   * @type {OtpTokenResponse}
+   */
+
+  const res = {
+    expires: otpToken[EXPIRES]
+  }
+
+  if (otpToken[RESEND_BLOCK_DATE]) {
+    res.resendBlockDate = otpToken[RESEND_BLOCK_DATE]
+  }
+
+  if (otpToken[OTP_BLOCK_DATE]) {
+    res.otpBlockDate = otpToken[OTP_BLOCK_DATE]
+  }
+
+  return res
+
 }
 
 
@@ -202,31 +229,23 @@ class OtpTokenList {
 
   /**
    * @param {string} credential
-   * @returns {Promise<OtpTokenResponse|false>}
+   * @returns {Promise<false|OtpTokenResponse>}
    */
   async set(credential) {
 
     const encodedCredential = encodeCredential(credential)
 
-    for (let i = 0; i < this.#tokens.length; i++) {
+    if (encodedCredential === this.#current?.[CREDENTIAL]) {
+      return getOtpTokenResponse(this.#current)
+    }
+
+    for (let i = 1; i < this.#tokens.length; i++) {
       const otpToken = this.#tokens[i]
-      if (otpToken[CREDENTIAL] === encodedCredential) {
+      if (encodedCredential === otpToken[CREDENTIAL]) {
         this.#tokens[i] = this.#tokens[0]
         this.#tokens[0] = otpToken
         await this.#save()
-        /**
-         * @type {OtpTokenResponse}
-         */
-        const res = {
-          expires: otpToken[EXPIRES]
-        }
-        if (otpToken[RESEND_BLOCK_DATE]) {
-          res.resendBlockDate = otpToken[RESEND_BLOCK_DATE]
-        }
-        if (otpToken[OTP_BLOCK_DATE]) {
-          res.otpBlockDate = otpToken[OTP_BLOCK_DATE]
-        }
-        return res
+        return getOtpTokenResponse(otpToken)
       }
     }
 
@@ -278,11 +297,6 @@ export async function createOtpAndSend(c, credential) {
  * @returns {Promise<Readonly<OtpTokenList>|undefined|false>}
  */
 export async function getOtpInstance(c, keyId, encryptedTokens) {
-
-  /**
-   * Fire and forget
-   */
-  deleteEncryptionKey(c, keyId)
 
   deleteCookie(c, COOKIE_OTP)
   deleteCookie(c, COOKIE_KEY_ID)

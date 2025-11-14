@@ -2,7 +2,7 @@ import createRandomId from "@/lib/crypto/id"
 import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import { textEncoder, textDecoder } from "@/lib/text"
 
-import { doesEncryptionKeyExist, storeEncryptionKey, getEncryptionKey } from "@/custom/kms"
+import { doesEncryptionKeyExist, storeEncryptionKey, getEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
 
 /**
  * @import { Context } from "hono"
@@ -55,6 +55,11 @@ export async function decryptOtp(c, keyId, token) {
   if (!key) {
     return
   }
+
+  /**
+   * Fire and forget
+   */
+  deleteEncryptionKey(c, keyId)
 
   return await decryptSymmetricallyText(
     key,

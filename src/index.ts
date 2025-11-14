@@ -37,7 +37,6 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     )
   }
   
-  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
   const otpTokenList = await getOtpInstance(c, keyId, token)
 
   switch (otpTokenList) {
@@ -47,9 +46,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
       return c.json(await createOtpAndSend(c, credential))
   }
 
-  
-
-  const dateNow = Date.now()
+  const res = await otpTokenList.set(credential)
 
   if (storedCredential !== credential) {
     return c.json(
