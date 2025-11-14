@@ -4,12 +4,15 @@ import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
 import isProduction from "@/lib/production"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
+import { deleteEncryptionKey } from "@/custom/kms"
 import { ALLOW_ONLY_ONE_RESENDING, ATTEMPTS_BLOCK, INVALID_BLOCK_SECONDS, MAX_ATTEMPTS, MAX_DURATION_SECONDS, MAX_OTP_TOKENS_SESSION, RESEND_BLOCK_SECONDS, createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
+
 
 /**
  * @import { Context } from "hono"
  */
+
 
 /**
  * @typedef {[credential:string,otp:string,attempts:number,expires:number,resendBlockDate?:number,otpBlockDate?:number]} OtpToken
@@ -21,6 +24,7 @@ import sendOtp from "@/custom/send"
  * @property {OtpToken[RESEND_BLOCK_DATE]} [resendBlockDate]
  * @property {OtpToken[OTP_BLOCK_DATE]} [otpBlockDate]
  */
+
 
 
 const CREDENTIAL = 0
@@ -37,10 +41,6 @@ const OTP_SEPARATOR = "|"
 const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
 const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
 const RESEND_BLOCK_MS = RESEND_BLOCK_SECONDS * 1000
-
-
-export const COOKIE_KEY_ID = "e"
-export const COOKIE_OTP = "t"
 
 
 /**
@@ -63,25 +63,9 @@ function decodeCredential(encodedCredential) {
 }
 
 
-/**
- * @async
- * @function createOtpAndSend
- * @param {Context} c
- * @param {string} credential
- */
-export async function createOtpAndSend(c, credential) {
-  return await new OtpTokenList(c).set(credential)
-}
 
-
-/**
- * @function deleteOtpCookies
- * @param {Context} c
- */
-export function deleteOtpCookies(c) {
-  deleteCookie(c, COOKIE_OTP)
-  deleteCookie(c, COOKIE_KEY_ID)
-}
+export const COOKIE_KEY_ID = "e"
+export const COOKIE_OTP = "t"
 
 
 
@@ -108,72 +92,7 @@ class OtpTokenList {
   }
 
 
-  /**
-   * @param {string} otp
-   * @returns {Promise<false|string|number|undefined>}
-   */
-  async check(otp) {
-
-    if (this.#current[OTP_BLOCK_DATE] && this.#current[OTP_BLOCK_DATE] > Date.now()) {
-      return false
-    }
-
-    if (this.#current[OTP] === otp) {
-      return decodeCredential(this.#current[CREDENTIAL])
-    }
-
-    this.#current[ATTEMPTS]--
-  
-    /**
-     * Is `attempts` 0?
-     */
-    if (this.#current[ATTEMPTS] <= 1) {
-      return false
-    }
-
-    if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
-      this.#current[OTP_BLOCK_DATE] = Date.now() + INVALID_BLOCK_MS
-    }
-
-    await this.save()
-
-    return this.#current[OTP_BLOCK_DATE]
-
-  }
-
-
-  async resend() {
-
-    if (!this.#current[RESEND_BLOCK_DATE] || Date.now() < this.#current[RESEND_BLOCK_DATE]) {
-      return false
-    }
-
-    this.#current[OTP] = createOtp()
-
-    await sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
-
-    const dateNow = Date.now()
-
-    /**
-     * @type {OtpTokenResponse}
-     */
-    const res = { expires: dateNow + MAX_DURATION_MS }
-
-    if (ALLOW_ONLY_ONE_RESENDING) {
-      delete this.#current[RESEND_BLOCK_DATE]
-    } else {
-      this.#current[RESEND_BLOCK_DATE] = dateNow + RESEND_BLOCK_MS
-      res.resendBlockDate = this.#current[RESEND_BLOCK_DATE]
-    }
-
-    await this.save(dateNow)
-
-    return res
-
-  }
-
-
-  async save(dateNow = Date.now()) {
+  async #save(dateNow = Date.now()) {
 
     const tokens = []
 
@@ -217,6 +136,71 @@ class OtpTokenList {
 
 
   /**
+   * @param {string} otp
+   * @returns {Promise<false|string|number|undefined>}
+   */
+  async check(otp) {
+
+    if (this.#current[OTP_BLOCK_DATE] && this.#current[OTP_BLOCK_DATE] > Date.now()) {
+      return false
+    }
+
+    if (this.#current[OTP] === otp) {
+      return decodeCredential(this.#current[CREDENTIAL])
+    }
+
+    this.#current[ATTEMPTS]--
+  
+    /**
+     * Is `attempts` 0?
+     */
+    if (this.#current[ATTEMPTS] <= 1) {
+      return false
+    }
+
+    if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
+      this.#current[OTP_BLOCK_DATE] = Date.now() + INVALID_BLOCK_MS
+    }
+
+    await this.#save()
+
+    return this.#current[OTP_BLOCK_DATE]
+
+  }
+
+
+  async resend() {
+
+    if (!this.#current[RESEND_BLOCK_DATE] || Date.now() < this.#current[RESEND_BLOCK_DATE]) {
+      return false
+    }
+
+    this.#current[OTP] = createOtp()
+
+    await sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
+
+    const dateNow = Date.now()
+
+    /**
+     * @type {OtpTokenResponse}
+     */
+    const res = { expires: dateNow + MAX_DURATION_MS }
+
+    if (ALLOW_ONLY_ONE_RESENDING) {
+      delete this.#current[RESEND_BLOCK_DATE]
+    } else {
+      this.#current[RESEND_BLOCK_DATE] = dateNow + RESEND_BLOCK_MS
+      res.resendBlockDate = this.#current[RESEND_BLOCK_DATE]
+    }
+
+    await this.#save(dateNow)
+
+    return res
+
+  }
+
+
+  /**
    * @param {string} credential
    * @returns {Promise<OtpTokenResponse|false>}
    */
@@ -229,7 +213,7 @@ class OtpTokenList {
       if (otpToken[CREDENTIAL] === encodedCredential) {
         this.#tokens[i] = this.#tokens[0]
         this.#tokens[0] = otpToken
-        await this.save()
+        await this.#save()
         /**
          * @type {OtpTokenResponse}
          */
@@ -261,7 +245,7 @@ class OtpTokenList {
 
     this.#tokens.unshift([encodedCredential, otp, MAX_ATTEMPTS, expires, resendBlockDate])
 
-    await this.save(dateNow)
+    await this.#save(dateNow)
 
     return {
       expires,
@@ -273,32 +257,52 @@ class OtpTokenList {
 }
 
 
+
+/**
+ * @async
+ * @function createOtpAndSend
+ * @param {Context} c
+ * @param {string} credential
+ */
+export async function createOtpAndSend(c, credential) {
+  return await new OtpTokenList(c).set(credential)
+}
+
+
 /**
  * @async
  * @function getOtpInstance
  * @param {Context} c
  * @param {string} keyId
- * @param {string} token
+ * @param {string} encryptedTokens
  * @returns {Promise<Readonly<OtpTokenList>|undefined|false>}
  */
-export async function getOtpInstance(c, keyId, token) {
+export async function getOtpInstance(c, keyId, encryptedTokens) {
+
+  /**
+   * Fire and forget
+   */
+  deleteEncryptionKey(c, keyId)
+
+  deleteCookie(c, COOKIE_OTP)
+  deleteCookie(c, COOKIE_KEY_ID)
 
   /**
    * @type {(string|undefined)}
    */
-  let otpToken
+  let tokens
 
   try {
-    otpToken = await decryptOtp(c, keyId, token)
+    tokens = await decryptOtp(c, keyId, encryptedTokens)
   } catch {
     return
   }
 
-  if (!otpToken) {
+  if (!tokens) {
     return
   }
 
-  const otpStringTokens = otpToken.split(ARRAY_SEPARATOR)
+  const otpStringTokens = tokens.split(ARRAY_SEPARATOR)
 
   if (otpStringTokens.length < 2) {
     return
@@ -313,7 +317,6 @@ export async function getOtpInstance(c, keyId, token) {
   const dateNow = Date.now()
 
   if (isLessThanDelay(+lastValidAccess, dateNow)) {
-    deleteOtpCookies(c)
     return false
   }
 
