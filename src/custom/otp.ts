@@ -42,7 +42,7 @@ export const MAX_DURATION_SECONDS: number = 300  // 5 minutes
  *
  * For instance, if a user initiates verification for one credential and then another, the system stores both OTP tokens. This allows the user to return to the original credential verification without creating a new token. This variable directly controls the maximum number of such tokens stored per session.
  */
-export const MAX_OTP_TOKENS_SESSION: number = 3
+export const MAX_OTP_CREDENTIALS: number = 3
 
 
 /**

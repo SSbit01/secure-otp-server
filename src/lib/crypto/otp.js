@@ -35,7 +35,7 @@ export async function encryptOtp(c, value, expires) {
 
   await storeEncryptionKey(c, keyId, key, expires)
 
-  return [result, keyId]
+  return [keyId, result]
 
 }
 

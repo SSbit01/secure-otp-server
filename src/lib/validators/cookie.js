@@ -2,29 +2,26 @@ import { validator } from "hono/validator"
 
 import { isRandomIdValid } from "@/lib/crypto/id"
 import { ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
-import { COOKIE_KEY_ID, COOKIE_OTP, getOtpInstance } from "@/lib/otp"
+import { COOKIE_KEY_ID, COOKIE_ENCRYPTED_TOKENS, getOtpInstance } from "@/lib/otp"
 
 
 
-const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [COOKIE_OTP]: token }, c) => {
+const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_TOKENS]: token }, c) => {
 
-  if (!keyId || !isRandomIdValid(keyId) || !token) {
+  if (!token || !keyId || !isRandomIdValid(keyId)) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  // credential:otp:attempts:expires:resendBlockDate:otpBlockDate(optional)
-  const otpTokenData = await getOtpInstance(c, keyId, token)
+  const otpTokenList = await getOtpInstance(c, keyId, token)
 
-  switch (otpTokenData) {
-    case false:
-      return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  switch (otpTokenList) {
     case undefined:
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
-    case null:
-      return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    case false:
+      return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  return otpTokenData
+  return otpTokenList
 
 })
 

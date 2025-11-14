@@ -2,10 +2,12 @@ import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   OTP_BLOCKED,
+  OTP_INCORRECT,
   OTP_INVALID_COOKIE,
   OTP_INVALID_FORMAT,
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS,
+  OTP_TOO_MANY_CREDENTIALS,
   OTP_TOO_MANY_REQUESTS,
   SERVER
 } from "@/lib/error/names"
@@ -26,6 +28,11 @@ export const ERR_OTP_BLOCKED = {
   message: "Incorrect use of the systems, token invalidated."
 }
 
+export const ERR_OTP_INCORRECT = {
+  error: OTP_INCORRECT,
+  message: "Incorrect OTP value."
+}
+
 export const ERR_OTP_INVALID_COOKIE = {
   error: OTP_INVALID_COOKIE,
   message: "The OTP cookies are invalid."
@@ -44,6 +51,11 @@ export const ERR_OTP_RESENT_NOT_ALLOWED = {
 export const ERR_OTP_TOO_MANY_ATTEMPTS = {
   error: OTP_TOO_MANY_ATTEMPTS,
   message: "Too many attempts, you have to retry again."
+}
+
+export const ERR_OTP_TOO_MANY_CREDENTIALS = {
+  error: OTP_TOO_MANY_CREDENTIALS,
+  message: "Too many credentials."
 }
 
 export const ERR_OTP_TOO_MANY_REQUESTS = {
