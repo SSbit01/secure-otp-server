@@ -1,6 +1,6 @@
 import { validator } from "hono/validator"
 
-import { ERR_OTP_BLOCKED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
+import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 import { COOKIE_KEY_ID, COOKIE_ENCRYPTED_TOKENS, getOtpInstance } from "@/lib/otp"
 
 
@@ -13,7 +13,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     case undefined:
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     case null:
-      return c.json(ERR_OTP_BLOCKED, 400)
+      return c.json(ERR_OTP_EXPIRED, 400)
     case false:
       return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }

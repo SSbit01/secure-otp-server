@@ -77,6 +77,32 @@ function decodeCredential(encodedCredential) {
 }
 
 
+/**
+ * @function decodeOtpTokenString
+ * @param {string} otpTokenString 
+ * @param {number} [dateNow]
+ * @returns {(OtpToken|undefined)}
+ */
+function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
+
+  /**
+   * @type {OtpToken}
+   */
+  // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
+  const otpToken = otpTokenString.split(OTP_SEPARATOR)
+
+  otpToken[EXPIRES] = +otpToken[EXPIRES]
+
+  if (dateNow < otpToken[EXPIRES]) {
+    otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
+    otpToken[RESEND_BLOCK_UNTIL] = otpToken[RESEND_BLOCK_UNTIL] ? +otpToken[RESEND_BLOCK_UNTIL] : undefined
+    otpToken[OTP_BLOCK_UNTIL] = otpToken[OTP_BLOCK_UNTIL] ? +otpToken[OTP_BLOCK_UNTIL] : undefined
+    return otpToken
+  }
+
+}
+
+
 
 export const COOKIE_KEY_ID = "e"
 export const COOKIE_ENCRYPTED_TOKENS = "t"
@@ -369,57 +395,43 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
   /**
    * @type {(string[]|undefined)}
    */
-  let otpStringTokens
+  let otpTokenStrings
 
   try {
-    otpStringTokens = (await decryptOtp(c, keyId, encryptedTokens))?.split(ARRAY_SEPARATOR)
+    otpTokenStrings = (await decryptOtp(c, keyId, encryptedTokens))?.split(ARRAY_SEPARATOR)
   } catch {
     return
   }
 
-  if (!otpStringTokens || otpStringTokens.length < 2) {
+  if (!otpTokenStrings || otpTokenStrings.length < 2) {
     return
   }
 
-  const lastAccess = otpStringTokens.shift()
+  const lastAccess = otpTokenStrings.shift()
 
   if (!lastAccess) {
     return
   }
 
-  /**
-   * @type {(OtpToken|undefined)}
-   */
-  // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
-  const currentOtpToken = otpStringTokens.shift()?.split(OTP_SEPARATOR)
+  const currentOtpTokenString = otpTokenStrings.shift()
 
-  if (!currentOtpToken) {
+  if (!currentOtpTokenString) {
     return
   }
 
   const dateNow = Date.now()
 
-  if (dateNow >= currentOtpToken[EXPIRES]) {
+  const currentOtpToken = decodeOtpTokenString(currentOtpTokenString, dateNow)
+
+  if (!currentOtpToken) {
     return null
   }
 
-  currentOtpToken[ATTEMPTS] = +currentOtpToken[ATTEMPTS]
-  currentOtpToken[RESEND_BLOCK_UNTIL] = currentOtpToken[RESEND_BLOCK_UNTIL] ? +currentOtpToken[RESEND_BLOCK_UNTIL] : undefined
-  currentOtpToken[OTP_BLOCK_UNTIL] = currentOtpToken[OTP_BLOCK_UNTIL] ? +currentOtpToken[OTP_BLOCK_UNTIL] : undefined
-
   const otpTokens = [currentOtpToken]
 
-  for (const otpStringToken of otpStringTokens) {
-    /**
-     * @type {OtpToken}
-     */
-    // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
-    const otpToken = otpStringToken.split(OTP_SEPARATOR)
-    otpToken[EXPIRES] = +otpToken[EXPIRES]
-    if (dateNow < otpToken[EXPIRES]) {
-      otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
-      otpToken[RESEND_BLOCK_UNTIL] = otpToken[RESEND_BLOCK_UNTIL] ? +otpToken[RESEND_BLOCK_UNTIL] : undefined
-      otpToken[OTP_BLOCK_UNTIL] = otpToken[OTP_BLOCK_UNTIL] ? +otpToken[OTP_BLOCK_UNTIL] : undefined
+  for (const otpTokenString of otpTokenStrings) {
+    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    if (otpToken) {
       otpTokens.push(otpToken)
     }
   }

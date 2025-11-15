@@ -2,6 +2,7 @@ import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   OTP_BLOCKED,
+  OTP_EXPIRED,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
   OTP_INVALID_FORMAT,
@@ -25,7 +26,12 @@ export const ERR_CREDENTIAL_INVALID = {
 
 export const ERR_OTP_BLOCKED = {
   error: OTP_BLOCKED,
-  message: "The OTP token is blocked."
+  message: "The current OTP token is blocked."
+}
+
+export const ERR_OTP_EXPIRED = {
+  error: OTP_EXPIRED,
+  message: "The current OTP is expired. Please request a new code."
 }
 
 export const ERR_OTP_INCORRECT = {
@@ -40,17 +46,17 @@ export const ERR_OTP_INVALID_COOKIE = {
 
 export const ERR_OTP_INVALID_FORMAT = {
   error: OTP_INVALID_FORMAT,
-  message: "Incorrect use of the systems, token invalidated."
+  message: "Invalid OTP format."
 }
 
 export const ERR_OTP_RESENT_NOT_ALLOWED = {
   error: OTP_RESENT_NOT_ALLOWED,
-  message: "Incorrect use of the systems, token invalidated."
+  message: "Resend not allowed."
 }
 
 export const ERR_OTP_TOO_MANY_ATTEMPTS = {
   error: OTP_TOO_MANY_ATTEMPTS,
-  message: "Too many attempts, you have to retry again."
+  message: "Too many attempts. Please try again."
 }
 
 export const ERR_OTP_TOO_MANY_CREDENTIALS = {
@@ -60,7 +66,7 @@ export const ERR_OTP_TOO_MANY_CREDENTIALS = {
 
 export const ERR_OTP_TOO_MANY_REQUESTS = {
   error: OTP_TOO_MANY_REQUESTS,
-  message: "Incorrect use of the systems, token invalidated."
+  message: "Too many requests, slow down :)"
 }
 
 export const ERR_SERVER = {

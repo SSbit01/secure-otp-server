@@ -4,6 +4,7 @@ import app from "@/setup"
 
 import {
   ERR_OTP_BLOCKED,
+  ERR_OTP_EXPIRED,
   ERR_OTP_INCORRECT,
   ERR_OTP_RESENT_NOT_ALLOWED,
   ERR_OTP_TOO_MANY_CREDENTIALS,
@@ -29,7 +30,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     case undefined:
       return c.json(await createOtpAndSend(c, c.req.valid("json")))
     case null:
-      return c.json(ERR_OTP_BLOCKED, 400)
+      return c.json(ERR_OTP_EXPIRED, 400)
     case false:
       return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
