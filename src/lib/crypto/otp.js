@@ -1,43 +1,11 @@
-import createRandomId from "@/lib/crypto/id"
-import { createSymmetricKey, encryptSymmetricallyText, decryptSymmetricallyText } from "@/lib/crypto/symmetric"
-import { textEncoder, textDecoder } from "@/lib/text"
+import { decryptSymmetricallyText } from "@/lib/crypto/symmetric"
+import { textDecoder } from "@/lib/text"
 
-import { doesEncryptionKeyExist, storeEncryptionKey, getEncryptionKey } from "@/custom/kms"
+import { getEncryptionKey } from "@/custom/kms"
 
 /**
  * @import { Context } from "hono"
  */
-
-
-/**
- * @async
- * @function encryptOtp
- * @param {Context} c
- * @param {string} value
- * @param {number} expires
- * @returns {Promise<[result:string,keyId:string]>}
- */
-export async function encryptOtp(c, value, expires) {
-
-  const key = await createSymmetricKey()
-
-  const result = await encryptSymmetricallyText(
-    key,
-    value,
-    textEncoder
-  )
-
-  let keyId
-  
-  do {
-    keyId = createRandomId()
-  } while (await doesEncryptionKeyExist(c, keyId))
-
-  await storeEncryptionKey(c, keyId, key, expires)
-
-  return [keyId, result]
-
-}
 
 
 /**
@@ -47,6 +15,11 @@ export async function encryptOtp(c, value, expires) {
  * @param {string} keyId
  * @param {string} token
  * @returns {Promise<string|undefined>}
+ * @throws {TypeError} Thrown if `token` is not a string.
+ * @throws {SyntaxError} Thrown if `token` contains characters outside Base64 alphabet.
+ * @throws {DOMException} Raised when:
+ * - The provided key is not valid.
+ * - The operation failed.
  */
 export async function decryptOtp(c, keyId, token) {
 

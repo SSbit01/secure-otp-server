@@ -1,11 +1,13 @@
 import { setCookie, deleteCookie } from "hono/cookie"
 
-import { isRandomIdValid } from "@/lib/crypto/id"
-import { encryptOtp, decryptOtp } from "@/lib/crypto/otp"
+import createRandomId, { isRandomIdValid } from "@/lib/crypto/id"
+import { decryptOtp } from "@/lib/crypto/otp"
+import { createSymmetricKey, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import isProduction from "@/lib/production"
+import { textEncoder } from "@/lib/text"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
-import { deleteEncryptionKey } from "@/custom/kms"
+import { doesEncryptionKeyExist, storeEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
 
 import {
   ALLOW_ONLY_ONE_RESENDING,
@@ -114,16 +116,19 @@ class OtpTokenList {
 
   #context
   #tokens
+  #createdAt
 
 
   /**
    * @param {Context} c
    * @param {OtpToken[]} tokens
+   * @param {number} createdAt
    */
-  constructor(c, tokens = []) {
+  constructor(c, tokens = [], createdAt = Date.now()) {
 
     this.#context = c
     this.#tokens = tokens
+    this.#createdAt = createdAt
 
   }
 
@@ -155,7 +160,7 @@ class OtpTokenList {
   }
 
 
-  async #save(dateNow = Date.now()) {
+  async #save(dateNow = this.#createdAt) {
 
     const tokens = []
 
@@ -175,7 +180,17 @@ class OtpTokenList {
       return false
     }
 
-    const [keyId, result] = await encryptOtp(this.#context, tokens.join(ARRAY_SEPARATOR), expires)
+    const key = await createSymmetricKey()
+    
+    const result = await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
+  
+    let keyId
+    
+    do {
+      keyId = createRandomId()
+    } while (await doesEncryptionKeyExist(this.#context, keyId))
+  
+    await storeEncryptionKey(this.#context, keyId, key, expires)
 
     deleteOtpData(this.#context)
 
@@ -207,7 +222,7 @@ class OtpTokenList {
    */
   async check(otp) {
 
-    if (this.#current[OTP_BLOCK_UNTIL] && this.#current[OTP_BLOCK_UNTIL] > Date.now()) {
+    if (this.#current[OTP_BLOCK_UNTIL] && this.#current[OTP_BLOCK_UNTIL] > this.#createdAt) {
       return false
     }
 
@@ -224,15 +239,13 @@ class OtpTokenList {
       return false
     }
 
-    const dateNow = Date.now()
-
     if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
-      this.#current[OTP_BLOCK_UNTIL] = dateNow + INVALID_BLOCK_MS
+      this.#current[OTP_BLOCK_UNTIL] = this.#createdAt + INVALID_BLOCK_MS
     } else {
       delete this.#current[OTP_BLOCK_UNTIL]
     }
 
-    await this.#save(dateNow)
+    await this.#save()
 
     return this.#current[OTP_BLOCK_UNTIL]
 
@@ -241,7 +254,7 @@ class OtpTokenList {
 
   async resend() {
 
-    if (!this.#current[RESEND_BLOCK_UNTIL] || this.#current[ATTEMPTS] <= 0 || Date.now() < this.#current[RESEND_BLOCK_UNTIL]) {
+    if (!this.#current[RESEND_BLOCK_UNTIL] || this.#current[ATTEMPTS] <= 0 || this.#createdAt < this.#current[RESEND_BLOCK_UNTIL]) {
       return false
     }
 
@@ -349,23 +362,17 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
   }
 
   /**
-   * @type {(string|undefined)}
+   * @type {(string[]|undefined)}
    */
-  let tokens
+  let otpStringTokens
 
   try {
-    tokens = await decryptOtp(c, keyId, encryptedTokens)
+    otpStringTokens = (await decryptOtp(c, keyId, encryptedTokens))?.split(ARRAY_SEPARATOR)
   } catch {
     return
   }
 
-  if (!tokens) {
-    return
-  }
-
-  const otpStringTokens = tokens.split(ARRAY_SEPARATOR)
-
-  if (otpStringTokens.length < 2) {
+  if (!otpStringTokens || otpStringTokens.length < 2) {
     return
   }
 
@@ -405,6 +412,6 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
     return false
   }
   
-  return Object.freeze(new OtpTokenList(c, otpTokens))
+  return Object.freeze(new OtpTokenList(c, otpTokens, dateNow))
 
 }
