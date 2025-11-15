@@ -157,8 +157,6 @@ class OtpTokenList {
 
   async #save(dateNow = Date.now()) {
 
-    deleteOtpData(this.#context)
-
     const tokens = []
 
     let expires = 0
@@ -173,10 +171,13 @@ class OtpTokenList {
     }
 
     if (!tokens.length) {
+      deleteOtpData(this.#context)
       return false
     }
 
     const [keyId, result] = await encryptOtp(this.#context, tokens.join(ARRAY_SEPARATOR), expires)
+
+    deleteOtpData(this.#context)
 
     const lessPreciseExpiresDate = getReducedTimePrecision(expires)
 
@@ -207,7 +208,6 @@ class OtpTokenList {
   async check(otp) {
 
     if (this.#current[OTP_BLOCK_UNTIL] && this.#current[OTP_BLOCK_UNTIL] > Date.now()) {
-      deleteOtpData(this.#context)
       return false
     }
 
@@ -241,8 +241,7 @@ class OtpTokenList {
 
   async resend() {
 
-    if (!this.#current[RESEND_BLOCK_UNTIL] || Date.now() < this.#current[RESEND_BLOCK_UNTIL]) {
-      deleteOtpData(this.#context)
+    if (!this.#current[RESEND_BLOCK_UNTIL] || this.#current[ATTEMPTS] <= 0 || Date.now() < this.#current[RESEND_BLOCK_UNTIL]) {
       return false
     }
 
@@ -346,7 +345,6 @@ export async function createOtpAndSend(c, credential) {
 export async function getOtpInstance(c, keyId, encryptedTokens) {
 
   if (!encryptedTokens || !keyId || !isRandomIdValid(keyId)) {
-    deleteOtpCookies(c)
     return
   }
 
@@ -362,21 +360,18 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
   }
 
   if (!tokens) {
-    deleteOtpCookies(c)
     return
   }
 
   const otpStringTokens = tokens.split(ARRAY_SEPARATOR)
 
   if (otpStringTokens.length < 2) {
-    deleteOtpData(c)
     return
   }
 
   const lastValidAccess = otpStringTokens.shift()
 
   if (!lastValidAccess) {
-    deleteOtpData(c)
     return
   }
 
@@ -403,12 +398,10 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
   }
 
   if (!otpTokens.length) {
-    deleteOtpData(c)
     return
   }
 
   if (isLessThanDelay(+lastValidAccess, dateNow)) {
-    deleteOtpData(c)
     return false
   }
   
