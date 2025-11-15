@@ -28,6 +28,8 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
   switch (otpTokenList) {
     case undefined:
       return c.json(await createOtpAndSend(c, c.req.valid("json")))
+    case null:
+      return c.json(ERR_OTP_BLOCKED, 400)
     case false:
       return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }

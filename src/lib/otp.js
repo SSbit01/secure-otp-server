@@ -358,7 +358,7 @@ export async function createOtpAndSend(c, credential) {
  * @param {Context} c
  * @param {string} keyId
  * @param {string} encryptedTokens
- * @returns {Promise<Readonly<OtpTokenList>|undefined|false>}
+ * @returns {Promise<false|undefined|null|Readonly<OtpTokenList>>}
  */
 export async function getOtpInstance(c, keyId, encryptedTokens) {
 
@@ -400,7 +400,7 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
   const dateNow = Date.now()
 
   if (dateNow >= currentOtpToken[EXPIRES]) {
-    return
+    return null
   }
 
   currentOtpToken[ATTEMPTS] = +currentOtpToken[ATTEMPTS]
