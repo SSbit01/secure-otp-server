@@ -182,6 +182,9 @@ class OtpTokenList {
 
     const key = await createSymmetricKey()
 
+    /**
+     * Add `lastAccess` at the beginning
+     */
     tokens.unshift(Date.now())
     
     const result = await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
@@ -378,18 +381,33 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
     return
   }
 
-  const lastValidAccess = otpStringTokens.shift()
+  const lastAccess = otpStringTokens.shift()
 
-  if (!lastValidAccess) {
+  if (!lastAccess) {
     return
   }
 
   /**
-   * @type {OtpToken[]}
+   * @type {(OtpToken|undefined)}
    */
-  const otpTokens = []
+  // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
+  const currentOtpToken = otpStringTokens.shift()?.split(OTP_SEPARATOR)
+
+  if (!currentOtpToken) {
+    return
+  }
 
   const dateNow = Date.now()
+
+  if (dateNow >= currentOtpToken[EXPIRES]) {
+    return
+  }
+
+  currentOtpToken[ATTEMPTS] = +currentOtpToken[ATTEMPTS]
+  currentOtpToken[RESEND_BLOCK_UNTIL] = currentOtpToken[RESEND_BLOCK_UNTIL] ? +currentOtpToken[RESEND_BLOCK_UNTIL] : undefined
+  currentOtpToken[OTP_BLOCK_UNTIL] = currentOtpToken[OTP_BLOCK_UNTIL] ? +currentOtpToken[OTP_BLOCK_UNTIL] : undefined
+
+  const otpTokens = [currentOtpToken]
 
   for (const otpStringToken of otpStringTokens) {
     /**
@@ -406,11 +424,7 @@ export async function getOtpInstance(c, keyId, encryptedTokens) {
     }
   }
 
-  if (!otpTokens.length) {
-    return
-  }
-
-  if (isLessThanDelay(+lastValidAccess, dateNow)) {
+  if (isLessThanDelay(+lastAccess, dateNow)) {
     return false
   }
   
