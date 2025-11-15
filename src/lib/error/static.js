@@ -25,7 +25,7 @@ export const ERR_CREDENTIAL_INVALID = {
 
 export const ERR_OTP_BLOCKED = {
   error: OTP_BLOCKED,
-  message: "Incorrect use of the systems, token invalidated."
+  message: "The OTP token is blocked."
 }
 
 export const ERR_OTP_INCORRECT = {

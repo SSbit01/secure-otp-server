@@ -181,6 +181,8 @@ class OtpTokenList {
     }
 
     const key = await createSymmetricKey()
+
+    tokens.unshift(Date.now())
     
     const result = await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
   
