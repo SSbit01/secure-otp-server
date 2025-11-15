@@ -1,7 +1,6 @@
 import { setCookie, deleteCookie } from "hono/cookie"
 
 import createRandomId, { isRandomIdValid } from "@/lib/crypto/id"
-import { decryptOtp } from "@/lib/crypto/otp"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
