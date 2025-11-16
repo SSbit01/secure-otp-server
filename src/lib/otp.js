@@ -1,12 +1,12 @@
 import { setCookie, deleteCookie } from "hono/cookie"
 
-import createRandomId, { isRandomIdValid } from "@/lib/crypto/id"
+import { createRandomId } from "@/lib/crypto/id"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
-import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
+import { getReducedTimePrecision } from "@/lib/time"
 
-import { doesEncryptionKeyExist, getEncryptionKey, storeEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
+import { doesEncryptionKeyExist, storeEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
 
 import {
   ALLOW_ONLY_ONE_RESENDING,
@@ -20,6 +20,7 @@ import {
 } from "@/custom/otp"
 
 import sendOtp from "@/custom/send"
+
 
 
 /**
@@ -47,13 +48,13 @@ const EXPIRES = 3
 const RESEND_BLOCK = 4
 const OTP_BLOCK = 5
 
-
 const ARRAY_SEPARATOR = ","
 const OTP_SEPARATOR = "|"
 
 const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
 const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
 const RESEND_BLOCK_MS = RESEND_BLOCK_SECONDS * 1000
+
 
 
 /**
@@ -76,13 +77,19 @@ function decodeCredential(encodedCredential) {
 }
 
 
+
+export const COOKIE_KEY_ID = "e"
+export const COOKIE_ENCRYPTED_TOKENS = "t"
+
+
+
 /**
  * @function decodeOtpTokenString
  * @param {string} otpTokenString 
  * @param {number} [dateNow]
  * @returns {(OtpToken|undefined)}
  */
-function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
+export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
 
   /**
    * @type {OtpToken}
@@ -102,17 +109,11 @@ function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
 }
 
 
-
-export const COOKIE_KEY_ID = "e"
-export const COOKIE_ENCRYPTED_TOKENS = "t"
-
-
-
 /**
  * @function deleteOtpCookies
  * @param {Context} c
  */
-function deleteOtpCookies(c) {
+export function deleteOtpCookies(c) {
   deleteCookie(c, COOKIE_ENCRYPTED_TOKENS)
   return deleteCookie(c, COOKIE_KEY_ID)
 }
@@ -136,8 +137,41 @@ export function deleteOtpData(c) {
 }
 
 
+/**
+ * @function getOtpTokenStrings
+ * @param {Context} c
+ * @param {CryptoKey} key
+ * @param {string} encryptedTokens
+ * @returns {Promise<string[]|undefined>}
+ */
+export async function decryptOtpTokenStrings(c, key, encryptedTokens) {
 
-class OtpTokenList {
+  try {
+    return (await decryptSymmetricallyText(
+      key,
+      encryptedTokens,
+      textDecoder
+    ))?.split(ARRAY_SEPARATOR)
+  } catch {
+    deleteOtpData(c)
+  }
+
+}
+
+
+/**
+ * @async
+ * @function createOtpAndSend
+ * @param {Context} c
+ * @param {string} credential
+ */
+export async function createOtpAndSend(c, credential) {
+  return await new OtpTokenList(c).set(credential)
+}
+
+
+
+export class OtpTokenList {
 
   #context
   #tokens
@@ -204,7 +238,7 @@ class OtpTokenList {
 
     if (!tokens.length) {
       deleteOtpData(this.#context)
-      return false
+      return
     }
 
     const key = await createSymmetricKey()
@@ -287,7 +321,7 @@ class OtpTokenList {
   async resend() {
 
     if (!this.#current[RESEND_BLOCK] || this.#current[ATTEMPTS] <= 0 || this.#createdAt < this.#current[RESEND_BLOCK]) {
-      return false
+      return
     }
 
     this.#current[OTP] = createOtp()
@@ -317,7 +351,7 @@ class OtpTokenList {
 
   /**
    * @param {string} credential
-   * @returns {Promise<false|OtpTokenTime>}
+   * @returns {Promise<OtpTokenTime|undefined>}
    */
   async set(credential) {
 
@@ -341,7 +375,7 @@ class OtpTokenList {
     }
 
     if (this.#tokens.length >= MAX_OTP_CREDENTIALS) {
-      return false
+      return
     }
 
     const otp = createOtp()
@@ -363,94 +397,5 @@ class OtpTokenList {
     }
 
   }
-
-}
-
-
-
-/**
- * @async
- * @function createOtpAndSend
- * @param {Context} c
- * @param {string} credential
- */
-export async function createOtpAndSend(c, credential) {
-  return await new OtpTokenList(c).set(credential)
-}
-
-
-/**
- * @async
- * @function getOtpInstance
- * @param {Context} c
- * @param {string} keyId
- * @param {string} encryptedTokens
- * @returns {Promise<false|undefined|null|Readonly<OtpTokenList>>}
- */
-export async function getOtpInstance(c, keyId, encryptedTokens) {
-
-  if (!encryptedTokens || !keyId || !isRandomIdValid(keyId)) {
-    return
-  }
-
-  /**
-   * @type {string[]}
-   */
-  let otpTokenStrings
-
-  try {
-    const key = await getEncryptionKey(c, keyId)
-    if (!key) {
-      deleteOtpCookies(c)
-      return
-    }
-    otpTokenStrings = (await decryptSymmetricallyText(
-      key,
-      encryptedTokens,
-      textDecoder
-    ))?.split(ARRAY_SEPARATOR)
-  } catch {
-    deleteOtpData(c)
-    return
-  }
-
-  if (otpTokenStrings.length < 2) {
-    return
-  }
-
-  const lastAccess = otpTokenStrings.shift()
-
-  if (!lastAccess) {
-    return
-  }
-
-  const currentOtpTokenString = otpTokenStrings.shift()
-
-  if (!currentOtpTokenString) {
-    return
-  }
-
-  const dateNow = Date.now()
-
-  const currentOtpToken = decodeOtpTokenString(currentOtpTokenString, dateNow)
-
-  if (!currentOtpToken) {
-    return null
-  }
-
-  const otpTokens = [currentOtpToken]
-
-  for (const otpTokenString of otpTokenStrings) {
-    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
-    if (otpToken) {
-      otpTokens.push(otpToken)
-    }
-  }
-
-  if (isLessThanDelay(+lastAccess, dateNow)) {
-    return false
-  }
-  
-  return Object.freeze(new OtpTokenList(c, otpTokens, dateNow))
 
 }

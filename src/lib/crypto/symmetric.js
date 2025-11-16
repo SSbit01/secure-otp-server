@@ -1,11 +1,14 @@
 import base64ToBytes from "@/lib/base64"
 
 
+
 const encryptionAlgorithm = "AES-GCM"
+
 const keyParams = {
   name: encryptionAlgorithm,
   length: 256
 }
+
 const ivBytesLength = 12
 
 

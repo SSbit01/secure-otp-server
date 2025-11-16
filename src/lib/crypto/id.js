@@ -32,6 +32,6 @@ export function isRandomIdValid(id) {
  * @function 
  * @returns {string} A 24-character Base64-encoded random ID.
  */
-export default function createRandomId() {
+export function createRandomId() {
   return base64ToBytes.encode(crypto.getRandomValues(new Uint8Array(LENGTH_IN_BYTES)))
 }

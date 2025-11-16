@@ -11,9 +11,14 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { COOKIE_KEY_ID, COOKIE_ENCRYPTED_TOKENS, deleteOtpData, createOtpAndSend, getOtpInstance } from "@/lib/otp"
+import {
+  COOKIE_ENCRYPTED_TOKENS,
+  COOKIE_KEY_ID,
+  createOtpAndSend,
+  deleteOtpData
+} from "@/lib/otp"
 
-import otpCookieValidator from "@/lib/validators/cookie"
+import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
 
 import credentialValidator from "@/custom/credential"
@@ -50,7 +55,7 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
 
   const time = await c.req.valid("cookie").resend()
 
-  if (time === false) {
+  if (!time) {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
