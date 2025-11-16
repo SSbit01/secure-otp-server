@@ -74,7 +74,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     }
   }
   
-  return Object.freeze(new OtpTokenList(c, otpTokens, dateNow))
+  return Object.freeze(new OtpTokenList(c, otpTokens, key, dateNow))
 
 })
 

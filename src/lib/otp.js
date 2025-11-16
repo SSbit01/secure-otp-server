@@ -175,18 +175,21 @@ export class OtpTokenList {
 
   #context
   #tokens
+  #key
   #createdAt
 
 
   /**
    * @param {Context} c
-   * @param {OtpToken[]} tokens
-   * @param {number} createdAt
+   * @param {OtpToken[]} [tokens]
+   * @param {CryptoKey} [key]
+   * @param {number} [createdAt]
    */
-  constructor(c, tokens = [], createdAt = Date.now()) {
+  constructor(c, tokens = [], key, createdAt = Date.now()) {
 
     this.#context = c
-    this.#tokens = tokens
+    this.#tokens = tokens.length > MAX_OTP_CREDENTIALS ? tokens.slice(0, MAX_OTP_CREDENTIALS) : tokens
+    this.#key = key
     this.#createdAt = createdAt
 
   }
@@ -221,7 +224,13 @@ export class OtpTokenList {
   }
 
 
-  async #save(dateNow = this.#createdAt) {
+  /**
+   * @async
+   * @param {number} [dateNow]
+   * @param {CryptoKey} [key]
+   * @returns {Promise<number|undefined>}
+   */
+  async #save(dateNow = this.#createdAt, key) {
 
     const tokens = []
 
@@ -241,25 +250,6 @@ export class OtpTokenList {
       return
     }
 
-    const key = await createSymmetricKey()
-
-    /**
-     * Add `lastAccess` at the beginning
-     */
-    tokens.unshift(Date.now())
-    
-    const result = await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
-  
-    let keyId
-    
-    do {
-      keyId = createRandomId()
-    } while (await doesEncryptionKeyExist(this.#context, keyId))
-  
-    await storeEncryptionKey(this.#context, keyId, key, expires)
-
-    deleteOtpData(this.#context)
-
     const lessPreciseExpiresDate = getReducedTimePrecision(expires)
 
     /**
@@ -274,8 +264,28 @@ export class OtpTokenList {
       partitioned: false
     }
 
-    setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
-    setCookie(this.#context, COOKIE_ENCRYPTED_TOKENS, result, cookieOptions)
+    if (!key) {
+      key = await createSymmetricKey()
+      let keyId
+      do {
+        keyId = createRandomId()
+      } while (await doesEncryptionKeyExist(this.#context, keyId))
+      await storeEncryptionKey(this.#context, keyId, key, expires)
+      deleteOtpData(this.#context)
+      setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
+    }
+
+    /**
+     * Add `lastAccess` at the beginning
+     */
+    tokens.unshift(Date.now())
+    
+    setCookie(
+      this.#context,
+      COOKIE_ENCRYPTED_TOKENS,
+      await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder),
+      cookieOptions
+    )
 
     return lessPreciseExpiresDate
 
@@ -369,7 +379,10 @@ export class OtpTokenList {
       if (encodedCredential === otpToken[CREDENTIAL]) {
         this.#tokens[i] = this.#tokens[0]
         this.#tokens[0] = otpToken
-        await this.#save()
+        /**
+         * Don't create a new key, reuse the existing one, the expiration date doesn't need to change.
+         */
+        await this.#save(Date.now(), this.#key)
         return this.#time
       }
     }
