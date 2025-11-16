@@ -340,21 +340,17 @@ export class OtpTokenList {
 
     const dateNow = Date.now()
 
-    /**
-     * @type {OtpTokenTime}
-     */
-    const time = { expires: dateNow + MAX_DURATION_MS }
+    this.#current[EXPIRES] = dateNow + MAX_DURATION_MS
 
     if (ALLOW_ONLY_ONE_RESENDING) {
       delete this.#current[RESEND_BLOCK]
     } else {
       this.#current[RESEND_BLOCK] = dateNow + RESEND_BLOCK_MS
-      time.resendBlock = this.#current[RESEND_BLOCK]
     }
 
     await this.#save(dateNow)
 
-    return time
+    return this.#time
 
   }
 
