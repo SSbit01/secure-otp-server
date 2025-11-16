@@ -173,6 +173,8 @@ export async function createOtpAndSend(c, credential) {
 
 export class OtpTokenList {
 
+  #verified = false
+
   #context
   #tokens
   #key
@@ -224,6 +226,13 @@ export class OtpTokenList {
   }
 
 
+  get credential() {
+    if (this.#verified) {
+      return decodeCredential(this.#current[CREDENTIAL])
+    }
+  }
+
+
   /**
    * @async
    * @param {number} [dateNow]
@@ -238,8 +247,14 @@ export class OtpTokenList {
 
     for (const otpToken of this.#tokens) {
       if (dateNow < otpToken[EXPIRES]) {
-        if (otpToken[EXPIRES] > expires) {
+        if (expires < otpToken[EXPIRES]) {
           expires = otpToken[EXPIRES]
+        }
+        if (otpToken[RESEND_BLOCK] && dateNow >= otpToken[RESEND_BLOCK]) {
+          delete otpToken[RESEND_BLOCK]
+        }
+        if (otpToken[OTP_BLOCK] && dateNow >= otpToken[OTP_BLOCK]) {
+          delete otpToken[OTP_BLOCK]
         }
         tokens.push(otpToken.join(OTP_SEPARATOR))
       }
@@ -294,7 +309,7 @@ export class OtpTokenList {
 
   /**
    * @param {string} otp
-   * @returns {Promise<false|string|number|undefined>}
+   * @returns {Promise<boolean>}
    */
   async check(otp) {
 
@@ -303,7 +318,7 @@ export class OtpTokenList {
     }
 
     if (this.#current[OTP] === otp) {
-      return decodeCredential(this.#current[CREDENTIAL])
+      return this.#verified = true
     }
 
     this.#current[ATTEMPTS]--
@@ -323,7 +338,7 @@ export class OtpTokenList {
 
     await this.#save()
 
-    return this.#current[OTP_BLOCK]
+    return this.#current[OTP_BLOCK] || 0
 
   }
 
