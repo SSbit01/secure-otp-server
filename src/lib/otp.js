@@ -1,7 +1,9 @@
 import { setCookie, deleteCookie } from "hono/cookie"
+import { HTTPException } from "hono/http-exception"
 
 import { createRandomId } from "@/lib/crypto/id"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
+import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
@@ -211,11 +213,6 @@ export async function createOtpAndSend(c, credential) {
 
 export class OtpTokenList {
 
-  /**
-   * @type {(string|undefined)}
-   */
-  #credential
-
   #context
   #tokens
   #key
@@ -273,11 +270,6 @@ export class OtpTokenList {
   }
 
 
-  get credential() {
-    return this.#credential
-  }
-
-
   get otpBlock() {
     return this.#current[OTP_BLOCK]
   }
@@ -287,7 +279,7 @@ export class OtpTokenList {
    * @async
    * @param {number} [dateNow]
    * @param {CryptoKey} [key]
-   * @returns {Promise<number|undefined>}
+   * @returns {Promise<number>}
    */
   async #save(dateNow = this.#createdAt, key) {
 
@@ -311,7 +303,9 @@ export class OtpTokenList {
 
     if (!tokens.length) {
       deleteOtpData(this.#context)
-      return
+      throw new HTTPException(400, {
+        res: Response.json(ERR_OTP_INVALID_COOKIE)
+      })
     }
 
     const lessPreciseExpiresDate = getReducedTimePrecision(expires)
@@ -357,17 +351,16 @@ export class OtpTokenList {
 
   /**
    * @param {string} otp
-   * @returns {Promise<boolean>}
+   * @returns {Promise<string|undefined>}
    */
   async check(otp) {
 
     if (this.blocked || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
-      return false
+      return
     }
 
     if (this.#current[OTP] === otp) {
-      this.#credential ??= decodeCredential(this.#current[CREDENTIAL])
-      return true
+      return decodeCredential(this.#current[CREDENTIAL])
     }
 
     /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
@@ -385,8 +378,6 @@ export class OtpTokenList {
     }
 
     await this.#save()
-
-    return false
 
   }
 

@@ -56,13 +56,10 @@ app.use(bodyLimit({
 /**
  * Error handler.
  */
-app.onError(async(err, c) => {
+app.onError(async(error, c) => {
   
-  if (err instanceof HTTPException) {
-    return c.json({
-      error: GENERIC,
-      message: err.message
-    }, 400)
+  if (error instanceof HTTPException) {
+    return error.getResponse()
   }
 
   return c.json(ERR_SERVER, 500)
