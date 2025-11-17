@@ -331,7 +331,7 @@ export class OtpTokenList {
     }
 
     /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
-    this.#current[ATTEMPTS] -= 1
+    this.#current[ATTEMPTS]--
   
     if (this.blocked) {
       delete this.#current[ATTEMPTS]
