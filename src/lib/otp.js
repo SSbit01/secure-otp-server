@@ -80,8 +80,12 @@ function decodeCredential(encodedCredential) {
 }
 
 
-function r() {
-
+/**
+ * @function handleDeleteEncryptionKeyException
+ * @param {any} error
+ */
+function handleDeleteEncryptionKeyException(error) {
+  console.error("ERROR DURING KEY ID DELETION", error)
 }
 
 
@@ -171,7 +175,9 @@ export function deleteOtpData(c) {
     /**
      * Fire and forget
      */
-    deleteEncryptionKey(c, keyId)
+    queueMicrotask(() => {
+      deleteEncryptionKey(c, keyId).catch(handleDeleteEncryptionKeyException)
+    })
   }
 
 }
