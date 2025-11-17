@@ -35,6 +35,7 @@ import sendOtp from "@/custom/send"
 /**
  * @typedef {Object} OtpTokenTime
  * @property {OtpToken[EXPIRES]} expires
+ * @property {boolean} [blocked]
  * @property {OtpToken[RESEND_BLOCK]} [resendBlock]
  * @property {OtpToken[OTP_BLOCK]} [otpBlock]
  */
@@ -205,7 +206,7 @@ export class OtpTokenList {
   }
 
 
-  get #time() {
+  get #object() {
 
     /**
      * @type {OtpTokenTime}
@@ -214,16 +215,24 @@ export class OtpTokenList {
       expires: this.#current[EXPIRES]
     }
 
-    if (this.#current[RESEND_BLOCK]) {
-      time.resendBlock = this.#current[RESEND_BLOCK]
-    }
-
-    if (this.#current[OTP_BLOCK]) {
-      time.otpBlock = this.#current[OTP_BLOCK]
+    if (this.blocked) {
+      time.blocked = true
+    } else {
+      if (this.#current[RESEND_BLOCK]) {
+        time.resendBlock = this.#current[RESEND_BLOCK]
+      }
+      if (this.#current[OTP_BLOCK]) {
+        time.otpBlock = this.#current[OTP_BLOCK]
+      }
     }
 
     return time
 
+  }
+
+
+  get blocked() {
+    return !this.#current[ATTEMPTS] || this.#current[ATTEMPTS] <= 0
   }
 
 
@@ -312,7 +321,7 @@ export class OtpTokenList {
    */
   async check(otp) {
 
-    if (!this.#current[ATTEMPTS] || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
+    if (this.blocked || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
       return false
     }
 
@@ -321,10 +330,12 @@ export class OtpTokenList {
       return true
     }
 
-    this.#current[ATTEMPTS]--
+    /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
+    this.#current[ATTEMPTS] -= 1
   
-    if (this.#current[ATTEMPTS] <= 0) {
+    if (this.blocked) {
       delete this.#current[ATTEMPTS]
+      /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
     } else if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
       this.#current[OTP_BLOCK] = this.#createdAt + INVALID_BLOCK_MS
     } else {
@@ -340,7 +351,7 @@ export class OtpTokenList {
 
   async resend() {
 
-    if (!this.#current[RESEND_BLOCK] || !this.#current[ATTEMPTS] || this.#current[ATTEMPTS] <= 0 || this.#createdAt < this.#current[RESEND_BLOCK]) {
+    if (this.blocked || !this.#current[RESEND_BLOCK] || this.#createdAt < this.#current[RESEND_BLOCK]) {
       return
     }
 
@@ -360,7 +371,7 @@ export class OtpTokenList {
 
     await this.#save(dateNow)
 
-    return this.#time
+    return this.#object
 
   }
 
@@ -377,7 +388,7 @@ export class OtpTokenList {
      * Don't need to save and encrypt the token list again if the current token contains the `credential`.
      */
     if (encodedCredential === this.#current?.[CREDENTIAL]) {
-      return this.#time
+      return this.#object
     }
 
     for (let i = 1; i < this.#tokens.length; i++) {
@@ -389,7 +400,7 @@ export class OtpTokenList {
          * Don't create a new key, reuse the existing one, the expiration date doesn't need to change.
          */
         await this.#save(Date.now(), this.#key)
-        return this.#time
+        return this.#object
       }
     }
 
