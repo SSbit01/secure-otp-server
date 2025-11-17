@@ -173,7 +173,10 @@ export async function createOtpAndSend(c, credential) {
 
 export class OtpTokenList {
 
-  #verified = false
+  /**
+   * @type {(string|undefined)}
+   */
+  #credential
 
   #context
   #tokens
@@ -227,9 +230,7 @@ export class OtpTokenList {
 
 
   get credential() {
-    if (this.#verified) {
-      return decodeCredential(this.#current[CREDENTIAL])
-    }
+    return this.#credential
   }
 
 
@@ -318,7 +319,10 @@ export class OtpTokenList {
     }
 
     if (this.#current[OTP] === otp) {
-      return this.#verified = true
+      if (!this.#credential) {
+        this.#credential = decodeCredential(this.#current[CREDENTIAL])
+      }
+      return true
     }
 
     this.#current[ATTEMPTS]--
