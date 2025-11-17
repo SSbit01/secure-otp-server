@@ -68,41 +68,30 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
   const otpTokenList = c.req.valid("cookie")
 
-  if (await otpTokenList.check(c.req.valid("form"))) {
+  const credential = await otpTokenList.check(c.req.valid("form"))
+
+  if (credential) {
     /**
      * VERIFIED
      * In case of error, don't delete OTP data
      */
-    /** @ts-expect-error When `otpTokenList.check` returns true, the `credential` property is set.  */
-    const res = await finalAction(c, otpTokenList.credential)
+    const res = await finalAction(c, credential)
     deleteOtpData(c)
     return res
   }
 
-  
-
-  switch (result) {
-    case false:
-      return c.json(ERR_OTP_BLOCKED, 400)
-    case undefined:
-      return c.json(ERR_OTP_INCORRECT, 400)
+  if (otpTokenList.blocked) {
+    return c.json(ERR_OTP_BLOCKED, 400)
   }
 
-  if (typeof result === "number") {
+  if (otpTokenList.otpBlock) {
     return c.json({
       ...ERR_OTP_INCORRECT,
-      otpBlocked: result
+      otpBlock: otpTokenList.otpBlock
     }, 400)
   }
 
-  /**
-   * In case of error, don't delete OTP data
-   */
-  const res = await finalAction(c, result)
-
-  deleteOtpData(c)
-  
-  return res
+  return c.json(ERR_OTP_INCORRECT, 400)
 
 })
 
