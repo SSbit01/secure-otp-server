@@ -6,7 +6,7 @@ import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
 
-import { doesEncryptionKeyExist, storeEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
+import { storeEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
 
 import {
   ALLOW_ONLY_ONE_RESENDING,
@@ -292,8 +292,7 @@ export class OtpTokenList {
       let keyId
       do {
         keyId = createRandomId()
-      } while (await doesEncryptionKeyExist(this.#context, keyId))
-      await storeEncryptionKey(this.#context, keyId, key, expires)
+      } while (!(await storeEncryptionKey(this.#context, keyId, key, expires)))
       deleteOtpData(this.#context)
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
     }

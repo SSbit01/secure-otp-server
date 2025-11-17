@@ -19,25 +19,10 @@ import type { Context } from "hono"
 const keyStorage = new Map<string, [key: CryptoKey, expires: number]>()
 
 
-
-/**
- * Checks if an encryption key with the given ID exists.
- * 
- * @async
- * @function doesEncryptionKeyExist
- * @param {Context} c - Hono context.
- * @param {string} keyId - The ID of the encryption key to check.
- * @return {Promise<boolean>} A promise that resolves to `true` if the key exists, otherwise `false`.
- */
-export async function doesEncryptionKeyExist(c: Context, keyId: string) {
-
-  return keyStorage.has(keyId)
-
-}
-
-
 /**
  * Stores an encryption key with the given ID and expiration time.
+ * 
+ * If the key could not be saved due to a technical error, an error should be thrown.
  * 
  * @async
  * @function storeEncryptionKey
@@ -45,6 +30,7 @@ export async function doesEncryptionKeyExist(c: Context, keyId: string) {
  * @param {string} keyId - The ID of the encryption key to store. Created using `/src/lib/crypto/id.js`.
  * @param {CryptoKey} key - The encryption key to store.
  * @param {number} expires - The expiration time in milliseconds since the epoch.
+ * @return {Promise<boolean>} A promise that resolves to `true` if the key was stored, otherwise `false`.
  */
 export async function storeEncryptionKey(c: Context, keyId: string, key: CryptoKey, expires: number) {
 
@@ -59,6 +45,8 @@ export async function storeEncryptionKey(c: Context, keyId: string, key: CryptoK
   }
 
   keyStorage.set(keyId, [key, expires])
+
+  return true
 
 }
 
