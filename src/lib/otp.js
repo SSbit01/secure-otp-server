@@ -175,9 +175,7 @@ export function deleteOtpData(c) {
     /**
      * Fire and forget
      */
-    queueMicrotask(() => {
-      deleteEncryptionKey(c, keyId).catch(handleDeleteEncryptionKeyException)
-    })
+    deleteEncryptionKey(c, keyId).catch(handleDeleteEncryptionKeyException)
   }
 
 }
