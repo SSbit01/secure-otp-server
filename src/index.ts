@@ -66,10 +66,20 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
 
 app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
 
-  const otp = c.req.valid("form")
   const otpTokenList = c.req.valid("cookie")
 
-  const result = await otpTokenList.check(otp)
+  if (await otpTokenList.check(c.req.valid("form"))) {
+    /**
+     * VERIFIED
+     * In case of error, don't delete OTP data
+     */
+    /** @ts-expect-error When `otpTokenList.check` returns true, the `credential` property is set.  */
+    const res = await finalAction(c, otpTokenList.credential)
+    deleteOtpData(c)
+    return res
+  }
+
+  
 
   switch (result) {
     case false:
@@ -81,7 +91,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   if (typeof result === "number") {
     return c.json({
       ...ERR_OTP_INCORRECT,
-      otpBlockedUntil: result
+      otpBlocked: result
     }, 400)
   }
 

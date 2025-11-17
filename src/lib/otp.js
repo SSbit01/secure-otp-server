@@ -78,6 +78,11 @@ function decodeCredential(encodedCredential) {
 }
 
 
+function r() {
+
+}
+
+
 
 export const COOKIE_KEY_ID = "e"
 export const COOKIE_ENCRYPTED_TOKENS = "t"
@@ -93,19 +98,51 @@ export const COOKIE_ENCRYPTED_TOKENS = "t"
 export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
 
   /**
-   * @type {OtpToken}
+   * @type {any[]}
    */
-  // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
   const otpToken = otpTokenString.split(OTP_SEPARATOR)
 
   otpToken[EXPIRES] = +otpToken[EXPIRES]
 
-  if (dateNow < otpToken[EXPIRES]) {
-    otpToken[ATTEMPTS] = otpToken[ATTEMPTS] ? +otpToken[ATTEMPTS] : undefined
-    otpToken[RESEND_BLOCK] = otpToken[RESEND_BLOCK] ? +otpToken[RESEND_BLOCK] : undefined
-    otpToken[OTP_BLOCK] = otpToken[OTP_BLOCK] ? +otpToken[OTP_BLOCK] : undefined
-    return otpToken
+  if (dateNow >= otpToken[EXPIRES]) {
+    return
   }
+
+  if (otpToken[ATTEMPTS]) {
+    otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
+    if (otpToken[RESEND_BLOCK]) {
+      otpToken[RESEND_BLOCK] = +otpToken[RESEND_BLOCK]
+      if (otpToken[OTP_BLOCK]) {
+        const otpBlock = +otpToken[OTP_BLOCK]
+        if (dateNow < otpBlock) {
+          otpToken[OTP_BLOCK] = otpBlock
+        } else {
+          /** Trim the array to save space. */
+          otpToken.length = OTP_BLOCK
+        }
+      } else {
+        /** Trim the array to save space. */
+        otpToken.length = OTP_BLOCK
+      }
+    } else if (otpToken[RESEND_BLOCK] === "" && otpToken[OTP_BLOCK]) {
+      const otpBlock = +otpToken[OTP_BLOCK]
+      if (dateNow < otpBlock) {
+        otpToken[OTP_BLOCK] = otpBlock
+      } else {
+        /** Trim the array to save space. */
+        otpToken.length = RESEND_BLOCK
+      }
+    } else {
+      /** Trim the array to save space. */
+      otpToken.length = RESEND_BLOCK
+    }
+  } else {
+    /** Trim the array to save space. */
+    otpToken.length = ATTEMPTS
+  }
+
+  // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
+  return otpToken
 
 }
 
@@ -241,6 +278,11 @@ export class OtpTokenList {
   }
 
 
+  get otpBlock() {
+    return this.#current[OTP_BLOCK]
+  }
+
+
   /**
    * @async
    * @param {number} [dateNow]
@@ -258,14 +300,13 @@ export class OtpTokenList {
         if (expires < otpToken[EXPIRES]) {
           expires = otpToken[EXPIRES]
         }
-        if (otpToken[RESEND_BLOCK] && dateNow >= otpToken[RESEND_BLOCK]) {
-          delete otpToken[RESEND_BLOCK]
-        }
-        if (otpToken[OTP_BLOCK] && dateNow >= otpToken[OTP_BLOCK]) {
-          delete otpToken[OTP_BLOCK]
+        if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || dateNow >= otpToken[OTP_BLOCK])) {
+          /** Trim the array to save space. */
+          otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
         }
         tokens.push(otpToken.join(OTP_SEPARATOR))
       }
+
     }
 
     if (!tokens.length) {
@@ -292,7 +333,7 @@ export class OtpTokenList {
       let keyId
       do {
         keyId = createRandomId()
-      } while (!(await storeEncryptionKey(this.#context, keyId, key, expires)))
+      } while (!await storeEncryptionKey(this.#context, keyId, key, expires))
       deleteOtpData(this.#context)
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
     }
@@ -333,12 +374,14 @@ export class OtpTokenList {
     this.#current[ATTEMPTS]--
   
     if (this.blocked) {
-      delete this.#current[ATTEMPTS]
+      /** Trim the array to save space. */
+      this.#current.length = ATTEMPTS
       /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
     } else if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
       this.#current[OTP_BLOCK] = this.#createdAt + INVALID_BLOCK_MS
     } else {
-      delete this.#current[OTP_BLOCK]
+      /** Trim the array to save space. */
+      this.#current.length = OTP_BLOCK
     }
 
     await this.#save()
