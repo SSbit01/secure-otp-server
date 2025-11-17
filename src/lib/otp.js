@@ -29,22 +29,22 @@ import sendOtp from "@/custom/send"
 
 
 /**
- * @typedef {[credential:string,otp:string,attempts:number,expires:number,resendBlock?:number,otpBlock?:number]} OtpToken
+ * @typedef {[credential:string,otp:string,expires:number,attempts?:number,resendBlock?:number,otpBlock?:number]} OtpToken
  */
 
 /**
  * @typedef {Object} OtpTokenTime
  * @property {OtpToken[EXPIRES]} expires
  * @property {OtpToken[RESEND_BLOCK]} [resendBlock]
- * @property {(OtpToken[OTP_BLOCK]|boolean)} [otpBlock]
+ * @property {OtpToken[OTP_BLOCK]} [otpBlock]
  */
 
 
 
 const CREDENTIAL = 0
 const OTP = 1
-const ATTEMPTS = 2
-const EXPIRES = 3
+const EXPIRES = 2
+const ATTEMPTS = 3
 const RESEND_BLOCK = 4
 const OTP_BLOCK = 5
 
@@ -100,7 +100,7 @@ export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
   otpToken[EXPIRES] = +otpToken[EXPIRES]
 
   if (dateNow < otpToken[EXPIRES]) {
-    otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
+    otpToken[ATTEMPTS] = otpToken[ATTEMPTS] ? +otpToken[ATTEMPTS] : undefined
     otpToken[RESEND_BLOCK] = otpToken[RESEND_BLOCK] ? +otpToken[RESEND_BLOCK] : undefined
     otpToken[OTP_BLOCK] = otpToken[OTP_BLOCK] ? +otpToken[OTP_BLOCK] : undefined
     return otpToken
@@ -220,8 +220,6 @@ export class OtpTokenList {
 
     if (this.#current[OTP_BLOCK]) {
       time.otpBlock = this.#current[OTP_BLOCK]
-    } else if (!this.#current[ATTEMPTS]) {
-      time.otpBlock = true
     }
 
     return time
@@ -314,27 +312,20 @@ export class OtpTokenList {
    */
   async check(otp) {
 
-    if (this.#current[OTP_BLOCK] && this.#current[OTP_BLOCK] > this.#createdAt) {
+    if (!this.#current[ATTEMPTS] || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
       return false
     }
 
     if (this.#current[OTP] === otp) {
-      if (!this.#credential) {
-        this.#credential = decodeCredential(this.#current[CREDENTIAL])
-      }
+      this.#credential ??= decodeCredential(this.#current[CREDENTIAL])
       return true
     }
 
     this.#current[ATTEMPTS]--
   
-    /**
-     * Is `attempts` 0?
-     */
     if (this.#current[ATTEMPTS] <= 0) {
-      return false
-    }
-
-    if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
+      delete this.#current[ATTEMPTS]
+    } else if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
       this.#current[OTP_BLOCK] = this.#createdAt + INVALID_BLOCK_MS
     } else {
       delete this.#current[OTP_BLOCK]
@@ -342,14 +333,14 @@ export class OtpTokenList {
 
     await this.#save()
 
-    return this.#current[OTP_BLOCK] || 0
+    return false
 
   }
 
 
   async resend() {
 
-    if (!this.#current[RESEND_BLOCK] || this.#current[ATTEMPTS] <= 0 || this.#createdAt < this.#current[RESEND_BLOCK]) {
+    if (!this.#current[RESEND_BLOCK] || !this.#current[ATTEMPTS] || this.#current[ATTEMPTS] <= 0 || this.#createdAt < this.#current[RESEND_BLOCK]) {
       return
     }
 
