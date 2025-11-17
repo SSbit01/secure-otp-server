@@ -116,35 +116,22 @@ export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
 
   if (otpToken[ATTEMPTS]) {
     otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
-    if (otpToken[RESEND_BLOCK]) {
-      otpToken[RESEND_BLOCK] = +otpToken[RESEND_BLOCK]
-      if (otpToken[OTP_BLOCK]) {
-        const otpBlock = +otpToken[OTP_BLOCK]
-        if (dateNow < otpBlock) {
-          otpToken[OTP_BLOCK] = otpBlock
-        } else {
-          /** Trim the array to save space. */
-          otpToken.length = OTP_BLOCK
-        }
-      } else {
-        /** Trim the array to save space. */
-        otpToken.length = OTP_BLOCK
-      }
-    } else if (otpToken[RESEND_BLOCK] === "" && otpToken[OTP_BLOCK]) {
+    if (otpToken[OTP_BLOCK]) {
       const otpBlock = +otpToken[OTP_BLOCK]
       if (dateNow < otpBlock) {
         otpToken[OTP_BLOCK] = otpBlock
+        otpToken[RESEND_BLOCK] &&= +otpToken[RESEND_BLOCK]
+      } else if (otpToken[RESEND_BLOCK]) {
+        otpToken[RESEND_BLOCK] = +otpToken[RESEND_BLOCK]
+        /** Trim the array to save space. */
+        otpToken.length = OTP_BLOCK
       } else {
         /** Trim the array to save space. */
         otpToken.length = RESEND_BLOCK
       }
     } else {
-      /** Trim the array to save space. */
-      otpToken.length = RESEND_BLOCK
+      otpToken[RESEND_BLOCK] &&= +otpToken[RESEND_BLOCK]
     }
-  } else {
-    /** Trim the array to save space. */
-    otpToken.length = ATTEMPTS
   }
 
   // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
