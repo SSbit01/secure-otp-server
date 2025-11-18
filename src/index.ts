@@ -14,39 +14,72 @@ import {
 import {
   COOKIE_ENCRYPTED_TOKENS,
   COOKIE_KEY_ID,
-  createOtpAndSend,
-  deleteOtpData
+  areOtpParametersValid,
+  decodeOtpTokenString,
+  decryptOtpTokenStrings,
+  deleteOtpData,
+  OtpTokenList
 } from "@/lib/otp"
+
+import { isLessThanDelay } from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
 
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
+import { deleteEncryptionKey, getEncryptionKey } from "@/custom/kms"
 
 
 app.post("/api/otp/create", credentialValidator, async(c) => {
 
   const { [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_TOKENS]: encryptedTokens } = getCookie(c)
   
-  const otpTokenList = await getOtpInstance(c, keyId, encryptedTokens)
-
-  switch (otpTokenList) {
-    case undefined:
-      return c.json(await createOtpAndSend(c, c.req.valid("json")))
-    case null:
-      return c.json(ERR_OTP_EXPIRED, 400)
-    case false:
-      return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  if (!areOtpParametersValid(keyId, encryptedTokens)) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const time = await otpTokenList.set(c.req.valid("json"))
+  const key = await getEncryptionKey(c, keyId)
 
-  if (time === false) {
+  if (!key) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
+  const otpTokenStrings = await decryptOtpTokenStrings(c, key, encryptedTokens)
+
+  if (!otpTokenStrings) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
+  const lastAccess = otpTokenStrings.pop()
+
+  if (!lastAccess) {
+    deleteEncryptionKey(c, keyId)
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
+  const dateNow = Date.now()
+
+  if (isLessThanDelay(+lastAccess, dateNow)) {
+    return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  }
+
+  const otpTokens = []
+
+  for (const otpTokenString of otpTokenStrings) {
+    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    if (otpToken) {
+      otpTokens.push(otpToken)
+    }
+  }
+  
+  const otpTokenObject = await new OtpTokenList(c, otpTokens, key, dateNow).set(c.req.valid("json"))
+
+  if (!otpTokenObject) {
     return c.json(ERR_OTP_TOO_MANY_CREDENTIALS, 400)
   }
 
-  return c.json(time)
+  return c.json(otpTokenObject)
 
 })
 

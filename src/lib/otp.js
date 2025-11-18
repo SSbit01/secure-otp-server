@@ -1,7 +1,7 @@
 import { setCookie, deleteCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
 
-import { createRandomId } from "@/lib/crypto/id"
+import { createRandomId, isRandomIdValid } from "@/lib/crypto/id"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 import isProduction from "@/lib/production"
@@ -96,6 +96,17 @@ export const COOKIE_ENCRYPTED_TOKENS = "t"
 
 
 /**
+ * @function areOtpParametersValid
+ * @param {string} keyId
+ * @param {string} encryptedTokens
+ * @returns {boolean}
+ */
+export function areOtpParametersValid(keyId, encryptedTokens) {
+  return Boolean(encryptedTokens && keyId) && isRandomIdValid(keyId)
+}
+
+
+/**
  * @function decodeOtpTokenString
  * @param {string} otpTokenString 
  * @param {number} [dateNow]
@@ -187,17 +198,6 @@ export async function decryptOtpTokenStrings(c, key, encryptedTokens) {
     deleteOtpData(c)
   }
 
-}
-
-
-/**
- * @async
- * @function createOtpAndSend
- * @param {Context} c
- * @param {string} credential
- */
-export async function createOtpAndSend(c, credential) {
-  return await new OtpTokenList(c).set(credential)
 }
 
 
