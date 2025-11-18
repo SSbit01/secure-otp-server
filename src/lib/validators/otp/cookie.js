@@ -8,6 +8,7 @@ import {
   COOKIE_KEY_ID,
   decodeOtpTokenString,
   deleteOtpCookies,
+  deleteOtpData,
   decryptOtpTokenStrings,
   OtpTokenList
 } from "@/lib/otp"
@@ -37,13 +38,10 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  if (otpTokenStrings.length < 2) {
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
   const lastAccess = otpTokenStrings.pop()
 
   if (!lastAccess) {
+    deleteOtpData(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
@@ -56,6 +54,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
   const currentString = otpTokenStrings.pop()
 
   if (!currentString) {
+    deleteOtpData(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
