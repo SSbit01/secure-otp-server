@@ -31,7 +31,7 @@ import sendOtp from "@/custom/send"
 
 
 /**
- * @typedef {[credential:string,otp:string,expires:number,attempts?:number,resendBlock?:number,otpBlock?:number]} OtpToken
+ * @typedef {[credential:string,expires:number,otp?:string,attempts?:number,resendBlock?:number,otpBlock?:number]} OtpToken
  */
 
 /**
@@ -45,8 +45,8 @@ import sendOtp from "@/custom/send"
 
 
 const CREDENTIAL = 0
-const OTP = 1
-const EXPIRES = 2
+const EXPIRES = 1
+const OTP = 2
 const ATTEMPTS = 3
 const RESEND_BLOCK = 4
 const OTP_BLOCK = 5
@@ -236,28 +236,28 @@ export class OtpTokenList {
     /**
      * @type {OtpTokenTime}
      */
-    const time = {
+    const result = {
       expires: this.#current[EXPIRES]
     }
 
     if (this.blocked) {
-      time.blocked = true
+      result.blocked = true
     } else {
       if (this.#current[RESEND_BLOCK]) {
-        time.resendBlock = this.#current[RESEND_BLOCK]
+        result.resendBlock = this.#current[RESEND_BLOCK]
       }
       if (this.#current[OTP_BLOCK]) {
-        time.otpBlock = this.#current[OTP_BLOCK]
+        result.otpBlock = this.#current[OTP_BLOCK]
       }
     }
 
-    return time
+    return result
 
   }
 
 
   get blocked() {
-    return !this.#current[ATTEMPTS] || this.#current[ATTEMPTS] <= 0
+    return !this.#current[OTP]
   }
 
 
@@ -359,7 +359,7 @@ export class OtpTokenList {
   
     if (this.blocked) {
       /** Trim the array to save space. */
-      this.#current.length = ATTEMPTS
+      this.#current.length = OTP
       /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
     } else if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
       this.#current[OTP_BLOCK] = this.#createdAt + INVALID_BLOCK_MS
@@ -441,7 +441,7 @@ export class OtpTokenList {
     const expires = dateNow + MAX_DURATION_MS
     const resendBlock = dateNow + RESEND_BLOCK_MS
 
-    this.#tokens.unshift([encodedCredential, otp, MAX_ATTEMPTS, expires, resendBlock])
+    this.#tokens.unshift([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
 
     await this.#save(dateNow)
 
