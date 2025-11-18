@@ -35,7 +35,7 @@ import sendOtp from "@/custom/send"
  */
 
 /**
- * @typedef {Object} OtpTokenTime
+ * @typedef {Object} OtpTokenObject
  * @property {OtpToken[EXPIRES]} expires
  * @property {boolean} [blocked]
  * @property {OtpToken[RESEND_BLOCK]} [resendBlock]
@@ -234,7 +234,7 @@ export class OtpTokenList {
   get #object() {
 
     /**
-     * @type {OtpTokenTime}
+     * @type {OtpTokenObject}
      */
     const result = {
       expires: this.#current[EXPIRES]
@@ -321,6 +321,7 @@ export class OtpTokenList {
       } while (!await storeEncryptionKey(this.#context, keyId, key, expires))
       deleteOtpData(this.#context)
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
+      this.#key = key
     }
 
     /**
@@ -402,7 +403,7 @@ export class OtpTokenList {
 
   /**
    * @param {string} credential
-   * @returns {Promise<OtpTokenTime|undefined>}
+   * @returns {Promise<OtpTokenObject|undefined>}
    */
   async set(credential) {
 
