@@ -41,23 +41,23 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const lastAccess = otpTokenStrings.shift()
+  const lastAccess = otpTokenStrings.pop()
 
   if (!lastAccess) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const currentOtpTokenString = otpTokenStrings.shift()
+  const currentString = otpTokenStrings.pop()
 
-  if (!currentOtpTokenString) {
+  if (!currentString) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const dateNow = Date.now()
 
-  const currentOtpToken = decodeOtpTokenString(currentOtpTokenString, dateNow)
+  const current = decodeOtpTokenString(currentString, dateNow)
 
-  if (!currentOtpToken) {
+  if (!current) {
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 
@@ -65,7 +65,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  const otpTokens = [currentOtpToken]
+  const otpTokens = [current]
 
   for (const otpTokenString of otpTokenStrings) {
     const otpToken = decodeOtpTokenString(otpTokenString, dateNow)

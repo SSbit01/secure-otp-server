@@ -227,11 +227,15 @@ export class OtpTokenList {
 
 
   get #current() {
-    return this.#tokens[0]
+    return this.#tokens.at(-1)
   }
 
 
   get #object() {
+
+    if (!this.#current) {
+      return
+    }
 
     /**
      * @type {OtpTokenObject}
@@ -257,12 +261,12 @@ export class OtpTokenList {
 
 
   get blocked() {
-    return !this.#current[OTP]
+    return this.#current && !this.#current[OTP]
   }
 
 
   get otpBlock() {
-    return this.#current[OTP_BLOCK]
+    return this.#current?.[OTP_BLOCK]
   }
 
 
@@ -327,7 +331,7 @@ export class OtpTokenList {
     /**
      * Add `lastAccess` at the beginning
      */
-    tokens.unshift(Date.now())
+    tokens.push(Date.now())
     
     setCookie(
       this.#context,
@@ -347,7 +351,7 @@ export class OtpTokenList {
    */
   async check(otp) {
 
-    if (this.blocked || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
+    if (!this.#current || this.blocked || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
       return
     }
 
@@ -376,7 +380,7 @@ export class OtpTokenList {
 
   async resend() {
 
-    if (this.blocked || !this.#current[RESEND_BLOCK] || this.#createdAt < this.#current[RESEND_BLOCK]) {
+    if (this.blocked || !this.#current?.[RESEND_BLOCK] || this.#createdAt < this.#current[RESEND_BLOCK]) {
       return
     }
 
@@ -442,7 +446,7 @@ export class OtpTokenList {
     const expires = dateNow + MAX_DURATION_MS
     const resendBlock = dateNow + RESEND_BLOCK_MS
 
-    this.#tokens.unshift([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
+    this.#tokens.push([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
 
     await this.#save(dateNow)
 
