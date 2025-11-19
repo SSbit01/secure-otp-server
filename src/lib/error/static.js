@@ -1,7 +1,6 @@
 import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
-  OTP_BLOCKED,
   OTP_EXPIRED,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
@@ -22,11 +21,6 @@ export const ERR_BODY_TOO_LARGE = {
 export const ERR_CREDENTIAL_INVALID = {
   error: CREDENTIAL_INVALID,
   message: "Invalid credential."
-}
-
-export const ERR_OTP_BLOCKED = {
-  error: OTP_BLOCKED,
-  message: "The current OTP token is blocked."
 }
 
 export const ERR_OTP_EXPIRED = {
@@ -56,7 +50,7 @@ export const ERR_OTP_RESENT_NOT_ALLOWED = {
 
 export const ERR_OTP_TOO_MANY_ATTEMPTS = {
   error: OTP_TOO_MANY_ATTEMPTS,
-  message: "Too many attempts. Please try again."
+  message: "Too many attempts. For security reasons, the OTP has been blocked. Please wait for it to expire and then try again."
 }
 
 export const ERR_OTP_TOO_MANY_CREDENTIALS = {

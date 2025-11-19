@@ -3,10 +3,9 @@ import { getCookie } from "hono/cookie"
 import app from "@/setup"
 
 import {
-  ERR_OTP_BLOCKED,
-  ERR_OTP_EXPIRED,
   ERR_OTP_INCORRECT,
   ERR_OTP_RESENT_NOT_ALLOWED,
+  ERR_OTP_TOO_MANY_ATTEMPTS,
   ERR_OTP_TOO_MANY_CREDENTIALS,
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
@@ -114,7 +113,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
   }
 
   if (otpTokenList.blocked) {
-    return c.json(ERR_OTP_BLOCKED, 400)
+    return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)
   }
 
   if (otpTokenList.otpBlock) {

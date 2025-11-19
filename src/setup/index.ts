@@ -9,7 +9,6 @@ import { env } from "hono/adapter"
 import { HTTPException } from "hono/http-exception"
 
 import { ERR_BODY_TOO_LARGE, ERR_SERVER } from "@/lib/error/static"
-import { GENERIC } from "@/lib/error/names"
 
 
 

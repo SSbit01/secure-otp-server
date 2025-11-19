@@ -2,6 +2,20 @@ import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
 import {
+  BODY_TOO_LARGE,
+  CREDENTIAL_INVALID,
+  OTP_EXPIRED,
+  OTP_INCORRECT,
+  OTP_INVALID_COOKIE,
+  OTP_INVALID_FORMAT,
+  OTP_RESENT_NOT_ALLOWED,
+  OTP_TOO_MANY_ATTEMPTS,
+  OTP_TOO_MANY_CREDENTIALS,
+  OTP_TOO_MANY_REQUESTS,
+  SERVER
+} from "@/lib/error/names"
+
+import {
   RESEND_BLOCK_SECONDS,
   MAX_ATTEMPTS,
   ATTEMPTS_BLOCK,
@@ -78,7 +92,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("CREDENTIAL:INVALID")
+    expect(data.error).toBe(CREDENTIAL_INVALID)
 
   })
 
@@ -94,7 +108,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("GENERIC")
+    expect(data.error).toBe(SERVER)
 
   })
 
@@ -111,7 +125,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("CREDENTIAL:INVALID")
+    expect(data.error).toBe(CREDENTIAL_INVALID)
 
   })
 
@@ -128,7 +142,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("GENERIC")
+    expect(data.error).toBe(SERVER)
 
   })
 
@@ -145,7 +159,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("CREDENTIAL:INVALID")
+    expect(data.error).toBe(CREDENTIAL_INVALID)
 
   })
 
@@ -172,7 +186,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("GENERIC")
+    expect(data.error).toBe(SERVER)
 
   })
 
@@ -186,7 +200,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -202,7 +216,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -218,7 +232,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -240,7 +254,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -262,7 +276,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -295,7 +309,7 @@ describe("OTP 2", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:RESENT_NOT_ALLOWED")
+    expect(data.error).toBe(OTP_RESENT_NOT_ALLOWED)
 
   })
 
@@ -328,7 +342,7 @@ describe("OTP 3", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_FORMAT")
+    expect(data.error).toBe(OTP_INVALID_FORMAT)
 
   })
 
@@ -345,7 +359,7 @@ describe("OTP 3", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -363,7 +377,7 @@ describe("OTP 3", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -381,7 +395,7 @@ describe("OTP 3", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -405,7 +419,7 @@ describe("OTP 3", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -429,7 +443,7 @@ describe("OTP 3", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_COOKIE")
+    expect(data.error).toBe(OTP_INVALID_COOKIE)
 
   })
 
@@ -461,7 +475,7 @@ describe("OTP 4", async() => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_FORMAT")
+    expect(data.error).toBe(OTP_INVALID_FORMAT)
 
     return data
 
@@ -480,7 +494,7 @@ describe("OTP 4", async() => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_FORMAT")
+    expect(data.error).toBe(OTP_INVALID_FORMAT)
 
     return data
 
@@ -500,7 +514,7 @@ describe("OTP 4", async() => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INVALID_FORMAT")
+    expect(data.error).toBe(OTP_INVALID_FORMAT)
 
     return data
 
@@ -539,7 +553,7 @@ describe("OTP 5", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INCORRECT")
+    expect(data.error).toBe(OTP_INCORRECT)
 
     return data
 
@@ -575,7 +589,7 @@ describe("OTP 5", () => {
 
       const data = await res.json()
 
-      expect(data.error).toBe("OTP:BLOCKED")
+      expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS)
 
     })
   }
@@ -613,7 +627,7 @@ describe("OTP 6", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe("OTP:INCORRECT")
+    expect(data.error).toBe(OTP_INCORRECT)
 
     return data
 
@@ -667,7 +681,7 @@ describe("OTP 6", () => {
 
       const data = await res.json()
       
-      expect(data.error).toBe("OTP:TOO_MANY_ATTEMPTS")
+      expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS)
 
     })
 
