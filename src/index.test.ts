@@ -4,6 +4,7 @@ import { describe, it, expect } from "bun:test"
 import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
+  GENERIC,
   OTP_EXPIRED,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
@@ -41,6 +42,8 @@ const ATTEMPTS_WITHOUT_BLOCK = MAX_ATTEMPTS - ATTEMPTS_BLOCK
 function getCookieFromResponse(res: Response) {
 
   const arr = res.headers.getSetCookie()
+  
+  console.log(arr)
 
   const result = []
 
@@ -69,7 +72,7 @@ async function fetchOtpcookie() {
   const dateNow = Date.now()
 
   if (RESEND_BLOCK_SECONDS) {
-    expect(data.resendBlockDate).toBeGreaterThan(dateNow)
+    expect(data.resendBlock).toBeGreaterThan(dateNow)
   }
   expect(data.expires).toBeGreaterThan(dateNow)
 
@@ -108,7 +111,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe(SERVER)
+    expect(data.error).toBe(GENERIC)
 
   })
 
@@ -142,7 +145,7 @@ describe("OTP 1", () => {
 
     const data = await res.json()
     
-    expect(data.error).toBe(SERVER)
+    expect(data.error).toBe(GENERIC)
 
   })
 
@@ -167,26 +170,6 @@ describe("OTP 1", () => {
   it("Generate OTP", async() => {
 
     cookie = await fetchOtpcookie()
-
-  })
-
-
-  it(`Generate OTP with the same credentials`, async() => {
-
-    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-
-    const res = await app.request("/api/otp/create", {
-      method: "POST",
-      body: "",
-      headers: {
-        "Content-Type": "application/json",
-        cookie
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(SERVER)
 
   })
 

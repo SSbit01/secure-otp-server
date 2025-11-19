@@ -1,6 +1,7 @@
 import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
+  GENERIC,
   OTP_EXPIRED,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
@@ -11,6 +12,11 @@ import {
   OTP_TOO_MANY_REQUESTS,
   SERVER
 } from "@/lib/error/names"
+
+
+export const ERR_GENERIC = {
+  error: GENERIC
+}
 
 
 export const ERR_BODY_TOO_LARGE = {

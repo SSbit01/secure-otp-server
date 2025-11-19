@@ -8,7 +8,7 @@ import { secureHeaders } from "hono/secure-headers"
 import { env } from "hono/adapter"
 import { HTTPException } from "hono/http-exception"
 
-import { ERR_BODY_TOO_LARGE, ERR_SERVER } from "@/lib/error/static"
+import { ERR_BODY_TOO_LARGE, ERR_GENERIC, ERR_SERVER } from "@/lib/error/static"
 
 
 
@@ -55,13 +55,19 @@ app.use(bodyLimit({
 /**
  * Error handler.
  */
-app.onError(async(error, c) => {
+app.onError((error, c) => {
   
-  if (error instanceof HTTPException) {
-    return error.getResponse()
+  if (!(error instanceof HTTPException)) {
+    return c.json(ERR_SERVER, 500)
   }
 
-  return c.json(ERR_SERVER, 500)
+  const response = error.getResponse()
+
+  if (response.headers.has("Content-Type")) {
+    return response
+  }
+  
+  return c.json(error.message ? { ...ERR_GENERIC, message: error.message } : ERR_GENERIC, error.status || 500)
 
 })
 
