@@ -428,7 +428,7 @@ export class OtpTokenList {
         /**
          * Don't create a new key, reuse the existing one, the expiration date doesn't need to change.
          */
-        await this.#save(Date.now(), this.#key)
+        await this.#save(this.#createdAt, this.#key)
         return this.#object
       }
     }
