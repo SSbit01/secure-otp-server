@@ -1,4 +1,4 @@
-import { setCookie, deleteCookie } from "hono/cookie"
+import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
 
 import { createRandomId, isRandomIdValid } from "@/lib/crypto/id"
@@ -36,10 +36,10 @@ import sendOtp from "@/custom/send"
 
 /**
  * @typedef {Object} OtpTokenObject
- * @property {OtpToken[EXPIRES]} expires
+ * @property {Date} expires
  * @property {boolean} [blocked]
- * @property {OtpToken[RESEND_BLOCK]} [resendBlock]
- * @property {OtpToken[OTP_BLOCK]} [otpBlock]
+ * @property {Date} [resendBlock]
+ * @property {Date} [otpBlock]
  */
 
 
@@ -152,6 +152,28 @@ export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
 
 
 /**
+ * @function decodeOtpTokenStringArray
+ * @param {string[]} otpTokenStrings
+ * @param {number} [dateNow]
+ * @returns {OtpToken[]}
+ */
+export function decodeOtpTokenStringArray(otpTokenStrings, dateNow = Date.now()) {
+
+  const otpTokens = []
+
+  for (const otpTokenString of otpTokenStrings) {
+    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    if (otpToken) {
+      otpTokens.push(otpToken)
+    }
+  }
+
+  return otpTokens
+
+}
+
+
+/**
  * @function deleteOtpCookies
  * @param {Context} c
  */
@@ -241,17 +263,17 @@ export class OtpTokenList {
      * @type {OtpTokenObject}
      */
     const result = {
-      expires: this.#current[EXPIRES]
+      expires: new Date(getReducedTimePrecision(this.#current[EXPIRES]))
     }
 
     if (this.blocked) {
       result.blocked = true
     } else {
       if (this.#current[RESEND_BLOCK]) {
-        result.resendBlock = this.#current[RESEND_BLOCK]
+        result.resendBlock = new Date(getReducedTimePrecision(this.#current[RESEND_BLOCK]))
       }
       if (this.#current[OTP_BLOCK]) {
-        result.otpBlock = this.#current[OTP_BLOCK]
+        result.otpBlock = new Date(getReducedTimePrecision(this.#current[OTP_BLOCK]))
       }
     }
 
@@ -274,7 +296,7 @@ export class OtpTokenList {
    * @async
    * @param {number} [dateNow]
    * @param {CryptoKey} [key]
-   * @returns {Promise<number>}
+   * @returns {Promise<Date>}
    */
   async #save(dateNow = this.#createdAt, key) {
 
@@ -303,13 +325,13 @@ export class OtpTokenList {
       })
     }
 
-    const lessPreciseExpiresDate = getReducedTimePrecision(expires)
+    const lessPreciseExpires = new Date(getReducedTimePrecision(expires))
 
     /**
      * @type {import("hono/utils/cookie").CookieOptions}
      */
     const cookieOptions = {
-      expires: new Date(lessPreciseExpiresDate),
+      expires: lessPreciseExpires,
       httpOnly: true,
       maxAge: MAX_DURATION_SECONDS,
       secure: isProduction(this.#context),
@@ -317,13 +339,22 @@ export class OtpTokenList {
       partitioned: false
     }
 
-    if (!key) {
+    if (key) {
+      /**
+       * Add `lastAccess` at the beginning
+       */
+      tokens.push(dateNow)
+    } else {
       key = await createSymmetricKey()
+      const expiresDate = new Date(expires)
       let keyId
       do {
         keyId = createRandomId()
-      } while (!await storeEncryptionKey(this.#context, keyId, key, expires))
-      deleteOtpData(this.#context)
+      } while (!await storeEncryptionKey(this.#context, keyId, key, expiresDate))
+      const oldKeyId = getCookie(this.#context, COOKIE_KEY_ID)
+      if (oldKeyId) {
+        deleteEncryptionKey(this.#context, oldKeyId).catch(handleDeleteEncryptionKeyException)
+      }
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
       this.#key = key
     }
@@ -340,7 +371,7 @@ export class OtpTokenList {
       cookieOptions
     )
 
-    return lessPreciseExpiresDate
+    return lessPreciseExpires
 
   }
 
@@ -443,16 +474,13 @@ export class OtpTokenList {
 
     const dateNow = Date.now()
 
-    const expires = dateNow + MAX_DURATION_MS
     const resendBlock = dateNow + RESEND_BLOCK_MS
 
-    this.#tokens.push([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
-
-    await this.#save(dateNow)
+    this.#tokens.push([encodedCredential, dateNow + MAX_DURATION_MS, otp, MAX_ATTEMPTS, resendBlock])
 
     return {
-      expires,
-      resendBlock
+      expires: await this.#save(dateNow),
+      resendBlock: new Date(getReducedTimePrecision(resendBlock))
     }
 
   }

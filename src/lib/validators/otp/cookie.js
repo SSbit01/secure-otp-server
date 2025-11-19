@@ -7,6 +7,7 @@ import {
   COOKIE_KEY_ID,
   areOtpParametersValid,
   decodeOtpTokenString,
+  decodeOtpTokenStringArray,
   deleteOtpCookies,
   deleteOtpData,
   decryptOtpTokenStrings,
@@ -64,14 +65,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 
-  const otpTokens = []
-
-  for (const otpTokenString of otpTokenStrings) {
-    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
-    if (otpToken) {
-      otpTokens.push(otpToken)
-    }
-  }
+  const otpTokens = decodeOtpTokenStringArray(otpTokenStrings, dateNow)
 
   otpTokens.push(current)
   

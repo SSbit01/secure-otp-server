@@ -15,6 +15,7 @@ import {
   COOKIE_KEY_ID,
   areOtpParametersValid,
   decodeOtpTokenString,
+  decodeOtpTokenStringArray,
   decryptOtpTokenStrings,
   deleteOtpData,
   OtpTokenList
@@ -63,16 +64,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  const otpTokens = []
-
-  for (const otpTokenString of otpTokenStrings) {
-    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
-    if (otpToken) {
-      otpTokens.push(otpToken)
-    }
-  }
-  
-  const otpTokenObject = await new OtpTokenList(c, otpTokens, key, dateNow).set(c.req.valid("json"))
+  const otpTokenObject = await new OtpTokenList(c, decodeOtpTokenStringArray(otpTokenStrings), key, dateNow).set(c.req.valid("json"))
 
   if (!otpTokenObject) {
     return c.json(ERR_OTP_TOO_MANY_CREDENTIALS, 400)

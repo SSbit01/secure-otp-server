@@ -16,7 +16,7 @@ import type { Context } from "hono"
 
 
 
-const keyStorage = new Map<string, [key: CryptoKey, expires: number]>()
+const keyStorage = new Map<string, [key: CryptoKey, expires: Date]>()
 
 
 /**
@@ -29,17 +29,18 @@ const keyStorage = new Map<string, [key: CryptoKey, expires: number]>()
  * @param {Context} c - Hono context.
  * @param {string} keyId - The ID of the encryption key to store. Created using `/src/lib/crypto/id.js`.
  * @param {CryptoKey} key - The encryption key to store.
- * @param {number} expires - The expiration time in milliseconds since the epoch.
+ * @param {Date} expires - The expiration date.
  * @return {Promise<boolean>} A promise that resolves to `true` if the key was stored, otherwise `false`.
  */
-export async function storeEncryptionKey(c: Context, keyId: string, key: CryptoKey, expires: number) {
+export async function storeEncryptionKey(c: Context, keyId: string, key: CryptoKey, expires: Date) {
 
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
    */
-  const dateNow = Date.now()
+  const date = new Date()
+
   for (const [id, [, expires]] of keyStorage) {
-    if (dateNow >= expires) {
+    if (date >= expires) {
       keyStorage.delete(id)
     }
   }
@@ -82,9 +83,10 @@ export async function deleteEncryptionKey(c: Context, keyId: string) {
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
    */
-  const dateNow = Date.now()
+  const date = new Date()
+
   for (const [id, [, expires]] of keyStorage) {
-    if (dateNow >= expires) {
+    if (date >= expires) {
       keyStorage.delete(id)
     }
   }

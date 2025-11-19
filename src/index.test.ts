@@ -2,18 +2,13 @@ import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
 import {
-  BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   GENERIC,
-  OTP_EXPIRED,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
   OTP_INVALID_FORMAT,
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS,
-  OTP_TOO_MANY_CREDENTIALS,
-  OTP_TOO_MANY_REQUESTS,
-  SERVER
 } from "@/lib/error/names"
 
 import {
@@ -69,12 +64,12 @@ async function fetchOtpcookie() {
 
   const data = await res.json()
   
-  const dateNow = Date.now()
+  const date = new Date()
 
   if (RESEND_BLOCK_SECONDS) {
-    expect(data.resendBlock).toBeGreaterThan(dateNow)
+    expect(new Date(data.resendBlock) > date).toBeTrue()
   }
-  expect(data.expires).toBeGreaterThan(dateNow)
+  expect(new Date(data.expires) > date).toBeTrue()
 
   return getCookieFromResponse(res)
 
