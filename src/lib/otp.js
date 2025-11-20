@@ -347,13 +347,9 @@ export class OtpTokenList {
     } else {
       key = await createSymmetricKey()
       const expiresDate = new Date(expires)
-      let keyId
-      do {
+      let keyId = getCookie(this.#context, COOKIE_KEY_ID) || createRandomId()
+      while (!await storeEncryptionKey(this.#context, keyId, key, expiresDate)) {
         keyId = createRandomId()
-      } while (!await storeEncryptionKey(this.#context, keyId, key, expiresDate))
-      const oldKeyId = getCookie(this.#context, COOKIE_KEY_ID)
-      if (oldKeyId) {
-        deleteEncryptionKey(this.#context, oldKeyId).catch(handleDeleteEncryptionKeyException)
       }
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
       this.#key = key
