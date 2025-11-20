@@ -341,7 +341,7 @@ export class OtpTokenList {
 
     if (key) {
       /**
-       * Add `lastAccess` at the beginning
+       * Add `lastAccess` at the end
        */
       tokens.push(dateNow)
     } else {
@@ -353,12 +353,11 @@ export class OtpTokenList {
       }
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
       this.#key = key
+      /**
+       * Add `lastAccess` at the end
+       */
+      tokens.push(Date.now())
     }
-
-    /**
-     * Add `lastAccess` at the beginning
-     */
-    tokens.push(Date.now())
     
     setCookie(
       this.#context,
