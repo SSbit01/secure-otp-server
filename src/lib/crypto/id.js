@@ -1,5 +1,7 @@
-import base64ToBytes from "@/lib/base64"
-
+/** @type {Parameters<Uint8Array<ArrayBuffer>["toBase64"]>[0]} */
+const options = {
+  alphabet: "base64url"
+}
 
 const LENGTH_IN_BYTES = 18
 
@@ -33,5 +35,5 @@ export function isRandomIdValid(id) {
  * @returns {string} A 24-character Base64-encoded random ID.
  */
 export function createRandomId() {
-  return base64ToBytes.encode(crypto.getRandomValues(new Uint8Array(LENGTH_IN_BYTES)))
+  return crypto.getRandomValues(new Uint8Array(LENGTH_IN_BYTES)).toBase64(options)
 }

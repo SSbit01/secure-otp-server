@@ -32,7 +32,7 @@ Built with [Hono](https://hono.dev/) for fast and efficient routing.
 
 Runs on modern JavaScript runtimes ([Deno](https://deno.com/), [Bun](https://bun.com/), [Cloudflare Workers](https://workers.cloudflare.com/)...).
 
-You can run it on [Node.js](https://nodejs.org/), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/) are more recommended. To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage) adapter and configure it in [`src/index.ts`](/src/index.ts).
+You can run it on [Node.js](https://nodejs.org/) (>=25), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/) are more recommended. To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage) adapter and configure it in [`src/index.ts`](/src/index.ts).
 
 For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or [AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
 

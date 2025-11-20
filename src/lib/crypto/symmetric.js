@@ -1,7 +1,3 @@
-import base64ToBytes from "@/lib/base64"
-
-
-
 const encryptionAlgorithm = "AES-GCM"
 
 const keyParams = {
@@ -60,14 +56,14 @@ export async function encryptSymmetricallyText(
   const iv = crypto.getRandomValues(new Uint8Array(ivBytesLength))
 
   return (
-    base64ToBytes.encode(iv) +
-    base64ToBytes.encode(new Uint8Array(
+    iv.toBase64() +
+    new Uint8Array(
       await crypto.subtle.encrypt(
         { name: encryptionAlgorithm, iv },
         key,
         textEncoder.encode(value)
       )
-    ))
+    ).toBase64()
   )
 
 }
@@ -94,7 +90,7 @@ export async function decryptSymmetricallyText(
   textDecoder = new TextDecoder()
 ) {
 
-  const valueInt8Arr = base64ToBytes.decode(value)
+  const valueInt8Arr = Uint8Array.fromBase64(value)
   
   return (
     textDecoder.decode(
