@@ -92,5 +92,5 @@ export async function deleteEncryptionKey(c: Context, keyId: string) {
   }
 
   return keyStorage.delete(keyId)
-  
+
 }

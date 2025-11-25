@@ -90,15 +90,13 @@ export async function decryptSymmetricallyText(
   textDecoder = new TextDecoder()
 ) {
 
-  const valueInt8Arr = Uint8Array.fromBase64(value)
-  
-  return (
-    textDecoder.decode(
-      await crypto.subtle.decrypt(
-        { name: encryptionAlgorithm, iv: valueInt8Arr.subarray(0, ivBytesLength) },
-        key,
-        valueInt8Arr.subarray(ivBytesLength)
-      )
+  const data = Uint8Array.fromBase64(value)
+
+  return textDecoder.decode(
+    await crypto.subtle.decrypt(
+      { name: encryptionAlgorithm, iv: data.subarray(0, ivBytesLength) },
+      key,
+      data.subarray(ivBytesLength)
     )
   )
 

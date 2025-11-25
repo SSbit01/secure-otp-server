@@ -11,7 +11,7 @@ import {
 } from "@/lib/error/static"
 
 import {
-  COOKIE_ENCRYPTED_TOKENS,
+  COOKIE_ENCRYPTED_OTP_TOKENS,
   COOKIE_KEY_ID,
   areOtpParametersValid,
   decodeOtpTokenString,
@@ -28,13 +28,13 @@ import otpValueValidator from "@/lib/validators/otp"
 
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
-import { deleteEncryptionKey, getEncryptionKey } from "@/custom/kms"
+import { deleteEncryptionKey, getEncryptionKey } from "@/custom/id"
 
 
-app.post("/api/otp/create", credentialValidator, async(c) => {
+app.post("/api/otp/create", credentialValidator, async (c) => {
 
-  const { [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_TOKENS]: encryptedTokens } = getCookie(c)
-  
+  const { [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedTokens } = getCookie(c)
+
   if (!areOtpParametersValid(keyId, encryptedTokens)) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
@@ -75,7 +75,7 @@ app.post("/api/otp/create", credentialValidator, async(c) => {
 })
 
 
-app.post("/api/otp/resend", otpCookieValidator, async(c) => {
+app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
   const time = await c.req.valid("cookie").resend()
 
@@ -88,7 +88,7 @@ app.post("/api/otp/resend", otpCookieValidator, async(c) => {
 })
 
 
-app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async(c) => {
+app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => {
 
   const otpTokenList = c.req.valid("cookie")
 

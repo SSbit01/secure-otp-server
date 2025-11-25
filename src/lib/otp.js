@@ -8,7 +8,7 @@ import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
 
-import { storeEncryptionKey, deleteEncryptionKey } from "@/custom/kms"
+import { storeEncryptionKey, deleteEncryptionKey } from "@/custom/id"
 
 import {
   ALLOW_ONLY_ONE_RESENDING,
@@ -90,20 +90,7 @@ function handleDeleteEncryptionKeyException(error) {
 
 
 
-export const COOKIE_KEY_ID = "e"
-export const COOKIE_ENCRYPTED_TOKENS = "t"
-
-
-
-/**
- * @function areOtpParametersValid
- * @param {string} keyId
- * @param {string} encryptedTokens
- * @returns {boolean}
- */
-export function areOtpParametersValid(keyId, encryptedTokens) {
-  return Boolean(encryptedTokens && keyId) && isRandomIdValid(keyId)
-}
+export const COOKIE_ENCRYPTED_OTP_TOKENS = "t"
 
 
 /**
@@ -178,7 +165,7 @@ export function decodeOtpTokenStringArray(otpTokenStrings, dateNow = Date.now())
  * @param {Context} c
  */
 export function deleteOtpCookies(c) {
-  deleteCookie(c, COOKIE_ENCRYPTED_TOKENS)
+  deleteCookie(c, COOKIE_ENCRYPTED_OTP_TOKENS)
   return deleteCookie(c, COOKIE_KEY_ID)
 }
 
@@ -228,21 +215,18 @@ export class OtpTokenList {
 
   #context
   #tokens
-  #key
   #createdAt
 
 
   /**
    * @param {Context} c
    * @param {OtpToken[]} [tokens]
-   * @param {CryptoKey} [key]
    * @param {number} [createdAt]
    */
-  constructor(c, tokens = [], key, createdAt = Date.now()) {
+  constructor(c, tokens = [], createdAt = Date.now()) {
 
     this.#context = c
     this.#tokens = tokens.length > MAX_OTP_CREDENTIALS ? tokens.slice(0, MAX_OTP_CREDENTIALS) : tokens
-    this.#key = key
     this.#createdAt = createdAt
 
   }
@@ -347,21 +331,19 @@ export class OtpTokenList {
     } else {
       key = await createSymmetricKey()
       let keyId = getCookie(this.#context, COOKIE_KEY_ID) || createRandomId()
-      const expiresDate = new Date(expires)
-      while (!await storeEncryptionKey(this.#context, keyId, key, expiresDate)) {
+      while (!await storeEncryptionKey(this.#context, keyId, key, expires)) {
         keyId = createRandomId()
       }
       setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
-      this.#key = key
       /**
        * Add `lastAccess` at the end
        */
       tokens.push(Date.now())
     }
-    
+
     setCookie(
       this.#context,
-      COOKIE_ENCRYPTED_TOKENS,
+      COOKIE_ENCRYPTED_OTP_TOKENS,
       await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder),
       cookieOptions
     )
@@ -387,7 +369,7 @@ export class OtpTokenList {
 
     /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
     this.#current[ATTEMPTS]--
-  
+
     if (this.blocked) {
       /** Trim the array to save space. */
       this.#current.length = OTP
@@ -446,7 +428,7 @@ export class OtpTokenList {
       return this.#object
     }
 
-    for (let i = 1; i < this.#tokens.length; i++) {
+    for (let i = this.#tokens.length - 2; i >= 0; i--) {
       const otpToken = this.#tokens[i]
       if (encodedCredential === otpToken[CREDENTIAL]) {
         this.#tokens[i] = this.#tokens[0]
@@ -454,7 +436,7 @@ export class OtpTokenList {
         /**
          * Don't create a new key, reuse the existing one, the expiration date doesn't need to change.
          */
-        await this.#save(this.#createdAt, this.#key)
+        await this.#save()
         return this.#object
       }
     }

@@ -3,9 +3,7 @@ import { validator } from "hono/validator"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 
 import {
-  COOKIE_ENCRYPTED_TOKENS,
-  COOKIE_KEY_ID,
-  areOtpParametersValid,
+  COOKIE_ENCRYPTED_OTP_TOKENS,
   decodeOtpTokenString,
   decodeOtpTokenStringArray,
   deleteOtpCookies,
@@ -16,13 +14,13 @@ import {
 
 import { isLessThanDelay } from "@/lib/time"
 
-import { getEncryptionKey } from "@/custom/kms"
+import { getEncryptionKey } from "@/custom/id"
 
 
 
-const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_TOKENS]: encryptedTokens }, c) => {
+const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedOtpTokens }, c) => {
 
-  if (!areOtpParametersValid(keyId, encryptedTokens)) {
+  if (!encryptedOtpTokens) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
@@ -33,7 +31,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const otpTokenStrings = await decryptOtpTokenStrings(c, key, encryptedTokens)
+  const otpTokenStrings = await decryptOtpTokenStrings(c, key, encryptedOtpTokens)
 
   if (!otpTokenStrings) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
@@ -68,7 +66,7 @@ const otpCookieValidator = validator("cookie", async({ [COOKIE_KEY_ID]: keyId, [
   const otpTokens = decodeOtpTokenStringArray(otpTokenStrings, dateNow)
 
   otpTokens.push(current)
-  
+
   return Object.freeze(new OtpTokenList(c, otpTokens, key, dateNow))
 
 })
