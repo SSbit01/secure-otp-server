@@ -2,12 +2,13 @@
  * This server generates OTP token IDs, and it needs to store them somewhere.
  * This file defines functions for storing IDs.
  * 
- * Therefore, a simple in-memory KMS implementation has been defined using a JavaScript Map.
+ * Therefore, a simple in-memory implementation has been defined using a JavaScript Array.
  * 
  * - It is the cheapest and easiest implementation and works fine if the server is always on.
  * - This implementation does not persist IDs, so all IDs will be lost when the server restarts.
  * - In-memory implementations do not work well in distributed systems (e.g., multiple server instances behind a load balancer).
- * - In-memory implementations do not work well in serverless environments, because they are constantly closing and opening (Redis, DynamoDB or similar are the best alternatives).
+ * - In-memory implementations do not work well in serverless environments, because they are constantly closing and opening.
+ * - Redis, DynamoDB or similar are the best alternatives.
  */
 
 import { MAX_DURATION_SECONDS } from "@/custom/otp"
@@ -15,15 +16,12 @@ import { MAX_DURATION_SECONDS } from "@/custom/otp"
 import type { Context } from "hono"
 
 
-interface IdObject {
-  id: number
-  expires: number
-}
+type Id = number
 
 
 const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
 
-const idStorage: number[] = []
+const idStorage: Array<number | undefined> = []
 
 
 /**
@@ -34,10 +32,9 @@ const idStorage: number[] = []
  * @async
  * @function createId
  * @param {Context} c - Hono context.
- * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
- * @return {Promise<IdObject>} The new ID and the expiration date.
+ * @return {Promise<Id>} The new ID and the expiration date.
  */
-export async function createId(c: Context, dateNow = Date.now()): Promise<IdObject> {
+export async function createId(c: Context): Promise<Id> {
 
   /**
    * Manually clean up expired IDs, as this implementation cannot automatically delete them.
@@ -45,16 +42,17 @@ export async function createId(c: Context, dateNow = Date.now()): Promise<IdObje
   let newId
   let lastValidId = -1
 
+  const dateNow = Date.now()
+
   for (let i = 0; i < idStorage.length; i++) {
     const expires = idStorage[i]
     if (expires) {
-      if (dateNow < expires) {
+      if (expires < dateNow) {
         lastValidId = i
+      } else if (newId === undefined) {
+        newId = i
       } else {
         delete idStorage[i]
-        if (newId === undefined) {
-          newId = i
-        }
       }
     } else if (newId === undefined) {
       newId = i
@@ -69,10 +67,7 @@ export async function createId(c: Context, dateNow = Date.now()): Promise<IdObje
 
   idStorage[newId] = expires
 
-  return {
-    id: newId,
-    expires
-  }
+  return newId
 
 }
 
@@ -85,13 +80,14 @@ export async function createId(c: Context, dateNow = Date.now()): Promise<IdObje
  * @async
  * @function deleteId
  * @param {Context} c - Hono context.
- * @param {IdObject["id"]} id - The ID to delete.
- * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
+ * @param {Id} id - The ID to delete.
  * @returns {boolean} If delete was successful.
  */
-export async function deleteId(c: Context, id: IdObject["id"], dateNow = Date.now()) {
+export async function deleteId(c: Context, id: Id) {
 
   let lastValidId = -1
+
+  const dateNow = Date.now()
 
   for (let i = 0; i < idStorage.length; i++) {
     const expires = idStorage[i]
@@ -127,14 +123,19 @@ export async function deleteId(c: Context, id: IdObject["id"], dateNow = Date.no
  * @async
  * @function replaceId
  * @param {Context} c - Hono context.
- * @param {IdObject["id"]} oldId - The ID to delete.
+ * @param {Id} oldId - The ID to delete.
  * @param {number} expires - Expires date in milliseconds elapsed since the epoch. Used to verify the ID.
- * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
  * @returns {boolean} If delete was successful.
  */
-export async function replaceId(c: Context, oldId: IdObject["id"], expires: number, dateNow = Date.now()) {
+export async function replaceId(c: Context, oldId: Id, expires: number) {
 
-  if (idStorage[oldId] !== expires || expires >= dateNow) {
+  if (idStorage[oldId] !== expires) {
+    return
+  }
+
+  const dateNow = Date.now()
+
+  if (expires >= dateNow) {
     return
   }
 
@@ -143,13 +144,16 @@ export async function replaceId(c: Context, oldId: IdObject["id"], expires: numb
 
   for (let i = oldId + 1; i < idStorage.length; i++) {
     const expires = idStorage[i]
-    if (expires < dateNow) {
-      lastValidId = i
-    } else {
-      delete idStorage[i]
-      if (newId === undefined) {
+    if (expires) {
+      if (expires < dateNow) {
+        lastValidId = i
+      } else if (newId === undefined) {
         newId = i
+      } else {
+        delete idStorage[i]
       }
+    } else if (newId === undefined) {
+      newId = i
     }
   }
 
@@ -170,14 +174,19 @@ export async function replaceId(c: Context, oldId: IdObject["id"], expires: numb
  * @async
  * @function updateExpires
  * @param {Context} c - Hono context.
- * @param {IdObject["id"]} id - The ID.
+ * @param {Id} id - The ID.
  * @param {number} oldExpires - Old expires date in milliseconds elapsed since the epoch. Used to verify the ID.
- * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
  * @returns {boolean} If delete was successful.
  */
-export async function updateExpires(c: Context, id: IdObject["id"], oldExpires: number, dateNow = Date.now()) {
+export async function updateExpires(c: Context, id: Id, oldExpires: number) {
 
-  if (idStorage[id] !== oldExpires || oldExpires >= dateNow) {
+  if (idStorage[id] !== oldExpires) {
+    return
+  }
+
+  const dateNow = Date.now()
+
+  if (oldExpires >= dateNow) {
     return
   }
 
