@@ -2,7 +2,7 @@
  * This server generates keys with their IDs constantly, and it needs to store them somewhere.
  * This file defines functions for storing keys.
  * 
- * Therefore, a simple in-memory KMS implementation has been defined using a JavaScript Array.
+ * Therefore, a simple in-memory KMS implementation has been defined using a JavaScript Map.
  * 
  * - It is the cheapest and easiest implementation and works fine if the server is always on.
  * - This implementation does not persist keys, so all keys will be lost when the server restarts.
@@ -13,17 +13,26 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
-import { MAX_DURATION_SECONDS } from "@/custom/otp"
+import { MAX_DURATION_MS } from "@/lib/computed"
+import { createRandomId } from "@/lib/crypto/id"
 
 import type { Context } from "hono"
 
 
+interface CurrentKey {
+  id: string | number
+  key: CryptoKey
+}
+
+
+/// CUSTOM
+type KeyData = [expires: number, rotate: number, key: CryptoKey, encryptions: number]
+
 
 const ROTATE = 2592000000  // 30 days in miliseconds.
 
-
-
-const keyStorage: Array<[key: CryptoKey, createdAt: number, encryptions: number] | undefined> = []
+const keyStorage = new Map<CurrentKey["id"], KeyData>()
+///
 
 
 /**
@@ -32,42 +41,37 @@ const keyStorage: Array<[key: CryptoKey, createdAt: number, encryptions: number]
  * If the key could not be saved due to a technical error, an error should be thrown.
  * 
  * @async
- * @function storeEncryptionKey
+ * @function storeKey
  * @param {Context} c - Hono context.
  * @param {CryptoKey} key - The encryption key to store.
  * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
- * @return {Promise<boolean>} A promise that resolves to `true` if the key was stored, otherwise `false`.
+ * @return {Promise<CurrentKey["id"]>} A promise that resolves the ID of the stored key.
  */
-export async function storeEncryptionKey(c: Context, key: CryptoKey, dateNow = Date.now()) {
+export async function storeKey(c: Context, key: CryptoKey) {
 
   /**
    * Manually clean up expired keys, as this implementation cannot automatically delete them.
    */
-  let newId
-  let lastValidId = -1
+  const dateNow = Date.now()
 
-  for (let i = 0; i < keyStorage.length; i++) {
-    const createdAt = keyStorage[i]?.[1]
-    if (createdAt) {
-      if ((dateNow - createdAt) < dateNow) {
-        lastValidId = i
-      } else if (newId === undefined) {
-        newId = i
-      } else {
-        delete keyStorage[i]
-      }
-    } else if (newId === undefined) {
-      newId = i
+  for (const [keyId, [expires]] of keyStorage) {
+    if (expires <= dateNow) {
+      keyStorage.delete(keyId)
     }
   }
 
-  keyStorage.length = lastValidId + 1
+  const rotate = dateNow + ROTATE
+  const data: KeyData = [rotate + MAX_DURATION_MS, rotate, key, 1]
 
-  newId ??= keyStorage.length
+  let id: string
 
-  keyStorage[newId] = [key, dateNow, 0]
+  do {
+    id = createRandomId()
+  } while (keyStorage.has(id))
 
-  return true
+  keyStorage.set(id, data)
+
+  return id
 
 }
 
@@ -76,46 +80,70 @@ export async function storeEncryptionKey(c: Context, key: CryptoKey, dateNow = D
  * Retrieves an encryption key by its ID.
  * 
  * @async
- * @function getEncryptionKey
+ * @function getCurrentKey
  * @param {Context} c - Hono context.
- * @param {number} keyId - The ID of the encryption key to retrieve.
- * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
+ * @return {Promise<CurrentKey|undefined>} A promise that resolves to the `CurrentKey` if found, otherwise `undefined`.
  */
-export async function getEncryptionKey(c: Context, keyId: number): Promise<CryptoKey | undefined> {
+export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined> {
 
-  const data = keyStorage[keyId]
+  /**
+   * Manually clean up expired keys, as this implementation cannot automatically delete them.
+   */
+  let currentKeyEntry: [string | number, KeyData] | undefined
 
-  if (data) {
-    data[2]++
-    return data[0]
+  const dateNow = Date.now()
+
+  for (const keyEntry of keyStorage) {
+    const expires = keyEntry[1][0]
+    if (expires <= dateNow) {
+      keyStorage.delete(keyEntry[0])
+    } else if (!currentKeyEntry || expires > currentKeyEntry[1][0]) {
+      currentKeyEntry = keyEntry
+    }
+  }
+
+  if (!currentKeyEntry) {
+    return
+  }
+
+  const keyData = currentKeyEntry[1]
+
+  if (keyData[1] <= dateNow) {
+    return
+  }
+
+  keyData[3]++
+
+  return {
+    id: currentKeyEntry[0],
+    key: keyData[2]
   }
 
 }
 
 
 /**
- * Deletes an encryption key by its ID.
- * 
- * It is used in a "fire and forget" manner.
+ * Retrieves an encryption key by its ID.
  * 
  * @async
- * @function deleteEncryptionKey
+ * @function getKey
  * @param {Context} c - Hono context.
- * @param {string} keyId - The ID of the encryption key to delete.
+ * @param {CurrentKey["id"]} keyId - The ID of the encryption key to retrieve.
+ * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
-export async function deleteEncryptionKey(c: Context, keyId: string) {
+export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
 
-  /**
-   * Manually clean up expired keys, as this implementation cannot automatically delete them.
-   */
-  const date = new Date()
+  const keyData = keyStorage.get(keyId)
 
-  for (const [id, [, expires]] of keyStorage) {
-    if (date >= expires) {
-      keyStorage.delete(id)
-    }
+  if (!keyData) {
+    return
   }
 
-  return keyStorage.delete(keyId)
+  if (keyData[0] >= Date.now()) {
+    keyStorage.delete(keyId)
+    return
+  }
+
+  return keyData[2]
 
 }

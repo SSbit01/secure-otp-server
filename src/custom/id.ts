@@ -54,8 +54,8 @@ export async function createId(c: Context): Promise<Id> {
       } else {
         delete idStorage[i]
       }
-    } else if (newId === undefined) {
-      newId = i
+    } else {
+      newId ??= i
     }
   }
 
@@ -152,8 +152,8 @@ export async function replaceId(c: Context, oldId: Id, expires: number) {
       } else {
         delete idStorage[i]
       }
-    } else if (newId === undefined) {
-      newId = i
+    } else {
+      newId ??= i
     }
   }
 

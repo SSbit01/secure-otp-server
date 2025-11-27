@@ -1,6 +1,7 @@
 import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
 
+import { INVALID_BLOCK_MS, MAX_DURATION_MS, RESEND_BLOCK_MS } from "@/lib/computed"
 import { createRandomId, isRandomIdValid } from "@/lib/crypto/id"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
@@ -13,11 +14,9 @@ import { storeEncryptionKey, deleteEncryptionKey } from "@/custom/id"
 import {
   ALLOW_ONLY_ONE_RESENDING,
   ATTEMPTS_BLOCK,
-  INVALID_BLOCK_SECONDS,
   MAX_ATTEMPTS,
   MAX_DURATION_SECONDS,
   MAX_OTP_CREDENTIALS,
-  RESEND_BLOCK_SECONDS,
   createOtp
 } from "@/custom/otp"
 
@@ -53,10 +52,6 @@ const OTP_BLOCK = 5
 
 const ARRAY_SEPARATOR = ","
 const OTP_SEPARATOR = "|"
-
-const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
-const MAX_DURATION_MS = MAX_DURATION_SECONDS * 1000
-const RESEND_BLOCK_MS = RESEND_BLOCK_SECONDS * 1000
 
 
 
