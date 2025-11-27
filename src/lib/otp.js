@@ -2,14 +2,15 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
 
 import { INVALID_BLOCK_MS, MAX_DURATION_MS, RESEND_BLOCK_MS } from "@/lib/computed"
-import { createRandomId, isRandomIdValid } from "@/lib/crypto/id"
+import { createRandomId } from "@/lib/crypto/id"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
 
-import { storeEncryptionKey, deleteEncryptionKey } from "@/custom/id"
+import { createId, deleteId, replaceId, updateExpires } from "@/custom/id"
+import { getCurrentKey, getKey, storeKey } from "@/custom/kms"
 
 import {
   ALLOW_ONLY_ONE_RESENDING,

@@ -36,47 +36,6 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
 
 
 /**
- * Stores an encryption key with the given ID and expiration time.
- * 
- * If the key could not be saved due to a technical error, an error should be thrown.
- * 
- * @async
- * @function storeKey
- * @param {Context} c - Hono context.
- * @param {CryptoKey} key - The encryption key to store.
- * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
- * @return {Promise<CurrentKey["id"]>} A promise that resolves the ID of the stored key.
- */
-export async function storeKey(c: Context, key: CryptoKey) {
-
-  /**
-   * Manually clean up expired keys, as this implementation cannot automatically delete them.
-   */
-  const dateNow = Date.now()
-
-  for (const [keyId, [expires]] of keyStorage) {
-    if (expires <= dateNow) {
-      keyStorage.delete(keyId)
-    }
-  }
-
-  const rotate = dateNow + ROTATE
-  const data: KeyData = [rotate + MAX_DURATION_MS, rotate, key, 1]
-
-  let id: string
-
-  do {
-    id = createRandomId()
-  } while (keyStorage.has(id))
-
-  keyStorage.set(id, data)
-
-  return id
-
-}
-
-
-/**
  * Retrieves an encryption key by its ID.
  * 
  * @async
@@ -145,5 +104,46 @@ export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
   }
 
   return keyData[2]
+
+}
+
+
+/**
+ * Stores an encryption key with the given ID and expiration time.
+ * 
+ * If the key could not be saved due to a technical error, an error should be thrown.
+ * 
+ * @async
+ * @function storeKey
+ * @param {Context} c - Hono context.
+ * @param {CryptoKey} key - The encryption key to store.
+ * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
+ * @return {Promise<CurrentKey["id"]>} A promise that resolves the ID of the stored key.
+ */
+export async function storeKey(c: Context, key: CryptoKey) {
+
+  /**
+   * Manually clean up expired keys, as this implementation cannot automatically delete them.
+   */
+  const dateNow = Date.now()
+
+  for (const [keyId, [expires]] of keyStorage) {
+    if (expires <= dateNow) {
+      keyStorage.delete(keyId)
+    }
+  }
+
+  const rotate = dateNow + ROTATE
+  const data: KeyData = [rotate + MAX_DURATION_MS, rotate, key, 1]
+
+  let id: string
+
+  do {
+    id = createRandomId()
+  } while (keyStorage.has(id))
+
+  keyStorage.set(id, data)
+
+  return id
 
 }
