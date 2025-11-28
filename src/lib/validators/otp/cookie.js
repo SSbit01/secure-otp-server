@@ -4,6 +4,7 @@ import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } fr
 
 import {
   COOKIE_ENCRYPTED_OTP_TOKENS,
+  COOKIE_KEY_ID,
   decodeOtpTokenString,
   decodeOtpTokenStringArray,
   deleteOtpCookies,
@@ -14,17 +15,17 @@ import {
 
 import { isLessThanDelay } from "@/lib/time"
 
-import { getEncryptionKey } from "@/custom/id"
+import { getKey } from "@/custom/kms"
 
 
 
-const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedOtpTokens }, c) => {
+const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedOtpTokens, [COOKIE_KEY_ID]: keyId }, c) => {
 
   if (!encryptedOtpTokens) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const key = await getEncryptionKey(c, keyId)
+  const key = await getKey(c, keyId)
 
   if (!key) {
     deleteOtpCookies(c)
@@ -67,7 +68,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TO
 
   otpTokens.push(current)
 
-  return Object.freeze(new OtpTokenList(c, otpTokens, key, dateNow))
+  return Object.freeze(new OtpTokenList(c, otpTokens, dateNow))
 
 })
 

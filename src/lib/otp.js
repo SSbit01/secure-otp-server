@@ -78,6 +78,7 @@ function decodeCredential(encodedCredential) {
 
 
 export const COOKIE_ENCRYPTED_OTP_TOKENS = "t"
+export const COOKIE_KEY_ID = "k"
 
 
 /**
@@ -153,6 +154,24 @@ export function decodeOtpTokenStringArray(otpTokenStrings, dateNow = Date.now())
  */
 export function deleteOtpCookies(c) {
   deleteCookie(c, COOKIE_ENCRYPTED_OTP_TOKENS)
+  deleteCookie(c, COOKIE_KEY_ID)
+}
+
+
+/**
+ * @function deleteOtpData
+ * @param {Context} c
+ * @param {string} id
+ */
+export function deleteOtpData(c, id) {
+
+  deleteOtpCookies(c)
+
+  /**
+   * Fire and forget
+   */
+  deleteId(c, id)
+
 }
 
 
@@ -182,18 +201,21 @@ export async function decryptOtpTokenStrings(c, key, encryptedTokens) {
 export class OtpTokenList {
 
   #context
+  #id
   #tokens
   #createdAt
 
 
   /**
    * @param {Context} c
+   * @param {(string|number)} [id]
    * @param {OtpToken[]} [tokens]
    * @param {number} [createdAt]
    */
-  constructor(c, tokens = [], createdAt = Date.now()) {
+  constructor(c, tokens = [], id, createdAt = Date.now()) {
 
     this.#context = c
+    this.#id = id
     this.#tokens = tokens.length > MAX_OTP_CREDENTIALS ? tokens.slice(0, MAX_OTP_CREDENTIALS) : tokens
     this.#createdAt = createdAt
 
@@ -261,7 +283,7 @@ export class OtpTokenList {
           expires = otpToken[EXPIRES]
         }
         if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || dateNow >= otpToken[OTP_BLOCK])) {
-          /** Trim the array to save space.lnl,k*/
+          /** Trim the array to save space */
           otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
         }
         tokens.push(otpToken.join(OTP_SEPARATOR))
@@ -290,23 +312,29 @@ export class OtpTokenList {
       partitioned: false
     }
 
-    if (key) {
-      /**
-       * Add `lastAccess` at the end
-       */
-      tokens.push(dateNow)
+    const currentKey = await getCurrentKey(this.#context)
+
+    /**
+     * @type {CryptoKey}
+     */
+    let key
+
+    /**
+     * @type {(string|number)}
+     */
+    let keyId
+
+    if (currentKey) {
+      key = currentKey.key
+      keyId = currentKey.id
     } else {
       key = await createSymmetricKey()
-      let keyId = getCookie(this.#context, COOKIE_KEY_ID) || createRandomId()
-      while (!await storeEncryptionKey(this.#context, keyId, key, expires)) {
-        keyId = createRandomId()
-      }
-      setCookie(this.#context, COOKIE_KEY_ID, keyId, cookieOptions)
-      /**
-       * Add `lastAccess` at the end
-       */
-      tokens.push(Date.now())
+      keyId = await storeKey(this.#context, key)
     }
+
+    setCookie(this.#context, COOKIE_KEY_ID, keyId.toString(), cookieOptions)
+
+    tokens.push(Date.now())
 
     setCookie(
       this.#context,
@@ -325,6 +353,8 @@ export class OtpTokenList {
    * @returns {Promise<string|undefined>}
    */
   async check(otp) {
+
+    // replaceId
 
     if (!this.#current || this.blocked || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
       return
@@ -354,6 +384,8 @@ export class OtpTokenList {
 
 
   async resend() {
+
+    // updateExpires
 
     if (this.blocked || !this.#current?.[RESEND_BLOCK] || this.#createdAt < this.#current[RESEND_BLOCK]) {
       return
@@ -385,6 +417,8 @@ export class OtpTokenList {
    * @returns {Promise<OtpTokenObject|undefined>}
    */
   async set(credential) {
+
+    // createId (if ID is undefined) and updateExpires
 
     const encodedCredential = encodeCredential(credential)
 
@@ -419,9 +453,8 @@ export class OtpTokenList {
     const dateNow = Date.now()
 
     const resendBlock = dateNow + RESEND_BLOCK_MS
-    const expires = dateNow + MAX_DURATION_MS
 
-    this.#tokens.push([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
+    this.#tokens.push([encodedCredential, dateNow + MAX_DURATION_MS, otp, MAX_ATTEMPTS, resendBlock])
 
     return {
       expires: await this.#save(dateNow),
