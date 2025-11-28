@@ -201,9 +201,9 @@ export async function decryptOtpTokenStrings(c, key, encryptedTokens) {
 export class OtpTokenList {
 
   #context
+  #dateNow
   #id
   #tokens
-  #createdAt
 
 
   /**
@@ -217,7 +217,7 @@ export class OtpTokenList {
     this.#context = c
     this.#id = id
     this.#tokens = tokens.length > MAX_OTP_CREDENTIALS ? tokens.slice(0, MAX_OTP_CREDENTIALS) : tokens
-    this.#createdAt = createdAt
+    this.#dateNow = createdAt
 
   }
 
@@ -268,21 +268,20 @@ export class OtpTokenList {
 
   /**
    * @async
-   * @param {number} [dateNow]
    * @returns {Promise<Date>}
    */
-  async #save(dateNow = this.#createdAt) {
+  async #save() {
 
     const tokens = []
 
     let expires = 0
 
     for (const otpToken of this.#tokens) {
-      if (dateNow < otpToken[EXPIRES]) {
+      if (this.#dateNow < otpToken[EXPIRES]) {
         if (expires < otpToken[EXPIRES]) {
           expires = otpToken[EXPIRES]
         }
-        if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || dateNow >= otpToken[OTP_BLOCK])) {
+        if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || this.#dateNow >= otpToken[OTP_BLOCK])) {
           /** Trim the array to save space */
           otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
         }
@@ -356,7 +355,7 @@ export class OtpTokenList {
 
     // replaceId
 
-    if (!this.#current || this.blocked || (this.#current[OTP_BLOCK] && this.#createdAt < this.#current[OTP_BLOCK])) {
+    if (!this.#current || this.blocked || (this.#current[OTP_BLOCK] && this.#dateNow < this.#current[OTP_BLOCK])) {
       return
     }
 
@@ -372,7 +371,7 @@ export class OtpTokenList {
       this.#current.length = OTP
       /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
     } else if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
-      this.#current[OTP_BLOCK] = this.#createdAt + INVALID_BLOCK_MS
+      this.#current[OTP_BLOCK] = this.#dateNow + INVALID_BLOCK_MS
     } else {
       /** Trim the array to save space. */
       this.#current.length = OTP_BLOCK
@@ -387,7 +386,7 @@ export class OtpTokenList {
 
     // updateExpires
 
-    if (this.blocked || !this.#current?.[RESEND_BLOCK] || this.#createdAt < this.#current[RESEND_BLOCK]) {
+    if (this.blocked || !this.#current?.[RESEND_BLOCK] || this.#dateNow < this.#current[RESEND_BLOCK]) {
       return
     }
 
@@ -395,17 +394,17 @@ export class OtpTokenList {
 
     await sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
 
-    const dateNow = Date.now()
+    this.#dateNow = Date.now()
 
-    this.#current[EXPIRES] = dateNow + MAX_DURATION_MS
+    this.#current[EXPIRES] = this.#dateNow + MAX_DURATION_MS
 
     if (ALLOW_ONLY_ONE_RESENDING) {
       delete this.#current[RESEND_BLOCK]
     } else {
-      this.#current[RESEND_BLOCK] = dateNow + RESEND_BLOCK_MS
+      this.#current[RESEND_BLOCK] = this.#dateNow + RESEND_BLOCK_MS
     }
 
-    await this.#save(dateNow)
+    await this.#save()
 
     return this.#object
 
@@ -450,14 +449,14 @@ export class OtpTokenList {
 
     await sendOtp(this.#context, credential, otp)
 
-    const dateNow = Date.now()
+    this.#dateNow = Date.now()
 
-    const resendBlock = dateNow + RESEND_BLOCK_MS
+    const resendBlock = this.#dateNow + RESEND_BLOCK_MS
 
-    this.#tokens.push([encodedCredential, dateNow + MAX_DURATION_MS, otp, MAX_ATTEMPTS, resendBlock])
+    this.#tokens.push([encodedCredential, this.#dateNow + MAX_DURATION_MS, otp, MAX_ATTEMPTS, resendBlock])
 
     return {
-      expires: await this.#save(dateNow),
+      expires: await this.#save(),
       resendBlock: new Date(getReducedTimePrecision(resendBlock))
     }
 
