@@ -76,15 +76,6 @@ function decodeCredential(encodedCredential) {
 }
 
 
-/**
- * @function handleDeleteEncryptionKeyException
- * @param {any} error
- */
-function handleDeleteEncryptionKeyException(error) {
-  console.error("ERROR DURING KEY ID DELETION", error)
-}
-
-
 
 export const COOKIE_ENCRYPTED_OTP_TOKENS = "t"
 
@@ -162,25 +153,6 @@ export function decodeOtpTokenStringArray(otpTokenStrings, dateNow = Date.now())
  */
 export function deleteOtpCookies(c) {
   deleteCookie(c, COOKIE_ENCRYPTED_OTP_TOKENS)
-  return deleteCookie(c, COOKIE_KEY_ID)
-}
-
-
-/**
- * @function deleteOtpData
- * @param {Context} c
- */
-export function deleteOtpData(c) {
-
-  const keyId = deleteOtpCookies(c)
-
-  if (keyId) {
-    /**
-     * Fire and forget
-     */
-    deleteEncryptionKey(c, keyId).catch(handleDeleteEncryptionKeyException)
-  }
-
 }
 
 
@@ -275,10 +247,9 @@ export class OtpTokenList {
   /**
    * @async
    * @param {number} [dateNow]
-   * @param {CryptoKey} [key]
    * @returns {Promise<Date>}
    */
-  async #save(dateNow = this.#createdAt, key) {
+  async #save(dateNow = this.#createdAt) {
 
     const tokens = []
 
@@ -290,7 +261,7 @@ export class OtpTokenList {
           expires = otpToken[EXPIRES]
         }
         if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || dateNow >= otpToken[OTP_BLOCK])) {
-          /** Trim the array to save space. */
+          /** Trim the array to save space.lnl,k*/
           otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
         }
         tokens.push(otpToken.join(OTP_SEPARATOR))
@@ -448,8 +419,9 @@ export class OtpTokenList {
     const dateNow = Date.now()
 
     const resendBlock = dateNow + RESEND_BLOCK_MS
+    const expires = dateNow + MAX_DURATION_MS
 
-    this.#tokens.push([encodedCredential, dateNow + MAX_DURATION_MS, otp, MAX_ATTEMPTS, resendBlock])
+    this.#tokens.push([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
 
     return {
       expires: await this.#save(dateNow),
