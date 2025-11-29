@@ -178,20 +178,31 @@ export function deleteOtpData(c, id) {
 /**
  * @function getOtpTokenStrings
  * @param {Context} c
- * @param {CryptoKey} key
- * @param {string} encryptedTokens
+ * @param {(string|number)} keyId
+ * @param {string} encryptedOtpTokens
  * @returns {Promise<string[]|undefined>}
  */
-export async function decryptOtpTokenStrings(c, key, encryptedTokens) {
+export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
+
+  if (!keyId || !encryptedOtpTokens) {
+    return
+  }
+
+  const key = await getKey(c, keyId)
+
+  if (!key) {
+    deleteOtpCookies(c)
+    return
+  }
 
   try {
     return (await decryptSymmetricallyText(
       key,
-      encryptedTokens,
+      encryptedOtpTokens,
       textDecoder
     ))?.split(ARRAY_SEPARATOR)
   } catch {
-    deleteOtpData(c)
+    deleteOtpCookies(c)
   }
 
 }
@@ -224,6 +235,35 @@ export class OtpTokenList {
 
   get #current() {
     return this.#tokens.at(-1)
+  }
+
+  
+  get #expires() {
+
+    /**
+     * @type {OtpToken[]}
+     */
+    const tokens = []
+
+    let expires = 0
+
+    for (const otpToken of this.#tokens) {
+      if (this.#dateNow < otpToken[EXPIRES]) {
+        if (expires < otpToken[EXPIRES]) {
+          expires = otpToken[EXPIRES]
+        }
+        if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || this.#dateNow >= otpToken[OTP_BLOCK])) {
+          /** Trim the array to save space */
+          otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
+        }
+        tokens.push(otpToken)
+      }
+    }
+
+    this.#tokens = tokens
+
+    return expires
+
   }
 
 
@@ -392,9 +432,7 @@ export class OtpTokenList {
 
     this.#current[OTP] = createOtp()
 
-    await sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
-
-    this.#dateNow = Date.now()
+    sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
 
     this.#current[EXPIRES] = this.#dateNow + MAX_DURATION_MS
 
@@ -428,11 +466,15 @@ export class OtpTokenList {
       return this.#object
     }
 
-    for (let i = this.#tokens.length - 2; i >= 0; i--) {
+    let currentExpires = this.#current?.[EXPIRES] || 0
+
+    const lastIndex = this.#tokens.length - 1
+
+    for (let i = lastIndex - 1; i >= 0; i--) {
       const otpToken = this.#tokens[i]
       if (encodedCredential === otpToken[CREDENTIAL]) {
-        this.#tokens[i] = this.#tokens[0]
-        this.#tokens[0] = otpToken
+        this.#tokens[i] = this.#tokens[lastIndex]
+        this.#tokens[lastIndex] = otpToken
         /**
          * Don't create a new key, reuse the existing one, the expiration date doesn't need to change.
          */
@@ -447,13 +489,24 @@ export class OtpTokenList {
 
     const otp = createOtp()
 
-    await sendOtp(this.#context, credential, otp)
+    /**
+     * @type {number}
+     */
+    let expires
 
-    this.#dateNow = Date.now()
+    if (this.#id === undefined) {
+      sendOtp(this.#context, credential, otp)
+      const idData = await createId(this.#context)
+      this.#id = idData.id
+      expires = idData.expires
+    } else {
+      await updateExpires(this.#context, this.#id)
+      sendOtp(this.#context, credential, otp)
+    }
 
     const resendBlock = this.#dateNow + RESEND_BLOCK_MS
 
-    this.#tokens.push([encodedCredential, this.#dateNow + MAX_DURATION_MS, otp, MAX_ATTEMPTS, resendBlock])
+    this.#tokens.push([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
 
     return {
       expires: await this.#save(),

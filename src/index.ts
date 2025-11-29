@@ -77,13 +77,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
 app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
-  const time = await c.req.valid("cookie").resend()
+  const otpTokenObject = await c.req.valid("cookie").resend()
 
-  if (!time) {
+  if (!otpTokenObject) {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
-  return c.json(time)
+  return c.json(otpTokenObject)
 
 })
 

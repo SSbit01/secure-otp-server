@@ -9,7 +9,7 @@ import {
   decodeOtpTokenStringArray,
   deleteOtpCookies,
   deleteOtpData,
-  decryptOtpTokenStrings,
+  getOtpTokenStrings,
   OtpTokenList
 } from "@/lib/otp"
 
@@ -21,27 +21,23 @@ import { getKey } from "@/custom/kms"
 
 const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedOtpTokens, [COOKIE_KEY_ID]: keyId }, c) => {
 
-  if (!encryptedOtpTokens) {
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const key = await getKey(c, keyId)
-
-  if (!key) {
-    deleteOtpCookies(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const otpTokenStrings = await decryptOtpTokenStrings(c, key, encryptedOtpTokens)
+  const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedOtpTokens)
 
   if (!otpTokenStrings) {
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
+  }
+
+  const id = otpTokenStrings.pop()
+
+  if (!id) {
+    deleteOtpCookies(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const lastAccess = otpTokenStrings.pop()
 
   if (!lastAccess) {
-    deleteOtpData(c)
+    deleteOtpData(c, id)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
@@ -54,7 +50,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TO
   const currentString = otpTokenStrings.pop()
 
   if (!currentString) {
-    deleteOtpData(c)
+    deleteOtpData(c, id)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
@@ -68,7 +64,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TO
 
   otpTokens.push(current)
 
-  return Object.freeze(new OtpTokenList(c, otpTokens, dateNow))
+  return Object.freeze(new OtpTokenList(c, otpTokens, id, dateNow))
 
 })
 
