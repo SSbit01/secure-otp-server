@@ -1,7 +1,4 @@
-/** @type {Parameters<Uint8Array<ArrayBuffer>["toBase64"]>[0]} */
-const options = {
-  alphabet: "base64url"
-}
+import { base64Options } from "@/lib/base64"
 
 const LENGTH_IN_BYTES = 18
 
@@ -18,5 +15,5 @@ const LENGTH_IN_BYTES = 18
  * @returns {string} A random ID.
  */
 export function createRandomId(length = LENGTH_IN_BYTES) {
-  return crypto.getRandomValues(new Uint8Array(length)).toBase64(options)
+  return crypto.getRandomValues(new Uint8Array(length)).toBase64(base64Options)
 }

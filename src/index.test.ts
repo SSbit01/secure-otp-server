@@ -64,6 +64,8 @@ async function fetchOtpcookie() {
 
   const data = await res.json()
   
+  console.log(data)
+  
   const date = new Date()
 
   if (RESEND_BLOCK_SECONDS) {

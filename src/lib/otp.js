@@ -413,8 +413,6 @@ export class OtpTokenList {
       return this.#object
     }
 
-    let expires = this.#current?.[EXPIRES] || 0
-
     const lastIndex = this.#tokens.length - 1
 
     for (let i = lastIndex - 1; i >= 0; i--) {
@@ -427,8 +425,6 @@ export class OtpTokenList {
          */
         await this.#save()
         return this.#object
-      } else if (expires < otpToken[EXPIRES]) {
-        expires = otpToken[EXPIRES]
       }
     }
 
@@ -439,12 +435,14 @@ export class OtpTokenList {
     if (this.#id === undefined) {
       const idData = await createId(this.#context)
       this.#id = idData.id
-      expires = idData.expires
-    } else {
-      expires = await updateExpires(this.#context, this.#id, expires)
-      if (!expires) {
+      this.#expires = idData.expires
+    } else if (this.#expires) {
+      this.#expires = await updateExpires(this.#context, this.#id, this.#expires)
+      if (!this.#expires) {
         return
       }
+    } else {
+      return
     }
 
     const otp = createOtp()
@@ -453,7 +451,7 @@ export class OtpTokenList {
 
     const resendBlock = this.#dateNow + RESEND_BLOCK_MS
 
-    this.#tokens.push([encodedCredential, expires, otp, MAX_ATTEMPTS, resendBlock])
+    this.#tokens.push([encodedCredential, this.#expires, otp, MAX_ATTEMPTS, resendBlock])
 
     return {
       expires: await this.#save(),
