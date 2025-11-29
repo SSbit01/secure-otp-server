@@ -5,8 +5,8 @@ import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } fr
 import {
   COOKIE_ENCRYPTED_OTP_TOKENS,
   COOKIE_KEY_ID,
+  EXPIRES,
   decodeOtpTokenString,
-  decodeOtpTokenStringArray,
   deleteOtpCookies,
   deleteOtpData,
   getOtpTokenStrings,
@@ -14,8 +14,6 @@ import {
 } from "@/lib/otp"
 
 import { isLessThanDelay } from "@/lib/time"
-
-import { getKey } from "@/custom/kms"
 
 
 
@@ -60,11 +58,23 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TO
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 
-  const otpTokens = decodeOtpTokenStringArray(otpTokenStrings, dateNow)
+  let expires = current[EXPIRES]
+
+  const otpTokens = []
+
+  for (const otpTokenString of otpTokenStrings) {
+    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    if (otpToken) {
+      otpTokens.push(otpToken)
+      if (expires < otpToken[EXPIRES]) {
+        expires = otpToken[EXPIRES]
+      }
+    }
+  }
 
   otpTokens.push(current)
 
-  return Object.freeze(new OtpTokenList(c, otpTokens, id, dateNow))
+  return Object.freeze(new OtpTokenList(c, otpTokens, id, expires, dateNow))
 
 })
 

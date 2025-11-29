@@ -87,18 +87,19 @@ export async function createId(c: Context): Promise<IdData> {
  * @function deleteId
  * @param {Context} c - Hono context.
  * @param {IdData["id"]} id - The ID to delete.
+ * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
  * @returns {Promise<boolean>} If delete was successful.
  */
-export async function deleteId(c: Context, id: IdData["id"]): Promise<boolean> {
+export async function deleteId(c: Context, id: IdData["id"], expires: number): Promise<boolean> {
 
   let lastValidId = -1
 
   const dateNow = Date.now()
 
   for (let i = 0; i < idStorage.length; i++) {
-    const expires = idStorage[i]
-    if (expires) {
-      if (dateNow > expires) {
+    const currentExpires = idStorage[i]
+    if (currentExpires) {
+      if (dateNow > currentExpires) {
         lastValidId = i
       } else {
         delete idStorage[i]
@@ -109,7 +110,7 @@ export async function deleteId(c: Context, id: IdData["id"]): Promise<boolean> {
   // @ts-expect-error
   const storedExpires = idStorage[id]
 
-  if (!storedExpires) {
+  if (!storedExpires || storedExpires !== expires) {
     idStorage.length = lastValidId + 1
     return false
   }
