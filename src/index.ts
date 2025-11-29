@@ -4,20 +4,18 @@ import app from "@/setup"
 
 import {
   ERR_OTP_INCORRECT,
+  ERR_OTP_INVALID_COOKIE,
   ERR_OTP_RESENT_NOT_ALLOWED,
   ERR_OTP_TOO_MANY_ATTEMPTS,
-  ERR_OTP_TOO_MANY_CREDENTIALS,
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
 import {
   COOKIE_ENCRYPTED_OTP_TOKENS,
   COOKIE_KEY_ID,
-  areOtpParametersValid,
+  EXPIRES,
   decodeOtpTokenString,
-  decodeOtpTokenStringArray,
-  decryptOtpTokenStrings,
-  deleteOtpData,
+  getOtpTokenStrings,
   OtpTokenList
 } from "@/lib/otp"
 
@@ -28,33 +26,27 @@ import otpValueValidator from "@/lib/validators/otp"
 
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
-import { deleteEncryptionKey, getEncryptionKey } from "@/custom/id"
 
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const { [COOKIE_KEY_ID]: keyId, [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedTokens } = getCookie(c)
 
-  if (!areOtpParametersValid(keyId, encryptedTokens)) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
-  }
-
-  const key = await getEncryptionKey(c, keyId)
-
-  if (!key) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
-  }
-
-  const otpTokenStrings = await decryptOtpTokenStrings(c, key, encryptedTokens)
+  const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedTokens)
 
   if (!otpTokenStrings) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
+  const id = otpTokenStrings.pop()
+
+  if (!id) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
   const lastAccess = otpTokenStrings.pop()
 
   if (!lastAccess) {
-    deleteEncryptionKey(c, keyId)
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
@@ -64,10 +56,24 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  const otpTokenObject = await new OtpTokenList(c, decodeOtpTokenStringArray(otpTokenStrings), key, dateNow).set(c.req.valid("json"))
+  let expires = 0
+
+  const otpTokens = []
+
+  for (const otpTokenString of otpTokenStrings) {
+    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    if (otpToken) {
+      otpTokens.push(otpToken)
+      if (expires < otpToken[EXPIRES]) {
+        expires = otpToken[EXPIRES]
+      }
+    }
+  }
+
+  const otpTokenObject = await new OtpTokenList(c, otpTokens, id, expires, dateNow).set(c.req.valid("json"))
 
   if (!otpTokenObject) {
-    return c.json(ERR_OTP_TOO_MANY_CREDENTIALS, 400)
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   return c.json(otpTokenObject)
@@ -100,7 +106,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
      * In case of error, don't delete OTP data
      */
     const res = await finalAction(c, credential)
-    deleteOtpData(c)
+    otpTokenList.deleteData()
     return res
   }
 

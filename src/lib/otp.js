@@ -137,24 +137,6 @@ export function deleteOtpCookies(c) {
 
 
 /**
- * @function deleteOtpData
- * @param {Context} c
- * @param {string} id
- * @param {number} expires
- */
-export function deleteOtpData(c, id, expires) {
-
-  deleteOtpCookies(c)
-
-  /**
-   * Fire and forget
-   */
-  deleteId(c, id, expires)
-
-}
-
-
-/**
  * @function getOtpTokenStrings
  * @param {Context} c
  * @param {(string|number)} keyId
@@ -265,32 +247,14 @@ export class OtpTokenList {
    */
   async #save() {
 
-    const tokens = []
-
-    let expires = 0
-
-    for (const otpToken of this.#tokens) {
-      if (this.#dateNow < otpToken[EXPIRES]) {
-        if (expires < otpToken[EXPIRES]) {
-          expires = otpToken[EXPIRES]
-        }
-        if (otpToken[ATTEMPTS] && (!otpToken[OTP_BLOCK] || this.#dateNow >= otpToken[OTP_BLOCK])) {
-          /** Trim the array to save space */
-          otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
-        }
-        tokens.push(otpToken.join(OTP_SEPARATOR))
-      }
-
-    }
-
-    if (!tokens.length) {
-      deleteOtpData(this.#context, this.#id)
+    if (!this.#tokens.length) {
+      this.deleteData()
       throw new HTTPException(400, {
         res: Response.json(ERR_OTP_INVALID_COOKIE)
       })
     }
 
-    const lessPreciseExpires = new Date(getReducedTimePrecision(expires))
+    const lessPreciseExpires = new Date(getReducedTimePrecision(this.#expires))
 
     /**
      * @type {import("hono/utils/cookie").CookieOptions}
@@ -304,8 +268,6 @@ export class OtpTokenList {
       partitioned: false
     }
 
-    const currentKey = await getCurrentKey(this.#context)
-
     /**
      * @type {CryptoKey}
      */
@@ -315,6 +277,8 @@ export class OtpTokenList {
      * @type {(string|number)}
      */
     let keyId
+
+    const currentKey = await getCurrentKey(this.#context)
 
     if (currentKey) {
       key = currentKey.key
@@ -326,6 +290,12 @@ export class OtpTokenList {
 
     setCookie(this.#context, COOKIE_KEY_ID, keyId.toString(), cookieOptions)
 
+    const tokens = []
+
+    for (const otpToken of this.#tokens) {
+      tokens.push(otpToken.join(OTP_SEPARATOR))
+    }
+
     tokens.push(Date.now())
 
     setCookie(
@@ -336,6 +306,20 @@ export class OtpTokenList {
     )
 
     return lessPreciseExpires
+
+  }
+
+
+  deleteData() {
+
+    deleteOtpCookies(this.#context)
+
+    if (this.#id && this.#expires) {
+      /**
+       * Fire and forget
+       */
+      deleteId(this.#context, this.#id, this.#expires)
+    }
 
   }
 
@@ -459,7 +443,7 @@ export class OtpTokenList {
     } else {
       expires = await updateExpires(this.#context, this.#id, expires)
       if (!expires) {
-        return 
+        return
       }
     }
 
