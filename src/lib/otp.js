@@ -333,7 +333,7 @@ export class OtpTokenList {
    */
   async check(otp) {
 
-    if (!this.#current || this.blocked || !this.#id || !this.#expires || (this.#current[OTP_BLOCK] && this.#dateNow < this.#current[OTP_BLOCK])) {
+    if (!this.#current || this.blocked || !this.#id || !this.#expires || (this.#current[OTP_BLOCK] && this.#dateNow <= this.#current[OTP_BLOCK])) {
       return
     }
 
@@ -370,7 +370,7 @@ export class OtpTokenList {
 
   async resend() {
 
-    if (this.blocked || !this.#id || !this.#expires || !this.#current?.[RESEND_BLOCK] || this.#dateNow < this.#current[RESEND_BLOCK]) {
+    if (this.blocked || !this.#id || !this.#expires || !this.#current?.[RESEND_BLOCK] || this.#dateNow <= this.#current[RESEND_BLOCK]) {
       return
     }
 

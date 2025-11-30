@@ -12,23 +12,29 @@ import {
 } from "@/lib/error/names"
 
 import {
-  RESEND_BLOCK_SECONDS,
-  MAX_ATTEMPTS,
   ATTEMPTS_BLOCK,
-  INVALID_BLOCK_SECONDS,
+  MAX_ATTEMPTS,
   MINIMUM_DELAY_BETWEEN_REQUESTS_MS as ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS,
   createOtp
 } from "@/custom/otp"
 
+import {
+  INVALID_BLOCK_MS as INVALID_BLOCK_MS_ORIGINAL,
+  RESEND_BLOCK_MS as RESEND_BLOCK_MS_ORIGINAL
+} from "@/lib/computed"
+
 import app from "@/index"
 
+
+const MAX_MS = 4000
 
 /**
  * Prevent TOO MANY REQUESTS error
  */
 const MINIMUM_DELAY_BETWEEN_REQUESTS_MS = ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS * 1.5
 
-const INVALID_BLOCK_MS = INVALID_BLOCK_SECONDS * 1000
+const INVALID_BLOCK_MS = Math.min(INVALID_BLOCK_MS_ORIGINAL, MAX_MS)
+const RESEND_BLOCK_MS = Math.min(RESEND_BLOCK_MS_ORIGINAL, MAX_MS)
 
 const ATTEMPTS_WITHOUT_BLOCK = MAX_ATTEMPTS - ATTEMPTS_BLOCK
 
@@ -64,7 +70,7 @@ async function fetchOtpcookie() {
   
   const date = new Date()
 
-  if (RESEND_BLOCK_SECONDS) {
+  if (RESEND_BLOCK_MS) {
     expect(new Date(data.resendBlock) > date).toBeTrue()
   }
   expect(new Date(data.expires) > date).toBeTrue()
@@ -543,16 +549,16 @@ describe("OTP 5", () => {
 
   it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
-    if (INVALID_BLOCK_SECONDS) {
+    if (INVALID_BLOCK_MS) {
       expect(new Date(data.otpBlock) > new Date()).toBeTrue()
     }
   })
 
 
-  if (INVALID_BLOCK_SECONDS) {
+  if (INVALID_BLOCK_MS) {
     it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
 
-      await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
+      await sleep(INVALID_BLOCK_MS)
 
       const res = await app.request("/api/otp/verify", {
         method: "POST",
@@ -617,7 +623,7 @@ describe("OTP 6", () => {
 
   it(`(2) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
-    if (INVALID_BLOCK_SECONDS) {
+    if (INVALID_BLOCK_MS) {
       expect(data.blockedUntil).toBeGreaterThan(Date.now())
     }
   })
@@ -626,43 +632,37 @@ describe("OTP 6", () => {
   let attempts = ATTEMPTS_WITHOUT_BLOCK + 1
 
 
-  if (INVALID_BLOCK_SECONDS < 5) {
-
-    while (attempts < MAX_ATTEMPTS) {
-      it(`Wait and send an invalid OTP - attempt: ${attempts}`, async() => {
-        await sleep(INVALID_BLOCK_MS || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-        const data = await sendInvalidOtp()
-        if (INVALID_BLOCK_SECONDS) {
-          expect(data.blockedUntil).toBeGreaterThan(Date.now())
-        }
-      })
-      attempts++
-    }
-
-
-    it(`Wait and send an invalid OTP (expect too many attempts)`, async() => {
-
+  while (attempts < MAX_ATTEMPTS) {
+    it(`Wait and send an invalid OTP - attempt: ${attempts}`, async() => {
       await sleep(INVALID_BLOCK_MS || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
+      const data = await sendInvalidOtp()
+      if (INVALID_BLOCK_MS) {
+        expect(data.blockedUntil).toBeGreaterThan(Date.now())
+      }
+    })
+    attempts++
+  }
 
-      const res = await app.request("/api/otp/verify", {
-        method: "POST",
-        body: `otp=${createOtp()}`,
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          cookie
-        }
-      })
 
-      cookie = getCookieFromResponse(res)
+  it(`Wait and send an invalid OTP (expect too many attempts)`, async() => {
 
-      const data = await res.json()
-      
-      expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS)
+    await sleep(INVALID_BLOCK_MS || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `otp=${createOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie
+      }
     })
 
-  } else {
-    console.warn("'Wait and send invalid OTP' tests skipped because they are set to more than 5 seconds.")
-  }
+    cookie = getCookieFromResponse(res)
+
+    const data = await res.json()
+    
+    expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS)
+
+  })
 
 })
