@@ -39,9 +39,8 @@ const idStorage: Array<number | undefined> = []
  */
 export async function createId(c: Context): Promise<IdData> {
 
-  /**
-   * Manually clean up expired IDs, as this implementation cannot automatically delete them.
-   */
+  // Manually clean up expired IDs, as this implementation cannot automatically delete them.
+  
   let newId
   let lastValidId = -1
 

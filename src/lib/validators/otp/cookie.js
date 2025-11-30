@@ -21,6 +21,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TO
   const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedOtpTokens)
 
   if (!otpTokenStrings) {
+    deleteOtpCookies(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
@@ -54,6 +55,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TO
   const current = decodeOtpTokenString(currentString, dateNow)
 
   if (!current) {
+    deleteOtpCookies(c)
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 

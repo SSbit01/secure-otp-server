@@ -45,9 +45,8 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
  */
 export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined> {
 
-  /**
-   * Manually clean up expired keys, as this implementation cannot automatically delete them.
-   */
+  // Manually clean up expired keys, as this implementation cannot automatically delete them.
+
   let currentKeyEntry: [string | number, KeyData] | undefined
 
   const dateNow = Date.now()
@@ -56,7 +55,7 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
     const expires = keyEntry[1][0]
     if (expires <= dateNow) {
       keyStorage.delete(keyEntry[0])
-    } else if (!currentKeyEntry || expires > currentKeyEntry[1][0]) {
+    } else if (!currentKeyEntry || expires < currentKeyEntry[1][0]) {
       currentKeyEntry = keyEntry
     }
   }
@@ -92,13 +91,15 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
  */
 export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
 
+  console.log(keyStorage)
+
   const keyData = keyStorage.get(keyId)
 
   if (!keyData) {
     return
   }
 
-  if (keyData[0] >= Date.now()) {
+  if (keyData[0] <= Date.now()) {
     keyStorage.delete(keyId)
     return
   }
@@ -122,9 +123,8 @@ export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
  */
 export async function storeKey(c: Context, key: CryptoKey): Promise<CurrentKey["id"]> {
 
-  /**
-   * Manually clean up expired keys, as this implementation cannot automatically delete them.
-   */
+  // Manually clean up expired keys, as this implementation cannot automatically delete them.
+  
   const dateNow = Date.now()
 
   for (const [keyId, [expires]] of keyStorage) {

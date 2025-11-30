@@ -37,8 +37,6 @@ const ATTEMPTS_WITHOUT_BLOCK = MAX_ATTEMPTS - ATTEMPTS_BLOCK
 function getCookieFromResponse(res: Response) {
 
   const arr = res.headers.getSetCookie()
-  
-  console.log(arr)
 
   const result = []
 
@@ -63,8 +61,6 @@ async function fetchOtpcookie() {
   })
 
   const data = await res.json()
-  
-  console.log(data)
   
   const date = new Date()
 

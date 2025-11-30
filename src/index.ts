@@ -83,6 +83,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
 app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
+  console.log("BBBBBB")
+
   const otpTokenObject = await c.req.valid("cookie").resend()
 
   if (!otpTokenObject) {

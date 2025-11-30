@@ -152,7 +152,6 @@ export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
   const key = await getKey(c, keyId)
 
   if (!key) {
-    deleteOtpCookies(c)
     return
   }
 
@@ -162,9 +161,7 @@ export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
       encryptedOtpTokens,
       textDecoder
     ))?.split(ARRAY_SEPARATOR)
-  } catch {
-    deleteOtpCookies(c)
-  }
+  } catch {}
 
 }
 
