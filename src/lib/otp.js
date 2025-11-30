@@ -218,8 +218,9 @@ export class OtpTokenList {
       if (this.#current[RESEND_BLOCK]) {
         result.resendBlock = new Date(getReducedTimePrecision(this.#current[RESEND_BLOCK]))
       }
-      if (this.#current[OTP_BLOCK]) {
-        result.otpBlock = new Date(getReducedTimePrecision(this.#current[OTP_BLOCK]))
+      const otpBlock = this.otpBlock
+      if (otpBlock) {
+        result.otpBlock = otpBlock
       }
     }
 
@@ -229,12 +230,15 @@ export class OtpTokenList {
 
 
   get blocked() {
-    return this.#current && !this.#current[OTP]
+    return this.#current ? !this.#current[OTP] : false
   }
 
 
   get otpBlock() {
-    return this.#current?.[OTP_BLOCK]
+    const otpBlock = this.#current?.[OTP_BLOCK]
+    if (otpBlock) {
+      return new Date(getReducedTimePrecision(otpBlock))
+    }
   }
 
 
@@ -293,9 +297,9 @@ export class OtpTokenList {
       tokens.push(otpToken.join(OTP_SEPARATOR))
     }
 
-    tokens.push(this.#id)
-
     tokens.push(Date.now())
+
+    tokens.push(this.#id)
 
     setCookie(
       this.#context,

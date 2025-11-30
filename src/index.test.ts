@@ -544,7 +544,7 @@ describe("OTP 5", () => {
   it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
     if (INVALID_BLOCK_SECONDS) {
-      expect(data.blockedUntil).toBeGreaterThan(Date.now())
+      expect(new Date(data.otpBlock) > new Date()).toBeTrue()
     }
   })
 

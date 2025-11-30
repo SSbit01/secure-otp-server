@@ -114,10 +114,12 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)
   }
 
-  if (otpTokenList.otpBlock) {
+  const otpBlock = otpTokenList.otpBlock
+
+  if (otpBlock) {
     return c.json({
       ...ERR_OTP_INCORRECT,
-      otpBlock: otpTokenList.otpBlock
+      otpBlock: otpBlock
     }, 400)
   }
 
