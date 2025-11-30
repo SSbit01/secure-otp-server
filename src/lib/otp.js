@@ -293,6 +293,8 @@ export class OtpTokenList {
       tokens.push(otpToken.join(OTP_SEPARATOR))
     }
 
+    tokens.push(this.#id)
+
     tokens.push(Date.now())
 
     setCookie(

@@ -91,8 +91,6 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
  */
 export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
 
-  console.log(keyStorage)
-
   const keyData = keyStorage.get(keyId)
 
   if (!keyData) {
