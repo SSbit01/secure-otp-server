@@ -1,5 +1,4 @@
-import { deleteCookie, getCookie, setCookie } from "hono/cookie"
-import { HTTPException } from "hono/http-exception"
+import { deleteCookie, setCookie } from "hono/cookie"
 
 import { INVALID_BLOCK_MS, MAX_DURATION_MS, RESEND_BLOCK_MS } from "@/lib/computed"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
