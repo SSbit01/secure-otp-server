@@ -2,7 +2,7 @@ import { Context } from "hono"
 
 
 /**
- * This function runs when the OTP and the credential/ID have been verified.
+ * This function is executed when the OTP and credential/ID have been successfully verified.
  * 
  * Customize this function as you like.
  * 

@@ -24,6 +24,10 @@ Easily adapt logic for OTP generation, credential validation, and OTP delivery (
 
 Prevents replay attacks by using single-use verification keys, while remaining lightweight.
 
+### Multi-Credential Sessions
+
+Store several OTP tokens per session, each bound to a different credential. Users can move between credentials without restarting the flow, and the session-encrypted cookie enforces a strict cap so tokens stay lightweight.
+
 ### High Performance
 
 Built with [Hono](https://hono.dev/) for fast and efficient routing.
@@ -40,9 +44,10 @@ For additional deployment targets such as [Fastly Compute](https://www.fastly.co
 
 This server uses a hybrid design to provide stateful security without the overhead of a storage system.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is encrypted into a token using AES-256-GCM. This token is sent to the client in a secure, `HttpOnly` cookie.
-2. The encryption key is not stored directly. Instead, a random, single-use ID is generated and stored on the server, pointing to the key.
-3. When the client attempts to verify an OTP, it sends back the encrypted token. The server uses the ID to retrieve the correct key. After each verification attempt, the key and its ID are deleted from the server's key management system (KMS).
+1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is appended to an encrypted list of tokens (one entry per credential) using AES-256-GCM. The list is sent to the client in a secure, `HttpOnly` cookie.
+2. The encryption key is not stored directly. Instead, a random ID is generated and stored on the server.
+3. When the client attempts to verify an OTP, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
+4. The encrypted cookie stores at most `MAX_OTP_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
 
 This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks. By default, the KMS stores keys in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
 
@@ -52,15 +57,11 @@ This process ensures that each encrypted token can only be used for verification
 
 Clone the repository and install dependencies using your preferred package manager.
 
-```sh
 # Using Bun
 bun install
 
 # Using Deno
-deno task install
-```
-
-### 2. Configuration
+deno task install### 2. Configuration
 
 Create a `.env` file in the root of the project. For production, set `NODE_ENV` to `"production"` to enable secure cookies and specify your frontend's `ORIGIN`.
 
@@ -82,12 +83,7 @@ bun run bun:dev
 
 # Using Deno
 deno task deno:dev
-
-# Using Wrangler for Cloudflare Workers
-bun run cf:dev
 ```
-
-Check the `package.json` `"scripts"` field for other built-in scripts (build, lint, format...).
 
 ## API Reference
 
@@ -99,10 +95,11 @@ Generates a new OTP, encrypts the session data, and sends it to the user. This e
 
 - **Body**: `application/json`. The schema is defined in [`src/custom/credential.ts`](/src/custom/credential.ts).
 - **Logic**: The OTP sending logic is defined in [`src/custom/send.ts`](/src/custom/send.ts).
+- **Multi-credential flow**: Sending this request again with a different credential adds another OTP token (until `MAX_OTP_CREDENTIALS` is reached).
 
 ### `POST /api/otp/resend`
 
-Generates and sends a new OTP for the same session. This endpoint uses the cookies from the `/api/otp/create` request and does not require a request body.
+Generates and sends a new OTP for the current token. This endpoint uses the cookies from the `/api/otp/create` request and does not require a request body.
 
 - **Logic**: Resend timing and limits can be configured in [`src/custom/otp.ts`](/src/custom/otp.ts).
 
@@ -117,10 +114,11 @@ Verifies an OTP code. Each verification attempt updates the session token.
 
 Key logic is separated into the following modules:
 
-- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry).
+- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays, and the `MAX_OTP_CREDENTIALS` cap that governs multi-credential sessions.
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
 - [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
-- [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for single-use encryption keys (defaults to in-memory).
+- [`src/custom/id.ts`](/src/custom/id.ts): Storage for OTP token list IDs (defaults to in-memory).
+- [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for encryption keys (defaults to in-memory).
 - [`src/custom/final.ts`](/src/custom/final.ts): Action to perform after successful OTP verification.
 
 Each file contains detailed comments explaining how to modify the code.
@@ -142,8 +140,8 @@ Server error responses follow this structure:
 
 ```typescript
 {
-  "error": string;
-  "message": string;
+  error: string;
+  message?: string;
 }
 ```
 
@@ -153,12 +151,6 @@ Server error responses follow this structure:
 ## Testing
 
 The test suite is written with Bun's built-in test runner.
-
-```sh
-bun test
-```
-
-## License
 
 This project is [MIT licensed](/LICENSE).
 
