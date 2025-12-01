@@ -1,3 +1,5 @@
+const isTest = process.env.NODE_ENV === "test"
+
 /**
  * By default, only one resending is allowed per session. You can enable unlimited resendings by setting this variable to `false`.
  * 
@@ -20,7 +22,7 @@ export const ATTEMPTS_BLOCK: number = 1
  * 
  * - It is recommended to set it to 20 seconds.
  */
-export const INVALID_BLOCK_SECONDS: number = 20
+export const INVALID_BLOCK_SECONDS: number = isTest ? 3 : 20
 
 
 /**
@@ -76,7 +78,7 @@ export const OTP_REGEX: RegExp = /\w+/
  * 
  * - It is recommended to set it to 20 seconds.
  */
-export const RESEND_BLOCK_SECONDS: number = 20
+export const RESEND_BLOCK_SECONDS: number = isTest ? 3 : 20
 
 
 /**

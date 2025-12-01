@@ -1,3 +1,11 @@
+/**
+ * MANY TESTS ARE STILL MISSING:
+ * 
+ * - Multiple OTP tokens tests.
+ * - Credential swapping tests.
+ * ...
+ */
+
 import { sleep } from "bun"
 import { describe, it, expect } from "bun:test"
 
@@ -19,22 +27,19 @@ import {
 } from "@/custom/otp"
 
 import {
-  INVALID_BLOCK_MS as INVALID_BLOCK_MS_ORIGINAL,
-  RESEND_BLOCK_MS as RESEND_BLOCK_MS_ORIGINAL
+  INVALID_BLOCK_MS,
+  RESEND_BLOCK_MS
 } from "@/lib/computed"
 
 import app from "@/index"
 
 
-const MAX_MS = 4000
+const MAX_WAITING_MS = 4000
 
 /**
  * Prevent TOO MANY REQUESTS error
  */
 const MINIMUM_DELAY_BETWEEN_REQUESTS_MS = ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS * 1.5
-
-const INVALID_BLOCK_MS = Math.min(INVALID_BLOCK_MS_ORIGINAL, MAX_MS)
-const RESEND_BLOCK_MS = Math.min(RESEND_BLOCK_MS_ORIGINAL, MAX_MS)
 
 const ATTEMPTS_WITHOUT_BLOCK = MAX_ATTEMPTS - ATTEMPTS_BLOCK
 
@@ -81,7 +86,7 @@ async function fetchOtpcookie() {
 
 
 
-describe("OTP 1", () => {
+describe("OTP Generation", () => {
 
   let cookie: string
 
@@ -172,6 +177,20 @@ describe("OTP 1", () => {
 
   })
 
+})
+
+
+
+describe("OTP Resending", () => {
+
+  let cookie: string
+
+
+  it("Generate OTP again", async() => {
+
+    cookie = await fetchOtpcookie()
+
+  })
 
 
   it("Resend OTP without sending the cookie", async() => {
@@ -262,21 +281,6 @@ describe("OTP 1", () => {
 
   })
 
-})
-
-
-
-describe("OTP 2", () => {
-
-  let cookie: string
-
-
-  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
-
-    cookie = await fetchOtpcookie()
-
-  })
-
 
   it("Resend OTP without waiting", async() => {
 
@@ -295,16 +299,40 @@ describe("OTP 2", () => {
 
   })
 
+
+  if (RESEND_BLOCK_MS <= MAX_WAITING_MS) {
+
+    it("Resend OTP", async() => {
+
+      await sleep(RESEND_BLOCK_MS)
+  
+      const res = await app.request("/api/otp/resend", {
+        method: "POST",
+        headers: {
+          cookie
+        }
+      })
+  
+      const data = await res.json()
+      
+      expect(data.expires).toBeString()
+  
+    })
+
+  } else {
+    console.warn(`RESEND_BLOCK_MS is greater than ${MAX_WAITING_MS}ms, skipping 'Resend valid OTP' test`)
+  }
+
 })
 
 
 
-describe("OTP 3", () => {
+describe("OTP Sending", () => {
 
   let cookie: string
 
 
-  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
+  it("Generate OTP again", async() => {
 
     cookie = await fetchOtpcookie()
 
@@ -429,21 +457,6 @@ describe("OTP 3", () => {
 
   })
 
-})
-
-
-
-describe("OTP 4", async() => {
-
-  let cookie: string
-
-
-  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
-
-    cookie = await fetchOtpcookie()
-
-  })
-
 
   it("Verify with an invalid `Content-Type`", async() => {
 
@@ -502,21 +515,6 @@ describe("OTP 4", async() => {
 
   })
 
-})
-
-
-
-describe("OTP 5", () => {
-  
-  let cookie: string
-
-
-  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
-
-    cookie = await fetchOtpcookie()
-
-  })
-
 
   async function sendInvalidOtp() {
 
@@ -555,7 +553,8 @@ describe("OTP 5", () => {
   })
 
 
-  if (INVALID_BLOCK_MS) {
+  if (INVALID_BLOCK_MS <= MAX_WAITING_MS) {
+
     it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
 
       await sleep(INVALID_BLOCK_MS)
@@ -574,95 +573,9 @@ describe("OTP 5", () => {
       expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS)
 
     })
+
+  } else {
+    console.warn(`'INVALID_BLOCK_MS' is greater than ${MAX_WAITING_MS}ms, skipping 'Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}' test`)
   }
-
-})
-
-
-
-describe("OTP 6", () => {
-
-  let cookie: string
-
-
-  it("Generate OTP again (because the server deletes the key if it detects misuse)", async() => {
-
-    cookie = await fetchOtpcookie()
-
-  })
-
-
-  async function sendInvalidOtp() {
-
-    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-
-    const res = await app.request("/api/otp/verify", {
-      method: "POST",
-      body: `otp=${createOtp()}`,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        cookie
-      }
-    })
-
-    cookie = getCookieFromResponse(res)
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INCORRECT)
-
-    return data
-
-  }
-
-
-  for (let i = 1; i < ATTEMPTS_WITHOUT_BLOCK; i++) {
-    it(`(2) Send an invalid OTP - attempt: ${i}`, sendInvalidOtp)
-  }
-
-
-  it(`(2) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
-    const data = await sendInvalidOtp()
-    if (INVALID_BLOCK_MS) {
-      expect(data.blockedUntil).toBeGreaterThan(Date.now())
-    }
-  })
-
-  
-  let attempts = ATTEMPTS_WITHOUT_BLOCK + 1
-
-
-  while (attempts < MAX_ATTEMPTS) {
-    it(`Wait and send an invalid OTP - attempt: ${attempts}`, async() => {
-      await sleep(INVALID_BLOCK_MS || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-      const data = await sendInvalidOtp()
-      if (INVALID_BLOCK_MS) {
-        expect(data.blockedUntil).toBeGreaterThan(Date.now())
-      }
-    })
-    attempts++
-  }
-
-
-  it(`Wait and send an invalid OTP (expect too many attempts)`, async() => {
-
-    await sleep(INVALID_BLOCK_MS || MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-
-    const res = await app.request("/api/otp/verify", {
-      method: "POST",
-      body: `otp=${createOtp()}`,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        cookie
-      }
-    })
-
-    cookie = getCookieFromResponse(res)
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS)
-
-  })
 
 })

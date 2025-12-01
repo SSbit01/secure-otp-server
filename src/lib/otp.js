@@ -244,15 +244,13 @@ export class OtpTokenList {
 
   /**
    * @async
-   * @returns {Promise<Date>}
+   * @returns {Promise<Date|undefined>}
    */
   async #save() {
 
     if (!this.#tokens.length) {
-      this.deleteData()
-      throw new HTTPException(400, {
-        res: Response.json(ERR_OTP_INVALID_COOKIE)
-      })
+      deleteOtpCookies(this.#context)
+      return
     }
 
     const lessPreciseExpires = new Date(getReducedTimePrecision(this.#expires))
@@ -353,11 +351,12 @@ export class OtpTokenList {
     /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
     this.#current[ATTEMPTS]--
 
-    if (this.blocked) {
+    const attempts = this.#current[ATTEMPTS]
+
+    if (!attempts) {
       /** Trim the array to save space. */
       this.#current.length = OTP
-      /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
-    } else if (INVALID_BLOCK_MS && this.#current[ATTEMPTS] <= ATTEMPTS_BLOCK) {
+    } else if (INVALID_BLOCK_MS && attempts <= ATTEMPTS_BLOCK) {
       this.#current[OTP_BLOCK] = this.#dateNow + INVALID_BLOCK_MS
     } else {
       /** Trim the array to save space. */
@@ -459,8 +458,10 @@ export class OtpTokenList {
 
     this.#tokens.push([encodedCredential, this.#expires, otp, MAX_ATTEMPTS, resendBlock])
 
-    return {
-      expires: await this.#save(),
+    const expiresDate = await this.#save()
+
+    return expiresDate && {
+      expires: expiresDate,
       resendBlock: new Date(getReducedTimePrecision(resendBlock))
     }
 
