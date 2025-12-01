@@ -44,14 +44,6 @@ import sendOtp from "@/custom/send"
 const ARRAY_SEPARATOR = ","
 const OTP_SEPARATOR = "|"
 
-export const CREDENTIAL = 0
-export const EXPIRES = 1
-export const OTP = 2
-export const ATTEMPTS = 3
-export const RESEND_BLOCK = 4
-export const OTP_BLOCK = 5
-
-
 
 /**
  * @function encodeCredential
@@ -73,6 +65,13 @@ function decodeCredential(encodedCredential) {
 }
 
 
+
+export const CREDENTIAL = 0
+export const EXPIRES = 1
+export const OTP = 2
+export const ATTEMPTS = 3
+export const RESEND_BLOCK = 4
+export const OTP_BLOCK = 5
 
 export const COOKIE_ENCRYPTED_OTP_TOKENS = "t"
 export const COOKIE_KEY_ID = "k"
