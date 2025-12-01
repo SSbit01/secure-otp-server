@@ -26,10 +26,11 @@ interface CurrentKey {
 
 
 /// CUSTOM
-type KeyData = [expires: number, rotate: number, key: CryptoKey, encryptions: number]
+type KeyData = [expires: number, rotate: number, key: CryptoKey, uses?: number]
 
 
-const ROTATE = 2592000000  // 30 days in miliseconds.
+const ROTATE_TIME = 2592000000  // 30 days in miliseconds.
+const ROTATE_USES = 1000000000  // 1 billion.
 
 const keyStorage = new Map<CurrentKey["id"], KeyData>()
 ///
@@ -66,7 +67,13 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
 
   const keyData = currentKeyEntry[1]
 
-  if (keyData[1] <= dateNow) {
+  if (keyData[1] <= dateNow || !keyData[3]) {
+    return
+  }
+
+  if (keyData[3] >= ROTATE_USES) {
+    /** Trim the array to save space. */
+    keyData.length = 3
     return
   }
 
@@ -131,7 +138,7 @@ export async function storeKey(c: Context, key: CryptoKey): Promise<CurrentKey["
     }
   }
 
-  const rotate = dateNow + ROTATE
+  const rotate = dateNow + ROTATE_TIME
   const data: KeyData = [rotate + MAX_DURATION_MS, rotate, key, 1]
 
   let id: string
