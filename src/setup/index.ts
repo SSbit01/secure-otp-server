@@ -77,12 +77,4 @@ app.notFound(c => c.body(null, 404))
 
 
 
-app.post("/api/rotate", async (c) => {
-
-  return c.json({ rotated: true })
-  
-})
-
-
-
 export default app
