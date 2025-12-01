@@ -117,7 +117,7 @@ export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
     }
   }
 
-  // @ts-expect-error TS doesn't know that this must be a `OtpToken` array.
+  // @ts-expect-error: TS doesn't know that this must be a `OtpToken` array.
   return otpToken
 
 }
