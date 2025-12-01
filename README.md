@@ -47,7 +47,7 @@ This server uses a hybrid design to provide stateful security without the overhe
 1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is appended to an encrypted list of tokens (one entry per credential) using AES-256-GCM. The list is sent to the client in a secure, `HttpOnly` cookie.
 2. The encryption key is not stored directly. Instead, a random ID is generated and stored on the server.
 3. When the client attempts to verify an OTP, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
-4. The encrypted cookie stores at most `MAX_OTP_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
+4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
 
 This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks. By default, the KMS stores keys in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
 
@@ -95,7 +95,7 @@ Generates a new OTP, encrypts the session data, and sends it to the user. This e
 
 - **Body**: `application/json`. The schema is defined in [`src/custom/credential.ts`](/src/custom/credential.ts).
 - **Logic**: The OTP sending logic is defined in [`src/custom/send.ts`](/src/custom/send.ts).
-- **Multi-credential flow**: Sending this request again with a different credential adds another OTP token (until `MAX_OTP_CREDENTIALS` is reached).
+- **Multi-credential flow**: Sending this request again with a different credential adds another OTP token (until `OTP_MAX_CREDENTIALS` is reached).
 
 ### `POST /api/otp/resend`
 
@@ -114,7 +114,7 @@ Verifies an OTP code. Each verification attempt updates the session token.
 
 Key logic is separated into the following modules:
 
-- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays, and the `MAX_OTP_CREDENTIALS` cap that governs multi-credential sessions.
+- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays, and the `OTP_MAX_CREDENTIALS` cap that governs multi-credential sessions.
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
 - [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
 - [`src/custom/id.ts`](/src/custom/id.ts): Storage for OTP token list IDs (defaults to in-memory).
