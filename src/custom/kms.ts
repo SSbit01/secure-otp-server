@@ -123,7 +123,6 @@ export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
  * @function storeKey
  * @param {Context} c - Hono context.
  * @param {CryptoKey} key - The encryption key to store.
- * @param {number} [dateNow] - Current date in milliseconds elapsed since the epoch.
  * @return {Promise<CurrentKey["id"]>} The ID of the stored key.
  */
 export async function storeKey(c: Context, key: CryptoKey): Promise<CurrentKey["id"]> {
