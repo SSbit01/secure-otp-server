@@ -344,6 +344,7 @@ export class OtpTokenList {
     const id = await replaceId(this.#context, this.#id, this.#expires)
 
     if (!id) {
+      deleteOtpCookies(this.#context)
       return
     }
 
@@ -377,6 +378,7 @@ export class OtpTokenList {
     const expires = await updateExpires(this.#context, this.#id, this.#expires)
 
     if (!expires) {
+      deleteOtpCookies(this.#context)
       return 
     }
 
@@ -442,6 +444,7 @@ export class OtpTokenList {
     } else if (this.#expires) {
       this.#expires = await updateExpires(this.#context, this.#id, this.#expires)
       if (!this.#expires) {
+        deleteOtpCookies(this.#context)
         return
       }
     } else {
