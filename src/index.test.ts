@@ -27,8 +27,8 @@ import {
 } from "@/custom/otp"
 
 import {
-  INVALID_BLOCK_MS,
-  RESEND_BLOCK_MS
+  OTP_INVALID_BLOCK_MS,
+  OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
 
 import app from "@/index"
@@ -75,7 +75,7 @@ async function fetchOtpcookie() {
   
   const date = new Date()
 
-  if (RESEND_BLOCK_MS) {
+  if (OTP_RESEND_BLOCK_MS) {
     expect(new Date(data.resendBlock) > date).toBeTrue()
   }
   expect(new Date(data.expires) > date).toBeTrue()
@@ -300,11 +300,11 @@ describe("OTP Resending", () => {
   })
 
 
-  if (RESEND_BLOCK_MS <= MAX_WAITING_MS) {
+  if (OTP_RESEND_BLOCK_MS <= MAX_WAITING_MS) {
 
     it("Resend OTP", async() => {
 
-      await sleep(RESEND_BLOCK_MS)
+      await sleep(OTP_RESEND_BLOCK_MS)
   
       const res = await app.request("/api/otp/resend", {
         method: "POST",
@@ -320,7 +320,7 @@ describe("OTP Resending", () => {
     })
 
   } else {
-    console.warn(`RESEND_BLOCK_MS is greater than ${MAX_WAITING_MS}ms, skipping 'Resend valid OTP' test`)
+    console.warn(`OTP_RESEND_BLOCK_MS is greater than ${MAX_WAITING_MS}ms, skipping 'Resend valid OTP' test`)
   }
 
 })
@@ -547,17 +547,17 @@ describe("OTP Sending", () => {
 
   it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async() => {
     const data = await sendInvalidOtp()
-    if (INVALID_BLOCK_MS) {
+    if (OTP_INVALID_BLOCK_MS) {
       expect(new Date(data.otpBlock) > new Date()).toBeTrue()
     }
   })
 
 
-  if (INVALID_BLOCK_MS <= MAX_WAITING_MS) {
+  if (OTP_INVALID_BLOCK_MS <= MAX_WAITING_MS) {
 
     it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async() => {
 
-      await sleep(INVALID_BLOCK_MS)
+      await sleep(OTP_INVALID_BLOCK_MS)
 
       const res = await app.request("/api/otp/verify", {
         method: "POST",
@@ -575,7 +575,7 @@ describe("OTP Sending", () => {
     })
 
   } else {
-    console.warn(`'INVALID_BLOCK_MS' is greater than ${MAX_WAITING_MS}ms, skipping 'Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}' test`)
+    console.warn(`'OTP_INVALID_BLOCK_MS' is greater than ${MAX_WAITING_MS}ms, skipping 'Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}' test`)
   }
 
 })

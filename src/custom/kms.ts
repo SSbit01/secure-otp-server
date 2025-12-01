@@ -13,7 +13,7 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
-import { MAX_DURATION_MS } from "@/lib/computed"
+import { OTP_MAX_DURATION_MS } from "@/lib/computed"
 import { createRandomId } from "@/lib/crypto/id"
 
 import type { Context } from "hono"
@@ -139,7 +139,7 @@ export async function storeKey(c: Context, key: CryptoKey): Promise<CurrentKey["
   }
 
   const rotate = dateNow + ROTATE_TIME
-  const data: KeyData = [rotate + MAX_DURATION_MS, rotate, key, 1]
+  const data: KeyData = [rotate + OTP_MAX_DURATION_MS, rotate, key, 1]
 
   let id: string
 

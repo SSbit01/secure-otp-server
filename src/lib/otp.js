@@ -1,6 +1,6 @@
 import { deleteCookie, setCookie } from "hono/cookie"
 
-import { INVALID_BLOCK_MS, MAX_DURATION_MS, RESEND_BLOCK_MS } from "@/lib/computed"
+import { OTP_INVALID_BLOCK_MS, OTP_MAX_DURATION_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
@@ -353,8 +353,8 @@ export class OtpTokenList {
     if (!attempts) {
       /** Trim the array to save space. */
       this.#current.length = OTP
-    } else if (INVALID_BLOCK_MS && attempts <= OTP_ATTEMPTS_BLOCK) {
-      this.#current[OTP_BLOCK] = this.#dateNow + INVALID_BLOCK_MS
+    } else if (OTP_INVALID_BLOCK_MS && attempts <= OTP_ATTEMPTS_BLOCK) {
+      this.#current[OTP_BLOCK] = this.#dateNow + OTP_INVALID_BLOCK_MS
     } else {
       /** Trim the array to save space. */
       this.#current.length = OTP_BLOCK
@@ -384,12 +384,12 @@ export class OtpTokenList {
 
     sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
 
-    this.#current[EXPIRES] = this.#dateNow + MAX_DURATION_MS
+    this.#current[EXPIRES] = this.#dateNow + OTP_MAX_DURATION_MS
 
     if (OTP_ALLOW_ONLY_ONE_RESENDING) {
       delete this.#current[RESEND_BLOCK]
     } else {
-      this.#current[RESEND_BLOCK] = this.#dateNow + RESEND_BLOCK_MS
+      this.#current[RESEND_BLOCK] = this.#dateNow + OTP_RESEND_BLOCK_MS
     }
 
     await this.#save()
@@ -451,7 +451,7 @@ export class OtpTokenList {
 
     sendOtp(this.#context, credential, otp)
 
-    const resendBlock = this.#dateNow + RESEND_BLOCK_MS
+    const resendBlock = this.#dateNow + OTP_RESEND_BLOCK_MS
 
     this.#tokens.push([encodedCredential, this.#expires, otp, OTP_MAX_ATTEMPTS, resendBlock])
 
