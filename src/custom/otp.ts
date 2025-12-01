@@ -1,3 +1,6 @@
+import process from "node:process"
+
+
 const isTest = process.env.NODE_ENV === "test"
 
 /**

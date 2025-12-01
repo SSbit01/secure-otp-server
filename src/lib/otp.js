@@ -2,9 +2,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
 
 import { INVALID_BLOCK_MS, MAX_DURATION_MS, RESEND_BLOCK_MS } from "@/lib/computed"
-import { createRandomId } from "@/lib/crypto/id"
 import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
-import { ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
@@ -161,7 +159,9 @@ export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
       encryptedOtpTokens,
       textDecoder
     ))?.split(ARRAY_SEPARATOR)
-  } catch {}
+  } catch {
+    // It simply returns `undefined`
+  }
 
 }
 
@@ -202,7 +202,7 @@ export class OtpTokenList {
   get #object() {
 
     if (!this.#current) {
-      return
+      return undefined
     }
 
     /**
@@ -236,9 +236,7 @@ export class OtpTokenList {
 
   get otpBlock() {
     const otpBlock = this.#current?.[OTP_BLOCK]
-    if (otpBlock) {
-      return new Date(getReducedTimePrecision(otpBlock))
-    }
+    return otpBlock ? new Date(getReducedTimePrecision(otpBlock)) : undefined
   }
 
 
