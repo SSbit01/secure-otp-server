@@ -154,4 +154,4 @@ The test suite is written with Bun's built-in test runner.
 
 This project is [MIT licensed](/LICENSE).
 
-Created by [SSbit01](https://ssbit01.github.io).
+Originally created by [SSbit01](https://ssbit01.github.io).
