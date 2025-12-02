@@ -3,8 +3,8 @@ import { validator } from "hono/validator"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 
 import {
-  COOKIE_ENCRYPTED_OTP_TOKENS,
-  COOKIE_KEY_ID,
+  COOKIE_OTP_ENCRYPTED_TOKENS,
+  COOKIE_OTP_KEY_ID,
   EXPIRES,
   decodeOtpTokenString,
   deleteOtpCookies,
@@ -16,7 +16,7 @@ import { isLessThanDelay } from "@/lib/time"
 
 
 
-const otpCookieValidator = validator("cookie", async ({ [COOKIE_ENCRYPTED_OTP_TOKENS]: encryptedOtpTokens, [COOKIE_KEY_ID]: keyId }, c) => {
+const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TOKENS]: encryptedOtpTokens, [COOKIE_OTP_KEY_ID]: keyId }, c) => {
 
   const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedOtpTokens)
 

@@ -78,8 +78,8 @@ export const ATTEMPTS = 3
 export const RESEND_BLOCK = 4
 export const OTP_BLOCK = 5
 
-export const COOKIE_ENCRYPTED_OTP_TOKENS = "t"
-export const COOKIE_KEY_ID = "k"
+export const COOKIE_OTP_ENCRYPTED_TOKENS = "t"
+export const COOKIE_OTP_KEY_ID = "k"
 
 
 /**
@@ -132,8 +132,8 @@ export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
  * @param {Context} c
  */
 export function deleteOtpCookies(c) {
-  deleteCookie(c, COOKIE_ENCRYPTED_OTP_TOKENS)
-  deleteCookie(c, COOKIE_KEY_ID)
+  deleteCookie(c, COOKIE_OTP_ENCRYPTED_TOKENS)
+  deleteCookie(c, COOKIE_OTP_KEY_ID)
 }
 
 
@@ -288,7 +288,7 @@ export class OtpTokenList {
       keyId = await storeKey(this.#context, key)
     }
 
-    setCookie(this.#context, COOKIE_KEY_ID, keyId.toString(), cookieOptions)
+    setCookie(this.#context, COOKIE_OTP_KEY_ID, keyId.toString(), cookieOptions)
 
     const tokens = []
 
@@ -302,7 +302,7 @@ export class OtpTokenList {
 
     setCookie(
       this.#context,
-      COOKIE_ENCRYPTED_OTP_TOKENS,
+      COOKIE_OTP_ENCRYPTED_TOKENS,
       await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder),
       cookieOptions
     )
