@@ -11,7 +11,7 @@
  * - Redis, DynamoDB or similar are the best alternatives.
  */
 
-import { OTP_MAX_DURATION_MS } from "@/lib/computed"
+import { OTP_MAX_AGE_MS } from "@/lib/computed"
 
 import type { Context } from "hono"
 
@@ -65,9 +65,9 @@ export async function createId(c: Context): Promise<IdData> {
 
   newId ??= idStorage.length
 
-  const expires = dateNow + OTP_MAX_DURATION_MS
+  const expires = dateNow + OTP_MAX_AGE_MS
 
-  idStorage[newId] = dateNow + OTP_MAX_DURATION_MS
+  idStorage[newId] = dateNow + OTP_MAX_AGE_MS
 
   return {
     id: newId,
@@ -194,7 +194,7 @@ export async function updateExpires(c: Context, id: IdData["id"], oldExpires: nu
     return 0
   }
 
-  const newExpires = Date.now() + OTP_MAX_DURATION_MS
+  const newExpires = Date.now() + OTP_MAX_AGE_MS
 
   // @ts-expect-error: The `id` is a number with this implementation.
   idStorage[id] = newExpires

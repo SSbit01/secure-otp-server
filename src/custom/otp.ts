@@ -4,6 +4,15 @@ const isTest = process.env.NODE_ENV === "test"
 
 
 /**
+ * Delay based rate limiting between OTP requests.
+ * 
+ * - It is recommended to set it to 200 milliseconds or higher.
+ * - Also, you can add external rate limiting using Cloudflare or other services.
+ */
+export const MINIMUM_DELAY_BETWEEN_REQUESTS_MS: number = 200  // 0.2 seconds
+
+
+/**
  * By default, only one resending is allowed per session. You can enable unlimited resendings by setting this variable to `false`.
  * 
  * - It is recommended to set it to `true`.
@@ -29,9 +38,12 @@ export const OTP_INVALID_BLOCK_SECONDS: number = isTest ? 3 : 20
 
 
 /**
- * The maximum number of attempts a user can verify an OTP.
+ * You can customize the length of OTPs.
+ * 
+ * - It is recommended to set it between 6 and 10.
+ * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
  */
-export const OTP_MAX_ATTEMPTS: number = 3
+export const OTP_LENGTH: number = 8
 
 
 /**
@@ -39,7 +51,7 @@ export const OTP_MAX_ATTEMPTS: number = 3
  * 
  * - If it is too low, tests may fail.
  */
-export const OTP_MAX_DURATION_SECONDS: number = 300  // 5 minutes
+export const OTP_MAX_AGE: number = 300  // 5 minutes
 
 
 /**
@@ -53,21 +65,9 @@ export const OTP_MAX_CREDENTIALS: number = 3
 
 
 /**
- * Delay based rate limiting between OTP requests.
- * 
- * - It is recommended to set it to 200 milliseconds or higher.
- * - Also, you can add external rate limiting using Cloudflare or other services.
+ * The maximum number of attempts a user can verify an OTP.
  */
-export const MINIMUM_DELAY_BETWEEN_REQUESTS_MS: number = 200  // 0.2 seconds
-
-
-/**
- * You can customize the length of OTPs.
- * 
- * - It is recommended to set it between 6 and 10.
- * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
- */
-export const OTP_LENGTH: number = 8
+export const OTP_MAX_ATTEMPTS: number = 3
 
 
 /**
