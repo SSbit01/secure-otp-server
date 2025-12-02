@@ -186,7 +186,7 @@ export class OtpTokenList {
    * @param {number} [expires]
    * @param {number} [createdAt]
    */
-  constructor(c, tokens = [], id, expires, createdAt = Date.now()) {
+  constructor(c, tokens = [], id, expires = 0, createdAt = Date.now()) {
 
     this.#context = c
     this.#id = id
@@ -197,11 +197,25 @@ export class OtpTokenList {
   }
 
 
+  /**
+   * @returns {(OtpToken|undefined)}
+   */
   get #current() {
     return this.#tokens.at(-1)
   }
 
 
+  /**
+   * @returns {boolean}
+   */
+  get #idValid() {
+    return this.#id != undefined  // #id might be `0`
+  }
+
+
+  /**
+   * @returns {(OtpTokenObject|undefined)}
+   */
   get #object() {
 
     if (!this.#current) {
@@ -232,11 +246,17 @@ export class OtpTokenList {
   }
 
 
+  /**
+   * @returns {boolean}
+   */
   get blocked() {
     return this.#current ? !this.#current[OTP] : false
   }
 
 
+  /**
+   * @returns {(Date|undefined)}
+   */
   get otpBlock() {
     const otpBlock = this.#current?.[OTP_BLOCK]
     return otpBlock ? new Date(getReducedTimePrecision(otpBlock)) : undefined
@@ -249,7 +269,11 @@ export class OtpTokenList {
    */
   async #save() {
 
-    if (!this.#tokens.length) {
+    if (
+      !this.#tokens.length ||
+      !this.#expires ||
+      !this.#idValid
+    ) {
       deleteOtpCookies(this.#context)
       return
     }
@@ -316,10 +340,11 @@ export class OtpTokenList {
 
     deleteOtpCookies(this.#context)
 
-    if (this.#id && this.#expires) {
+    if (this.#expires && this.#idValid) {
       /**
        * Fire and forget
        */
+      // @ts-expect-error: `#idValid` is true
       deleteId(this.#context, this.#id, this.#expires)
     }
 
@@ -332,14 +357,22 @@ export class OtpTokenList {
    */
   async check(otp) {
 
-    if (!this.#current || this.blocked || !this.#id || !this.#expires || (this.#current[OTP_BLOCK] && this.#dateNow <= this.#current[OTP_BLOCK])) {
+    if (
+      this.blocked ||
+      !this.#expires ||
+      !this.#idValid ||
+      (this.#current?.[OTP_BLOCK] && this.#dateNow <= this.#current[OTP_BLOCK])
+    ) {
       return
     }
-
+    
+    // @ts-expect-error: `#current` is defined.
     if (this.#current[OTP] === otp) {
+      // @ts-expect-error: `#current` and `#idValid` are not falsy.
       return await deleteId(this.#context, this.#id, this.#expires) ? decodeCredential(this.#current[CREDENTIAL]) : undefined
     }
 
+    // @ts-expect-error: `#idValid` is true.
     const id = await replaceId(this.#context, this.#id, this.#expires)
 
     if (!id) {
@@ -349,13 +382,14 @@ export class OtpTokenList {
 
     this.#id = id
 
-    /** @ts-expect-error TS doesn't know that this must be a `number`, because `this.blocked` is false. */
+    // @ts-expect-error: `#current` is defined.
     this.#current[ATTEMPTS]--
 
-    const attempts = this.#current[ATTEMPTS]
+    const attempts = this.#current?.[ATTEMPTS]
 
     if (!attempts) {
       /** Trim the array to save space. */
+      // @ts-expect-error: `#current` and `#idValid` are not falsy.
       this.#current.length = OTP
     } else if (OTP_INVALID_BLOCK_MS && attempts <= OTP_ATTEMPTS_BLOCK) {
       this.#current[OTP_BLOCK] = this.#dateNow + OTP_INVALID_BLOCK_MS
@@ -371,10 +405,17 @@ export class OtpTokenList {
 
   async resend() {
 
-    if (this.blocked || !this.#id || !this.#expires || !this.#current?.[RESEND_BLOCK] || this.#dateNow <= this.#current[RESEND_BLOCK]) {
+    if (
+      this.blocked ||
+      !this.#idValid ||
+      !this.#expires ||
+      !this.#current?.[RESEND_BLOCK] ||
+      this.#dateNow <= this.#current[RESEND_BLOCK]
+    ) {
       return
     }
 
+    // @ts-expect-error: `#idValid` is true.
     const expires = await updateExpires(this.#context, this.#id, this.#expires)
 
     if (!expires) {
@@ -437,18 +478,17 @@ export class OtpTokenList {
       return
     }
 
-    if (this.#id === undefined) {
-      const idData = await createId(this.#context)
-      this.#id = idData.id
-      this.#expires = idData.expires
-    } else if (this.#expires) {
+    if (this.#idValid && this.#expires) {
+      // @ts-expect-error: `#idValid` is true.
       this.#expires = await updateExpires(this.#context, this.#id, this.#expires)
       if (!this.#expires) {
         deleteOtpCookies(this.#context)
         return
       }
     } else {
-      return
+      const idData = await createId(this.#context)
+      this.#id = idData.id
+      this.#expires = idData.expires
     }
 
     const otp = createOtp()
