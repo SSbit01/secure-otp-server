@@ -70,6 +70,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     }
   }
 
+  /**
+   * All OTP tokens are expired.
+   */
+  if (!expires) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
   const otpTokenObject = await new OtpTokenList(c, otpTokens, id, expires, dateNow).set(c.req.valid("json"))
 
   if (!otpTokenObject) {
