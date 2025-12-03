@@ -287,11 +287,11 @@ export class OtpTokenList {
      */
     let keyId
 
-    const keyData = await getCurrentKey(this.#context)
+    const currentKey = await getCurrentKey(this.#context)
 
-    if (keyData) {
-      key = keyData.key
-      keyId = keyData.id
+    if (currentKey) {
+      key = currentKey.key
+      keyId = currentKey.id
     } else {
       key = await createSymmetricKey()
       keyId = await storeKey(this.#context, key)
