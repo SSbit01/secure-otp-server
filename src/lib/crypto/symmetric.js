@@ -83,8 +83,8 @@ export async function encryptTextSymmetrically(
  * @param   {string}          encryptedText - Encrypted value to be decrypted.
  * @param   {TextDecoder}     [textDecoder] - If you have an instance of a `TextDecoder`, you can reuse it.
  * @returns {Promise<string>} The value decrypted.
- * @throws  {TypeError}       Thrown if `value` is not a string.
- * @throws  {SyntaxError}     Thrown if `value` contains characters outside Base64 alphabet.
+ * @throws  {TypeError}       Thrown if `encryptedText` is not a string.
+ * @throws  {SyntaxError}     Thrown if `encryptedText` contains characters outside Base64 alphabet.
  * @throws  {DOMException}    Raised when:
  * - The provided key is not valid.
  * - The operation failed.
