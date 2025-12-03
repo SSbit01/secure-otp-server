@@ -3,14 +3,15 @@ import { base64Options } from "@/lib/base64"
 
 const encryptionAlgorithm = "AES-GCM"
 
-const keyParams = {
-  name: encryptionAlgorithm,
-  length: 256
-}
-
 const ivBytesLength = 12
 
-
+/**
+ * @type {AesKeyGenParams}
+ */
+const keyParams = Object.freeze({
+  name: encryptionAlgorithm,
+  length: 256
+})
 
 /**
  * @type {readonly KeyUsage[]}
@@ -39,20 +40,21 @@ export async function createSymmetricKey() {
 
 
 /**
- * Encrypts a string value.
+ * Encrypts a value with a `CryptoKey` previously generated with `createSymmetricKeyFromText`.
  * 
  * @async
- * @function encryptSymmetricallyText
- * @param {CryptoKey} key - Symmetric key for AES-GCM encryption.
- * @param {string} value - String value to be encrypted.
+ * @function encryptTextSymmetrically
+ * @param   {CryptoKey}       key           - Symmetric key generated with `createSymmetricKeyFromText`.
+ * @param   {string}          text          - String value to be encrypted.
+ * @param   {TextEncoder}     [textEncoder] - If you have an instance of a `TextEncoder`, you can reuse it.
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
- * @throws {DOMException} Raised when:
+ * @throws  {DOMException}    Raised when:
  * - The provided key is not valid.
  * - The operation failed (e.g., AES-GCM plaintext longer than 2^39−256 bytes).
  */
-export async function encryptSymmetricallyText(
+export async function encryptTextSymmetrically(
   key,
-  value,
+  text,
   textEncoder = new TextEncoder()
 ) {
 
@@ -64,7 +66,7 @@ export async function encryptSymmetricallyText(
       await crypto.subtle.encrypt(
         { name: encryptionAlgorithm, iv },
         key,
-        textEncoder.encode(value)
+        textEncoder.encode(text)
       )
     ).toBase64(base64Options)
   )
@@ -73,27 +75,27 @@ export async function encryptSymmetricallyText(
 
 
 /**
- * Decrypts a value into a string.
+ * Decrypts a value with a `CryptoKey` previously generated with `createSymmetricKeyFromText`.
  * 
  * @async
- * @function decryptSymmetricallyText
- * @param {CryptoKey} key - Symmetric key used to encrypt the value.
- * @param {string} value - Encrypted value to be decrypted.
- * @param {TextDecoder} [textDecoder] - If you have an instance of a `TextDecoder`, you can reuse it.
+ * @function decryptTextSymmetrically
+ * @param   {CryptoKey}       key           - Symmetric key used to encrypt the value.
+ * @param   {string}          encryptedText - Encrypted value to be decrypted.
+ * @param   {TextDecoder}     [textDecoder] - If you have an instance of a `TextDecoder`, you can reuse it.
  * @returns {Promise<string>} The value decrypted.
- * @throws {TypeError} Thrown if `value` is not a string.
- * @throws {SyntaxError} Thrown if `value` contains characters outside Base64 alphabet.
- * @throws {DOMException} Raised when:
+ * @throws  {TypeError}       Thrown if `value` is not a string.
+ * @throws  {SyntaxError}     Thrown if `value` contains characters outside Base64 alphabet.
+ * @throws  {DOMException}    Raised when:
  * - The provided key is not valid.
  * - The operation failed.
  */
-export async function decryptSymmetricallyText(
+export async function decryptTextSymmetrically(
   key,
-  value,
+  encryptedText,
   textDecoder = new TextDecoder()
 ) {
 
-  const data = Uint8Array.fromBase64(value, base64Options)
+  const data = Uint8Array.fromBase64(encryptedText, base64Options)
 
   return textDecoder.decode(
     await crypto.subtle.decrypt(

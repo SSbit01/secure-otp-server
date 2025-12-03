@@ -7,7 +7,7 @@ import {
   OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
 
-import { createSymmetricKey, decryptSymmetricallyText, encryptSymmetricallyText } from "@/lib/crypto/symmetric"
+import { createSymmetricKey, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
@@ -157,7 +157,7 @@ export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
   }
 
   try {
-    return (await decryptSymmetricallyText(
+    return (await decryptTextSymmetrically(
       key,
       encryptedOtpTokens,
       textDecoder
@@ -327,7 +327,7 @@ export class OtpTokenList {
     setCookie(
       this.#context,
       COOKIE_OTP_ENCRYPTED_TOKENS,
-      await encryptSymmetricallyText(key, tokens.join(ARRAY_SEPARATOR), textEncoder),
+      await encryptTextSymmetrically(key, tokens.join(ARRAY_SEPARATOR), textEncoder),
       cookieOptions
     )
 
