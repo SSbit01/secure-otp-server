@@ -277,20 +277,6 @@ export class OtpTokenList {
       return
     }
 
-    const lessPreciseExpires = new Date(getReducedTimePrecision(this.#expires))
-
-    /**
-     * @type {import("hono/utils/cookie").CookieOptions}
-     */
-    const cookieOptions = {
-      expires: lessPreciseExpires,
-      httpOnly: true,
-      maxAge: OTP_MAX_AGE_MS,
-      secure: isProduction(this.#context),
-      sameSite: "strict",
-      partitioned: false
-    }
-
     /**
      * @type {CryptoKey}
      */
@@ -311,8 +297,6 @@ export class OtpTokenList {
       keyId = await storeKey(this.#context, key)
     }
 
-    setCookie(this.#context, COOKIE_OTP_KEY_ID, keyId.toString(), cookieOptions)
-
     const tokens = []
 
     for (const otpToken of this.#tokens) {
@@ -323,10 +307,33 @@ export class OtpTokenList {
 
     tokens.push(this.#id)
 
+    const encryptedOtpTokens = await encryptTextSymmetrically(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
+
+    const lessPreciseExpires = new Date(getReducedTimePrecision(this.#expires))
+
+    /**
+     * @type {import("hono/utils/cookie").CookieOptions}
+     */
+    const cookieOptions = {
+      expires: lessPreciseExpires,
+      httpOnly: true,
+      maxAge: OTP_MAX_AGE_MS,
+      secure: isProduction(this.#context),
+      sameSite: "strict",
+      partitioned: false
+    }
+
+    setCookie(
+      this.#context,
+      COOKIE_OTP_KEY_ID,
+      keyId.toString(),
+      cookieOptions
+    )
+
     setCookie(
       this.#context,
       COOKIE_OTP_ENCRYPTED_TOKENS,
-      await encryptTextSymmetrically(key, tokens.join(ARRAY_SEPARATOR), textEncoder),
+      encryptedOtpTokens,
       cookieOptions
     )
 
