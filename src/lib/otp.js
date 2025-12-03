@@ -1,8 +1,7 @@
 import { deleteCookie, setCookie } from "hono/cookie"
 
 import {
-  OTP_INVALID_BLOCK_MS, 
-  OTP_MAX_AGE_MINUS,
+  OTP_INVALID_BLOCK_MS,
   OTP_MAX_AGE_MS,
   OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
@@ -286,7 +285,7 @@ export class OtpTokenList {
     const cookieOptions = {
       expires: lessPreciseExpires,
       httpOnly: true,
-      maxAge: OTP_MAX_AGE_MINUS,
+      maxAge: OTP_MAX_AGE_MS,
       secure: isProduction(this.#context),
       sameSite: "strict",
       partitioned: false
@@ -302,11 +301,11 @@ export class OtpTokenList {
      */
     let keyId
 
-    const currentKey = await getCurrentKey(this.#context)
+    const keyData = await getCurrentKey(this.#context)
 
-    if (currentKey) {
-      key = currentKey.key
-      keyId = currentKey.id
+    if (keyData) {
+      key = keyData.key
+      keyId = keyData.id
     } else {
       key = await createSymmetricKey()
       keyId = await storeKey(this.#context, key)

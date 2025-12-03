@@ -37,3 +37,12 @@ export function isLessThanDelay(time, dateNow = Date.now(), delay = MINIMUM_DELA
   return (dateNow - time) < delay
   
 }
+
+
+/**
+ * @function secondsToMs
+ * @param {number} value 
+ */
+export function secondsToMs(value) {
+  return value * 1000
+}
