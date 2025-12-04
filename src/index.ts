@@ -15,7 +15,6 @@ import {
   COOKIE_OTP_KEY_ID,
   EXPIRES,
   decodeOtpTokenString,
-  deleteOtpCookies,
   getOtpTokenStrings,
   OtpTokenList
 } from "@/lib/otp"
