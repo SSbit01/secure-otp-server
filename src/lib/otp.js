@@ -232,9 +232,9 @@ export class OtpTokenList {
       result.blocked = true
     } else {
       if (this.#current[RESEND_BLOCK]) {
-        result.resendBlock = new Date(getReducedTimePrecision(this.#current[RESEND_BLOCK]))
+        result.resendBlock = new Date(getReducedTimePrecision(this.#current[RESEND_BLOCK], Math.ceil))
       }
-      const otpBlock = this.otpBlock
+      const { otpBlock } = this
       if (otpBlock) {
         result.otpBlock = otpBlock
       }
@@ -258,7 +258,7 @@ export class OtpTokenList {
    */
   get otpBlock() {
     const otpBlock = this.#current?.[OTP_BLOCK]
-    return otpBlock ? new Date(getReducedTimePrecision(otpBlock)) : undefined
+    return otpBlock ? new Date(getReducedTimePrecision(otpBlock, Math.ceil)) : undefined
   }
 
 
@@ -495,7 +495,7 @@ export class OtpTokenList {
 
     return expiresDate && {
       expires: expiresDate,
-      resendBlock: new Date(getReducedTimePrecision(resendBlock))
+      resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
     }
 
   }
