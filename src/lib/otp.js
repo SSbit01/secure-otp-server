@@ -342,21 +342,6 @@ export class OtpTokenList {
   }
 
 
-  deleteData() {
-
-    deleteOtpCookies(this.#context)
-
-    if (this.#expires && this.#idValid) {
-      /**
-       * Fire and forget
-       */
-      // @ts-expect-error: `#idValid` is true
-      deleteId(this.#context, this.#id, this.#expires)
-    }
-
-  }
-
-
   /**
    * @param {string} otp
    * @returns {Promise<string|undefined>}
@@ -374,6 +359,7 @@ export class OtpTokenList {
     
     // @ts-expect-error: `#current` is defined.
     if (this.#current[OTP] === otp) {
+      deleteOtpCookies(this.#context)
       // @ts-expect-error: `#current` and `#idValid` are not falsy.
       return await deleteId(this.#context, this.#id, this.#expires) ? decodeCredential(this.#current[CREDENTIAL]) : undefined
     }

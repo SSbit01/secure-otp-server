@@ -15,6 +15,7 @@ import {
   COOKIE_OTP_KEY_ID,
   EXPIRES,
   decodeOtpTokenString,
+  deleteOtpCookies,
   getOtpTokenStrings,
   OtpTokenList
 } from "@/lib/otp"
@@ -110,11 +111,8 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   if (credential) {
     /**
      * VERIFIED
-     * In case of error, don't delete OTP data
      */
-    const res = await finalAction(c, credential)
-    otpTokenList.deleteData()
-    return res
+    return await finalAction(c, credential)
   }
 
   if (otpTokenList.blocked) {
