@@ -303,9 +303,11 @@ export class OtpTokenList {
       tokens.push(otpToken.join(OTP_SEPARATOR))
     }
 
-    tokens.push(Date.now())
-
     tokens.push(this.#id)
+
+    this.#dateNow = Date.now()
+
+    tokens.push(this.#dateNow)
 
     const encryptedOtpTokens = await encryptTextSymmetrically(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
 

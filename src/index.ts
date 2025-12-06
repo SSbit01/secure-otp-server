@@ -15,6 +15,7 @@ import {
   COOKIE_OTP_KEY_ID,
   EXPIRES,
   decodeOtpTokenString,
+  deleteOtpCookies,
   getOtpTokenStrings,
   OtpTokenList
 } from "@/lib/otp"
@@ -38,12 +39,6 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const id = otpTokenStrings.pop()
-
-  if (!id) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
-  }
-
   const lastAccess = otpTokenStrings.pop()
 
   if (!lastAccess) {
@@ -53,7 +48,14 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const dateNow = Date.now()
 
   if (isLessThanDelay(+lastAccess, dateNow)) {
+    deleteOtpCookies(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  }
+
+  const id = otpTokenStrings.pop()
+
+  if (!id) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
   let expires = 0

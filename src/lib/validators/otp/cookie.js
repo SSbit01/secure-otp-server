@@ -25,13 +25,6 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TO
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const id = otpTokenStrings.pop()
-
-  if (!id) {
-    deleteOtpCookies(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
   const lastAccess = otpTokenStrings.pop()
 
   if (!lastAccess) {
@@ -42,7 +35,15 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TO
   const dateNow = Date.now()
 
   if (isLessThanDelay(+lastAccess, dateNow)) {
+    deleteOtpCookies(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  }
+
+  const id = otpTokenStrings.pop()
+
+  if (!id) {
+    deleteOtpCookies(c)
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const currentString = otpTokenStrings.pop()
