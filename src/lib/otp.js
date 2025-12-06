@@ -423,8 +423,6 @@ export class OtpTokenList {
 
     sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
 
-    this.#current[EXPIRES] = this.#dateNow + OTP_MAX_AGE_MS
-
     if (OTP_ALLOW_ONLY_ONE_RESENDING) {
       delete this.#current[RESEND_BLOCK]
     } else {
