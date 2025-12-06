@@ -36,7 +36,7 @@ import sendOtp from "@/custom/send"
  */
 
 /**
- * @typedef {Object} OtpTokenObject
+ * @typedef {Object} OtpTokenData
  * @property {Date} expires
  * @property {boolean} [blocked]
  * @property {Date} [resendBlock]
@@ -205,24 +205,16 @@ export class OtpTokenList {
 
 
   /**
-   * @returns {boolean}
+   * @returns {(OtpTokenData|undefined)}
    */
-  get #idValid() {
-    return this.#id != undefined  // #id might be `0`
-  }
-
-
-  /**
-   * @returns {(OtpTokenObject|undefined)}
-   */
-  get #object() {
+  get #data() {
 
     if (!this.#current) {
       return undefined
     }
 
     /**
-     * @type {OtpTokenObject}
+     * @type {OtpTokenData}
      */
     const result = {
       expires: new Date(getReducedTimePrecision(this.#current[EXPIRES]))
@@ -242,6 +234,14 @@ export class OtpTokenList {
 
     return result
 
+  }
+
+
+  /**
+   * @returns {boolean}
+   */
+  get #idValid() {
+    return this.#id != undefined  // #id might be `0`.
   }
 
 
@@ -436,14 +436,14 @@ export class OtpTokenList {
 
     await this.#save()
 
-    return this.#object
+    return this.#data
 
   }
 
 
   /**
    * @param {string} credential
-   * @returns {Promise<OtpTokenObject|undefined>}
+   * @returns {Promise<OtpTokenData|undefined>}
    */
   async set(credential) {
 
@@ -453,7 +453,7 @@ export class OtpTokenList {
      * Don't need to save and encrypt the token list again if the current token contains the `credential`.
      */
     if (encodedCredential === this.#current?.[CREDENTIAL]) {
-      return this.#object
+      return this.#data
     }
 
     const lastIndex = this.#tokens.length - 1
@@ -467,7 +467,7 @@ export class OtpTokenList {
          * Don't create a new key, reuse the existing one, the expiration date doesn't need to change.
          */
         await this.#save()
-        return this.#object
+        return this.#data
       }
     }
 
