@@ -424,7 +424,12 @@ export class OtpTokenList {
     sendOtp(this.#context, decodeCredential(this.#current[CREDENTIAL]), this.#current[OTP])
 
     if (OTP_ALLOW_ONLY_ONE_RESENDING) {
-      delete this.#current[RESEND_BLOCK]
+      if (this.#current[OTP_BLOCK]) {
+        delete this.#current[RESEND_BLOCK]
+      } else {
+        /** Trim the array to save space. */
+        this.#current.length = RESEND_BLOCK
+      }
     } else {
       this.#current[RESEND_BLOCK] = this.#dateNow + OTP_RESEND_BLOCK_MS
     }
