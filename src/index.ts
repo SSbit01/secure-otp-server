@@ -79,26 +79,26 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const otpTokenList = await new OtpTokenList(c, otpTokens, id, expires, dateNow).set(c.req.valid("json"))
+  const data = await new OtpTokenList(c, otpTokens, id, expires, dateNow).set(c.req.valid("json"))
 
-  if (!otpTokenList) {
+  if (!data) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  return c.json(otpTokenList)
+  return c.json(data)
 
 })
 
 
 app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
-  const otpTokenList = await c.req.valid("cookie").resend()
+  const data = await c.req.valid("cookie").resend()
 
-  if (!otpTokenList) {
+  if (!data) {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
-  return c.json(otpTokenList)
+  return c.json(data)
 
 })
 
