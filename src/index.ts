@@ -82,6 +82,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const data = await new OtpTokenList(c, otpTokens, id, expires, dateNow).set(c.req.valid("json"))
 
   if (!data) {
+    deleteOtpCookies(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
