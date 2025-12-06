@@ -410,14 +410,14 @@ export class OtpTokenList {
     }
 
     // @ts-expect-error: `#idValid` is true.
-    const expires = await updateExpires(this.#context, this.#id, this.#expires)
+    this.#expires = await updateExpires(this.#context, this.#id, this.#expires)
 
-    if (!expires) {
+    if (!this.#expires) {
       deleteOtpCookies(this.#context)
       return 
     }
 
-    this.#current[EXPIRES] = expires
+    this.#current[EXPIRES] = this.#expires
 
     this.#current[OTP] = createOtp()
 
