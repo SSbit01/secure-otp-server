@@ -76,7 +76,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TO
 
   otpTokens.push(current)
 
-  return Object.freeze(new OtpTokenList(c, otpTokens, id, expires, dateNow))
+  return new OtpTokenList(c, otpTokens, id, expires, dateNow)
 
 })
 

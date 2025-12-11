@@ -1,4 +1,4 @@
-import { base64Options } from "@/lib/base64"
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 const LENGTH_IN_BYTES = 18
 
@@ -15,5 +15,5 @@ const LENGTH_IN_BYTES = 18
  * @returns {string} A random ID.
  */
 export function createRandomId(length = LENGTH_IN_BYTES) {
-  return crypto.getRandomValues(new Uint8Array(length)).toBase64(base64Options)
+  return crypto.getRandomValues(new Uint8Array(length)).toBase64(BASE64URL_OPTIONS)
 }

@@ -1,4 +1,4 @@
-import { base64Options } from "@/lib/base64"
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 
 const encryptionAlgorithm = "AES-GCM"
@@ -8,7 +8,7 @@ const ivBytesLength = 12
 /**
  * @type {AesKeyGenParams}
  */
-const keyParams = Object.freeze({
+const KEY_PARAMS = Object.freeze({
   name: encryptionAlgorithm,
   length: 256
 })
@@ -16,7 +16,7 @@ const keyParams = Object.freeze({
 /**
  * @type {readonly KeyUsage[]}
  */
-const keyUsages = Object.freeze(["encrypt", "decrypt"])
+const KEY_USAGES = Object.freeze(["encrypt", "decrypt"])
 
 
 /**
@@ -30,9 +30,9 @@ export async function createSymmetricKey() {
 
   return (
     await crypto.subtle.generateKey(
-      keyParams,
+      KEY_PARAMS,
       true,
-      keyUsages
+      KEY_USAGES
     )
   )
 
@@ -61,14 +61,14 @@ export async function encryptTextSymmetrically(
   const iv = crypto.getRandomValues(new Uint8Array(ivBytesLength))
 
   return (
-    iv.toBase64(base64Options) +
+    iv.toBase64(BASE64URL_OPTIONS) +
     new Uint8Array(
       await crypto.subtle.encrypt(
         { name: encryptionAlgorithm, iv },
         key,
         textEncoder.encode(text)
       )
-    ).toBase64(base64Options)
+    ).toBase64(BASE64URL_OPTIONS)
   )
 
 }
@@ -95,7 +95,7 @@ export async function decryptTextSymmetrically(
   textDecoder = new TextDecoder()
 ) {
 
-  const data = Uint8Array.fromBase64(encryptedText, base64Options)
+  const data = Uint8Array.fromBase64(encryptedText, BASE64URL_OPTIONS)
 
   return textDecoder.decode(
     await crypto.subtle.decrypt(
