@@ -1,12 +1,13 @@
 import { validator } from "hono/validator"
 
+import { decompressNumber } from "@/lib/compression/number"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 
 import {
   COOKIE_OTP_ENCRYPTED_TOKENS,
   COOKIE_OTP_KEY_ID,
   EXPIRES,
-  decodeOtpTokenString,
+  decodeOtpToken,
   deleteOtpCookies,
   getOtpTokenStrings,
   OtpTokenList
@@ -25,16 +26,16 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TO
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const lastAccess = otpTokenStrings.pop()
+  const lastAccessString = otpTokenStrings.pop()
 
-  if (!lastAccess) {
+  if (!lastAccessString) {
     deleteOtpCookies(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const dateNow = Date.now()
 
-  if (isLessThanDelay(+lastAccess, dateNow)) {
+  if (isLessThanDelay(decompressNumber(lastAccessString), dateNow)) {
     deleteOtpCookies(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
@@ -53,7 +54,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TO
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const current = decodeOtpTokenString(currentString, dateNow)
+  const current = decodeOtpToken(currentString, dateNow)
 
   if (!current) {
     deleteOtpCookies(c)
@@ -65,7 +66,7 @@ const otpCookieValidator = validator("cookie", async ({ [COOKIE_OTP_ENCRYPTED_TO
   const otpTokens = []
 
   for (const otpTokenString of otpTokenStrings) {
-    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    const otpToken = decodeOtpToken(otpTokenString, dateNow)
     if (otpToken) {
       otpTokens.push(otpToken)
       if (expires < otpToken[EXPIRES]) {

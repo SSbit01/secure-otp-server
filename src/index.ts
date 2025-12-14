@@ -1,6 +1,9 @@
 import { getCookie } from "hono/cookie"
 
-import app from "@/setup"
+import credentialValidator from "@/custom/credential"
+import finalAction from "@/custom/final"
+
+import { decompressNumber } from "./lib/compression/number"
 
 import {
   ERR_OTP_INCORRECT,
@@ -14,7 +17,7 @@ import {
   COOKIE_OTP_ENCRYPTED_TOKENS,
   COOKIE_OTP_KEY_ID,
   EXPIRES,
-  decodeOtpTokenString,
+  decodeOtpToken,
   deleteOtpCookies,
   getOtpTokenStrings,
   OtpTokenList
@@ -25,8 +28,7 @@ import { isLessThanDelay } from "@/lib/time"
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
 
-import credentialValidator from "@/custom/credential"
-import finalAction from "@/custom/final"
+import app from "@/setup"
 
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
@@ -39,15 +41,15 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const lastAccess = otpTokenStrings.pop()
+  const lastAccessString = otpTokenStrings.pop()
 
-  if (!lastAccess) {
+  if (!lastAccessString) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
   const dateNow = Date.now()
 
-  if (isLessThanDelay(+lastAccess, dateNow)) {
+  if (isLessThanDelay(decompressNumber(lastAccessString), dateNow)) {
     deleteOtpCookies(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
@@ -63,7 +65,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const otpTokens = []
 
   for (const otpTokenString of otpTokenStrings) {
-    const otpToken = decodeOtpTokenString(otpTokenString, dateNow)
+    const otpToken = decodeOtpToken(otpTokenString, dateNow)
     if (otpToken) {
       otpTokens.push(otpToken)
       if (expires < otpToken[EXPIRES]) {

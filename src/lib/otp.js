@@ -1,5 +1,7 @@
 import { deleteCookie, setCookie } from "hono/cookie"
 
+import { compressNumber, decompressNumber } from "@/lib/compression/number"
+
 import {
   OTP_INVALID_BLOCK_MS,
   OTP_MAX_AGE_MS,
@@ -82,33 +84,38 @@ export const COOKIE_OTP_KEY_ID = "k"
 
 
 /**
- * @function decodeOtpTokenString
+ * @function decodeOtpToken
  * @param {string} otpTokenString 
  * @param {number} [dateNow]
  * @returns {(OtpToken|undefined)}
  */
-export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
+export function decodeOtpToken(otpTokenString, dateNow = Date.now()) {
 
   /**
    * @type {any[]}
    */
   const otpToken = otpTokenString.split(OTP_SEPARATOR)
 
-  otpToken[EXPIRES] = +otpToken[EXPIRES]
+  otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES])
 
   if (dateNow >= otpToken[EXPIRES]) {
     return
   }
 
+  /**
+   * Presence of token[RESEND_BLOCK] indicates that resending is available.
+   * That's why it is not removed, unlike [OTP_BLOCK].
+   */
+
   if (otpToken[ATTEMPTS]) {
     otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
     if (otpToken[OTP_BLOCK]) {
-      const otpBlock = +otpToken[OTP_BLOCK]
+      const otpBlock = decompressNumber(otpToken[OTP_BLOCK])
       if (dateNow < otpBlock) {
         otpToken[OTP_BLOCK] = otpBlock
-        otpToken[RESEND_BLOCK] &&= +otpToken[RESEND_BLOCK]
+        otpToken[RESEND_BLOCK] &&= decompressNumber(otpToken[RESEND_BLOCK])
       } else if (otpToken[RESEND_BLOCK]) {
-        otpToken[RESEND_BLOCK] = +otpToken[RESEND_BLOCK]
+        otpToken[RESEND_BLOCK] = decompressNumber(otpToken[RESEND_BLOCK])
         /** Trim the array to save space. */
         otpToken.length = OTP_BLOCK
       } else {
@@ -116,12 +123,36 @@ export function decodeOtpTokenString(otpTokenString, dateNow = Date.now()) {
         otpToken.length = RESEND_BLOCK
       }
     } else {
-      otpToken[RESEND_BLOCK] &&= +otpToken[RESEND_BLOCK]
+      otpToken[RESEND_BLOCK] &&= decompressNumber(otpToken[RESEND_BLOCK])
     }
   }
 
   // @ts-expect-error: TS doesn't know that this must be a `OtpToken` array.
   return otpToken
+
+}
+
+
+/**
+ * @function encodeOtpToken
+ * @param {OtpToken} otpToken
+ * @returns {string}
+ */
+export function encodeOtpToken(otpToken) {
+
+  /**
+   * @type {any[]}
+   */
+  const encodedToken = otpToken.slice()
+
+  encodedToken[EXPIRES] = compressNumber(encodedToken[EXPIRES])
+
+  if (encodedToken[OTP]) {
+    encodedToken[RESEND_BLOCK] &&= compressNumber(encodedToken[RESEND_BLOCK])
+    encodedToken[OTP_BLOCK] &&= compressNumber(encodedToken[OTP_BLOCK])
+  }
+
+  return encodedToken.join(OTP_SEPARATOR)
 
 }
 
@@ -162,7 +193,7 @@ export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
       textDecoder
     ))?.split(ARRAY_SEPARATOR)
   } catch {
-    // It simply returns `undefined`
+    // It simply returns `undefined`.
   }
 
 }
@@ -297,19 +328,16 @@ export class OtpTokenList {
       keyId = await storeKey(this.#context, key)
     }
 
-    const tokens = []
+    const encodedTokensList = this.#tokens.map(encodeOtpToken)
 
-    for (const otpToken of this.#tokens) {
-      tokens.push(otpToken.join(OTP_SEPARATOR))
-    }
-
-    tokens.push(this.#id)
+    // @ts-expect-error: `#idValid` is true.
+    encodedTokensList.push(this.#id)
 
     this.#dateNow = Date.now()
 
-    tokens.push(this.#dateNow)
+    encodedTokensList.push(compressNumber(this.#dateNow))
 
-    const encryptedOtpTokens = await encryptTextSymmetrically(key, tokens.join(ARRAY_SEPARATOR), textEncoder)
+    const encryptedOtpTokens = await encryptTextSymmetrically(key, encodedTokensList.join(ARRAY_SEPARATOR), textEncoder)
 
     const lessPreciseExpires = new Date(getReducedTimePrecision(this.#expires))
 
@@ -350,11 +378,15 @@ export class OtpTokenList {
    */
   async check(otp) {
 
+    /**
+     * [OTP_BLOCK] already checked in decoding.
+     */
+
     if (
       this.blocked ||
       !this.#expires ||
       !this.#idValid ||
-      (this.#current?.[OTP_BLOCK] && this.#dateNow <= this.#current[OTP_BLOCK])
+      this.#current?.[OTP_BLOCK]
     ) {
       return
     }
@@ -399,12 +431,16 @@ export class OtpTokenList {
 
   async resend() {
 
+    /**
+     * Presence of this.#current[RESEND_BLOCK] indicates that resending is available.
+     */
+
     if (
       this.blocked ||
       !this.#idValid ||
       !this.#expires ||
       !this.#current?.[RESEND_BLOCK] ||
-      this.#dateNow <= this.#current[RESEND_BLOCK]
+      this.#dateNow < this.#current[RESEND_BLOCK]
     ) {
       return
     }
