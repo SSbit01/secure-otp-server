@@ -44,8 +44,8 @@ For additional deployment targets such as [Fastly Compute](https://www.fastly.co
 
 This server uses a hybrid design to provide stateful security without the overhead of a storage system.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is appended to an encrypted list of tokens (one entry per credential) using AES-256-GCM. The list is sent to the client in a secure, `HttpOnly` cookie.
-2. The encryption key is not stored directly. Instead, a random ID is generated and stored on the server.
+1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens (one entry per credential) using AES-256-GCM. The list is sent to the client in a secure, `HttpOnly` cookie.
+2. A random ID linked to the list is generated and stored on the server.
 3. When the client attempts to verify an OTP, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
 4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
 
