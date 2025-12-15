@@ -207,18 +207,18 @@ export class OtpTokenList {
       keyId = await storeKey(this.#context, key)
     }
 
-    const encodedTokensList = this.#tokens.map(encodeOtpToken)
+    const encodedTokenList = this.#tokens.map(encodeOtpToken)
 
     // @ts-expect-error: `#idValid` is true.
-    encodedTokensList.push(this.#id)
+    encodedTokenList.push(this.#id)
 
     this.#dateNow = Date.now()
 
-    encodedTokensList.push(compressNumber(this.#dateNow))
+    encodedTokenList.push(compressNumber(this.#dateNow))
 
-    const encryptedOtpTokens = await encryptTextSymmetrically(
+    const encryptedTokens = await encryptTextSymmetrically(
       key,
-      encodedTokensList.join(ARRAY_SEPARATOR),
+      encodedTokenList.join(ARRAY_SEPARATOR),
       textEncoder
     )
 
@@ -246,7 +246,7 @@ export class OtpTokenList {
     setCookie(
       this.#context,
       COOKIE_OTP_ENCRYPTED_TOKENS,
-      encryptedOtpTokens,
+      encryptedTokens,
       cookieOptions
     )
 
