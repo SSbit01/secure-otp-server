@@ -207,18 +207,18 @@ export class OtpTokenList {
       keyId = await storeKey(this.#context, key)
     }
 
-    const encodedTokenList = this.#tokens.map(encodeOtpToken)
+    const encodedTokens = this.#tokens.map(encodeOtpToken)
 
     // @ts-expect-error: `#idValid` is true.
-    encodedTokenList.push(this.#id)
+    encodedTokens.push(this.#id)
 
     this.#dateNow = Date.now()
 
-    encodedTokenList.push(compressNumber(this.#dateNow))
+    encodedTokens.push(compressNumber(this.#dateNow))
 
     const encryptedTokens = await encryptTextSymmetrically(
       key,
-      encodedTokenList.join(ARRAY_SEPARATOR),
+      encodedTokens.join(ARRAY_SEPARATOR),
       textEncoder
     )
 
