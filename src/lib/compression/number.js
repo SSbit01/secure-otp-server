@@ -14,5 +14,5 @@ export function compressNumber(num) {
  * @returns {number}
  */
 export function decompressNumber(compressedNumber) {
-  return parseInt(compressedNumber, 36) || 0
+  return parseInt(compressedNumber, 36)
 }
