@@ -1,17 +1,4 @@
-import { deleteCookie, setCookie } from "hono/cookie"
-
-import { compressNumber, decompressNumber } from "@/lib/compression/number"
-
-import {
-  OTP_INVALID_BLOCK_MS,
-  OTP_MAX_AGE_MS,
-  OTP_RESEND_BLOCK_MS
-} from "@/lib/computed"
-
-import { createSymmetricKey, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
-import isProduction from "@/lib/production"
-import { textEncoder, textDecoder } from "@/lib/text"
-import { getReducedTimePrecision } from "@/lib/time"
+import { setCookie } from "hono/cookie"
 
 import { createId, deleteId, replaceId, updateExpires } from "@/custom/id"
 import { getCurrentKey, getKey, storeKey } from "@/custom/kms"
@@ -26,16 +13,24 @@ import {
 
 import sendOtp from "@/custom/send"
 
+import { compressNumber } from "@/lib/compression/number"
+import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+import { createSymmetricKey, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
+import deleteOtpCookies, { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID } from "@/lib/otp/cookie"
+import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
+import { encodeOtpToken } from "@/lib/otp/encode/token"
+import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
+import isProduction from "@/lib/production"
+import { textEncoder, textDecoder } from "@/lib/text"
+import { getReducedTimePrecision } from "@/lib/time"
+
 
 
 /**
  * @import { Context } from "hono"
+ * @import { OtpToken } from "@/lib/otp/order"
  */
 
-
-/**
- * @typedef {[credential:string,expires:number,otp?:string,attempts?:number,resendBlock?:number,otpBlock?:number]} OtpToken
- */
 
 /**
  * @typedef {Object} OtpTokenData
@@ -48,123 +43,7 @@ import sendOtp from "@/custom/send"
 
 
 const ARRAY_SEPARATOR = ","
-const OTP_SEPARATOR = "|"
 
-
-/**
- * @function encodeCredential
- * @param {string} credential
- * @returns {string}
- */
-function encodeCredential(credential) {
-  return encodeURI(credential.toString())
-}
-
-
-/**
- * @function decodeCredential
- * @param {string} encodedCredential
- * @returns {string}
- */
-function decodeCredential(encodedCredential) {
-  return decodeURI(encodedCredential)
-}
-
-
-
-export const CREDENTIAL = 0
-export const EXPIRES = 1
-export const OTP = 2
-export const ATTEMPTS = 3
-export const RESEND_BLOCK = 4
-export const OTP_BLOCK = 5
-
-export const COOKIE_OTP_ENCRYPTED_TOKENS = "t"
-export const COOKIE_OTP_KEY_ID = "k"
-
-
-/**
- * @function decodeOtpToken
- * @param {string} otpTokenString 
- * @param {number} [dateNow]
- * @returns {(OtpToken|undefined)}
- */
-export function decodeOtpToken(otpTokenString, dateNow = Date.now()) {
-
-  /**
-   * @type {any[]}
-   */
-  const otpToken = otpTokenString.split(OTP_SEPARATOR)
-
-  otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES])
-
-  if (dateNow >= otpToken[EXPIRES]) {
-    return
-  }
-
-  /**
-   * Presence of token[RESEND_BLOCK] indicates that resending is available.
-   * That's why it is not removed, unlike [OTP_BLOCK].
-   */
-
-  if (otpToken[ATTEMPTS]) {
-    otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
-    if (otpToken[OTP_BLOCK]) {
-      const otpBlock = decompressNumber(otpToken[OTP_BLOCK])
-      if (dateNow < otpBlock) {
-        otpToken[OTP_BLOCK] = otpBlock
-        otpToken[RESEND_BLOCK] &&= decompressNumber(otpToken[RESEND_BLOCK])
-      } else if (otpToken[RESEND_BLOCK]) {
-        otpToken[RESEND_BLOCK] = decompressNumber(otpToken[RESEND_BLOCK])
-        /** Trim the array to save space. */
-        otpToken.length = OTP_BLOCK
-      } else {
-        /** Trim the array to save space. */
-        otpToken.length = RESEND_BLOCK
-      }
-    } else {
-      otpToken[RESEND_BLOCK] &&= decompressNumber(otpToken[RESEND_BLOCK])
-    }
-  }
-
-  // @ts-expect-error: TS doesn't know that this must be a `OtpToken` array.
-  return otpToken
-
-}
-
-
-/**
- * @function encodeOtpToken
- * @param {OtpToken} otpToken
- * @returns {string}
- */
-export function encodeOtpToken(otpToken) {
-
-  /**
-   * @type {any[]}
-   */
-  const encodedToken = otpToken.slice()
-
-  encodedToken[EXPIRES] = compressNumber(encodedToken[EXPIRES])
-
-  if (encodedToken[OTP]) {
-    encodedToken[RESEND_BLOCK] &&= compressNumber(encodedToken[RESEND_BLOCK])
-    encodedToken[OTP_BLOCK] &&= compressNumber(encodedToken[OTP_BLOCK])
-  }
-
-  return encodedToken.join(OTP_SEPARATOR)
-
-}
-
-
-/**
- * @function deleteOtpCookies
- * @param {Context} c
- */
-export function deleteOtpCookies(c) {
-  deleteCookie(c, COOKIE_OTP_ENCRYPTED_TOKENS)
-  deleteCookie(c, COOKIE_OTP_KEY_ID)
-}
 
 
 /**
@@ -337,7 +216,11 @@ export class OtpTokenList {
 
     encodedTokensList.push(compressNumber(this.#dateNow))
 
-    const encryptedOtpTokens = await encryptTextSymmetrically(key, encodedTokensList.join(ARRAY_SEPARATOR), textEncoder)
+    const encryptedOtpTokens = await encryptTextSymmetrically(
+      key,
+      encodedTokensList.join(ARRAY_SEPARATOR),
+      textEncoder
+    )
 
     const lessPreciseExpires = new Date(getReducedTimePrecision(this.#expires))
 

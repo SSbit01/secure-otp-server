@@ -13,15 +13,10 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import {
-  COOKIE_OTP_ENCRYPTED_TOKENS,
-  COOKIE_OTP_KEY_ID,
-  EXPIRES,
-  decodeOtpToken,
-  deleteOtpCookies,
-  getOtpTokenStrings,
-  OtpTokenList
-} from "@/lib/otp"
+import { getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
+import deleteOtpCookies, { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID } from "@/lib/otp/cookie"
+import { decodeOtpToken } from "@/lib/otp/encode/token"
+import { EXPIRES } from "@/lib/otp/order"
 
 import { isLessThanDelay } from "@/lib/time"
 
