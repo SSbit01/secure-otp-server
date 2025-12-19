@@ -6,7 +6,6 @@ import { getCurrentKey, getKey, storeKey } from "@/custom/kms"
 import {
   OTP_ALLOW_ONLY_ONE_RESENDING,
   OTP_ATTEMPTS_BLOCK,
-  OTP_MAX_AGE,
   OTP_MAX_ATTEMPTS,
   OTP_MAX_CREDENTIALS,
   createOtp
@@ -231,7 +230,6 @@ export class OtpTokenList {
     const cookieOptions = {
       expires: lessPreciseExpires,
       httpOnly: true,
-      maxAge: OTP_MAX_AGE,
       secure: isProduction(this.#context),
       sameSite: "strict",
       partitioned: false
