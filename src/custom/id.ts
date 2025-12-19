@@ -17,7 +17,7 @@ import type { Context } from "hono"
 
 
 interface IdData {
-  id: string | number
+  id: number
   /**
    * Expiration time in milliseconds since epoch.
    */
@@ -98,7 +98,7 @@ export async function deleteId(c: Context, id: IdData["id"], expires: number): P
   for (let i = 0; i < idStorage.length; i++) {
     const currentExpires = idStorage[i]
     if (currentExpires) {
-      if (dateNow > currentExpires) {
+      if (currentExpires > dateNow) {
         lastValidId = i
       } else {
         delete idStorage[i]
@@ -106,7 +106,6 @@ export async function deleteId(c: Context, id: IdData["id"], expires: number): P
     }
   }
 
-  // @ts-expect-error: The `id` is a number with this implementation.
   const storedExpires = idStorage[id]
 
   if (!storedExpires || storedExpires !== expires) {
@@ -114,10 +113,9 @@ export async function deleteId(c: Context, id: IdData["id"], expires: number): P
     return false
   }
 
-  if (id === lastValidId) {
+  if (id == lastValidId) {
     idStorage.length = lastValidId
   } else {
-    // @ts-expect-error: The `id` is a number with this implementation.
     delete idStorage[id]
     idStorage.length = lastValidId + 1
   }
@@ -139,7 +137,6 @@ export async function deleteId(c: Context, id: IdData["id"], expires: number): P
  */
 export async function replaceId(c: Context, oldId: IdData["id"], expires: number): Promise<IdData["id"] | null | undefined> {
   
-  // @ts-expect-error: The `id` is a number with this implementation.
   if (idStorage[oldId] !== expires) {
     return
   }
@@ -149,7 +146,6 @@ export async function replaceId(c: Context, oldId: IdData["id"], expires: number
 
   const dateNow = Date.now()
 
-  // @ts-expect-error: The `id` is a number with this implementation.
   for (let i = oldId + 1; i < idStorage.length; i++) {
     const expires = idStorage[i]
     if (expires) {
@@ -165,7 +161,6 @@ export async function replaceId(c: Context, oldId: IdData["id"], expires: number
     }
   }
 
-  // @ts-expect-error: The `id` is a number with this implementation.
   idStorage.length = lastValidId + 1
 
   newId ??= idStorage.length
@@ -184,20 +179,18 @@ export async function replaceId(c: Context, oldId: IdData["id"], expires: number
  * @function updateExpires
  * @param {Context} c - Hono context.
  * @param {IdData["id"]} id - The ID.
- * @param {number} oldExpires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
+ * @param {number} oldExpires - Expiration time in milliseconds since epoch. It may be used to verify the ID. It is not checked because the server already filters expired IDs.
  * @returns {Promise<number>} New expiration time.
  */
 export async function updateExpires(c: Context, id: IdData["id"], oldExpires: number): Promise<number> {
 
-  // @ts-expect-error: The `id` is a number with this implementation.
   if (idStorage[id] !== oldExpires) {
     return 0
   }
 
   const newExpires = Date.now() + OTP_MAX_AGE_MS
 
-  // @ts-expect-error: The `id` is a number with this implementation.
-  idStorage[id] = newExpires
+ idStorage[id] = newExpires
 
   return newExpires
 
