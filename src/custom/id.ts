@@ -67,7 +67,7 @@ export async function createId(c: Context): Promise<IdData> {
 
   const expires = dateNow + OTP_MAX_AGE_MS
 
-  idStorage[newId] = dateNow + OTP_MAX_AGE_MS
+  idStorage[newId] = expires
 
   return {
     id: newId,

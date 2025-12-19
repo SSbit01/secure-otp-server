@@ -6,6 +6,7 @@ import { getCurrentKey, getKey, storeKey } from "@/custom/kms"
 import {
   OTP_ALLOW_ONLY_ONE_RESENDING,
   OTP_ATTEMPTS_BLOCK,
+  OTP_MAX_AGE,
   OTP_MAX_ATTEMPTS,
   OTP_MAX_CREDENTIALS,
   createOtp
@@ -14,7 +15,7 @@ import {
 import sendOtp from "@/custom/send"
 
 import { compressNumber } from "@/lib/compression/number"
-import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { createSymmetricKey, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
 import deleteOtpCookies, { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
@@ -230,7 +231,7 @@ export class OtpTokenList {
     const cookieOptions = {
       expires: lessPreciseExpires,
       httpOnly: true,
-      maxAge: OTP_MAX_AGE_MS,
+      maxAge: OTP_MAX_AGE,
       secure: isProduction(this.#context),
       sameSite: "strict",
       partitioned: false
