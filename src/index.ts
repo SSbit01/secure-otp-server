@@ -14,7 +14,7 @@ import {
 } from "@/lib/error/static"
 
 import { getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
-import deleteOtpCookies, { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID } from "@/lib/otp/cookie"
+import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
 import { decodeOtpToken } from "@/lib/otp/encode/token"
 import { EXPIRES } from "@/lib/otp/order"
 
@@ -28,7 +28,10 @@ import app from "@/setup"
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
 
-  const { [COOKIE_OTP_KEY_ID]: keyId, [COOKIE_OTP_ENCRYPTED_TOKENS]: encryptedTokens } = getCookie(c)
+  const {
+    [getCookieName(c, COOKIE_OTP_KEY_ID)]: keyId,
+    [getCookieName(c, COOKIE_OTP_ENCRYPTED_TOKENS)]: encryptedTokens
+  } = getCookie(c)
 
   const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedTokens)
 

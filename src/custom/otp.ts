@@ -30,6 +30,14 @@ export const OTP_ATTEMPTS_BLOCK: number = 1
 
 
 /**
+ * Cookie prefix for the OTP cookies.
+ * 
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#cookie_prefixes|MDN}
+ */
+export const OTP_COOKIE_PREFIX: string = "__Host-Http-"
+
+
+/**
  * When the user enters the code incorrectly many times and reaches the number of attempts defined in `OTP_ATTEMPTS_BLOCK`, a timeout of a few seconds can be set.
  * 
  * - It is recommended to set it to 20 seconds.

@@ -16,7 +16,7 @@ import sendOtp from "@/custom/send"
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { createSymmetricKey, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
-import deleteOtpCookies, { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID } from "@/lib/otp/cookie"
+import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
 import { encodeOtpToken } from "@/lib/otp/encode/token"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
@@ -230,6 +230,7 @@ export class OtpTokenList {
     const cookieOptions = {
       expires: lessPreciseExpires,
       httpOnly: true,
+      path: "/",
       secure: isProduction(this.#context),
       sameSite: "strict",
       partitioned: false
@@ -237,14 +238,14 @@ export class OtpTokenList {
 
     setCookie(
       this.#context,
-      COOKIE_OTP_KEY_ID,
+      getCookieName(this.#context, COOKIE_OTP_KEY_ID),
       keyId.toString(),
       cookieOptions
     )
 
     setCookie(
       this.#context,
-      COOKIE_OTP_ENCRYPTED_TOKENS,
+      getCookieName(this.#context, COOKIE_OTP_ENCRYPTED_TOKENS),
       encryptedTokens,
       cookieOptions
     )
@@ -401,9 +402,7 @@ export class OtpTokenList {
         return
       }
     } else {
-      const idData = await createId(this.#context)
-      this.#id = idData.id
-      this.#expires = idData.expires
+      ({ id: this.#id, expires: this.#expires } = await createId(this.#context))
     }
 
     const otp = createOtp()
