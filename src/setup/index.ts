@@ -32,7 +32,7 @@ app.use(secureHeaders())
 app.use(cors({
 
   origin(origin, c) {
-    return env(c).ORIGIN || "*"
+    return env(c).CORS_ORIGIN
   },
 
   allowMethods: ["GET", "HEAD", "POST"],

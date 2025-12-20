@@ -8,7 +8,7 @@ A template server for generating, encrypting, and verifying One-Time Passwords (
 >
 > This server implements several security best practices, but it is not a complete security solution on its own. Additional measures such as DDoS protection, rate limiting, and request throttling are necessary for a production environment. It is recommended to add these externally via a CDN, proxy, or API gateway.
 >
-> If you discover a vulnerability, please report it by email; the address is located in the `"author"` field of [`package.json`](/package.json).
+> If you discover a vulnerability, please read the [Security Policy](./SECURITY.md).
 
 ## Features
 
@@ -57,18 +57,22 @@ This process ensures that each encrypted token can only be used for verification
 
 Clone the repository and install dependencies using your preferred package manager.
 
+```sh
 # Using Bun
 bun install
 
 # Using Deno
-deno task install### 2. Configuration
+deno task install
+```
 
-Create a `.env` file in the root of the project. For production, set `NODE_ENV` to `"production"` to enable secure cookies and specify your frontend's `ORIGIN`.
+### 2. Configuration
+
+Create a `.env` file in the root of the project. For production, set `NODE_ENV` to `"production"` to enable secure cookies and specify your frontend's origin with `CORS_ORIGIN`.
 
 ```env
 # .env
 NODE_ENV="production"
-ORIGIN="https://your-app.com"
+CORS_ORIGIN="https://your-app.com"
 ```
 
 See [`sample.env`](/sample.env).
@@ -125,7 +129,7 @@ Each file contains detailed comments explaining how to modify the code.
 
 ### Advanced
 
-You can configure the server's middleware behavior in [`src/setup/index.ts`](/src/setup/index.ts).
+You can configure the server's middleware and CORS behavior in [`src/setup/index.ts`](/src/setup/index.ts).
 
 Default settings include:
 
