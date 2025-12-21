@@ -30,11 +30,7 @@ export function deleteOtpCookies(c) {
  * @returns {string}
  */
 export function getCookieName(c, name) {
-
-  if (isProduction(c)) {
-    name = OTP_COOKIE_PREFIX + name
-  }
-
-  return name
-
+  return isProduction(c)
+    ? (OTP_COOKIE_PREFIX + name)
+    : name
 }

@@ -30,7 +30,7 @@ export const OTP_ATTEMPTS_BLOCK: number = 1
 
 
 /**
- * Cookie prefix for the OTP cookies.
+ * Prefix for the OTP cookies, only applied in production.
  * 
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#cookie_prefixes|MDN}
  */

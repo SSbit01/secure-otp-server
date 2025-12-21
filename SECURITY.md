@@ -29,7 +29,9 @@ If you want attribution in release notes or advisories, feel free to request it.
 
 ### Scope
 
-This policy applies to this repository, but it does **not** automatically apply to third‑party forks, although private reporting is still encouraged to avoid harming downstream users.
+This policy applies to this repository,
+but it does **not** automatically apply to third‑party forks,
+although private reporting is still encouraged to avoid harming downstream users.
 
 ### Responsible Conduct
 

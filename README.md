@@ -2,11 +2,14 @@
 
 ![Logo](/logo.png "Secure OTP Server")
 
-A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.
+A template server for generating, encrypting, and verifying One-Time Passwords (OTP).
+Designed for microservices, modern authentication flows, and serverless environments.
 
 > [!CAUTION]
 >
-> This server implements several security best practices, but it is not a complete security solution on its own. Additional measures such as DDoS protection, rate limiting, and request throttling are necessary for a production environment. It is recommended to add these externally via a CDN, proxy, or API gateway.
+> This server implements several security best practices, but it is not a complete security solution on its own.
+> Additional measures such as DDoS protection, rate limiting, and request throttling are necessary for a production environment.
+> It is recommended to add these externally via a CDN, proxy, or API gateway.
 >
 > If you discover a vulnerability, please read the [Security Policy](./SECURITY.md).
 
@@ -14,7 +17,9 @@ A template server for generating, encrypting, and verifying One-Time Passwords (
 
 ### Secure by Design
 
-Generates cryptographically secure OTPs and encrypts session data using [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode), which is extremely fast on modern CPUs because they have dedicated hardware acceleration ([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set)), in addition to being quantum-resistant.
+Generates cryptographically secure OTPs and encrypts session data using [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode),
+which is extremely fast on modern CPUs because they have dedicated hardware acceleration ([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set)),
+in addition to being quantum-resistant.
 
 ### Customizable
 
@@ -26,7 +31,8 @@ Prevents replay attacks by using single-use verification keys, while remaining l
 
 ### Multi-Credential Sessions
 
-Store several OTP tokens per session, each bound to a different credential. Users can move between credentials without restarting the flow, and the session-encrypted cookie enforces a strict cap so tokens stay lightweight.
+Store several OTP tokens per session, each bound to a different credential.
+Users can move between credentials without restarting the flow, and the session-encrypted cookie enforces a strict cap so tokens stay lightweight.
 
 ### High Performance
 
@@ -36,7 +42,8 @@ Built with [Hono](https://hono.dev/) for fast and efficient routing.
 
 Runs on modern JavaScript runtimes ([Deno](https://deno.com/), [Bun](https://bun.com/), [Cloudflare Workers](https://workers.cloudflare.com/)...).
 
-You can run it on [Node.js](https://nodejs.org/) (>=25), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/) are more recommended. To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage) adapter and configure it in [`src/index.ts`](/src/index.ts).
+You can run it on [Node.js](https://nodejs.org/) (>=25), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/) are more recommended.
+To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage) adapter and configure it in [`src/index.ts`](/src/index.ts).
 
 For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or [AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
 
@@ -49,7 +56,8 @@ This server uses a hybrid design to provide stateful security without the overhe
 3. When the client attempts to verify an OTP, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
 4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
 
-This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks. By default, the KMS stores keys in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
+This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks.
+By default, the KMS stores keys in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
 
 ## Getting Started
 
