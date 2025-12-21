@@ -162,7 +162,9 @@ Server error responses follow this structure:
 
 ## Testing
 
-The test suite is written with Bun's built-in test runner.
+The test suite is written with Bun's built-in test runner. Use `bun run bun:test` to run the tests.
+
+---
 
 This project is [MIT licensed](/LICENSE).
 
