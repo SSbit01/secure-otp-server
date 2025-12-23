@@ -34,6 +34,11 @@ export function decodeOtpToken(otpTokenString, dateNow = Date.now()) {
    * That's why it is not removed, unlike [OTP_BLOCK].
    */
 
+  /**
+   * TODO: Check if otpToken[ATTEMPTS] corresponds to MAX_ATTEMPTS.
+   * If that's not the case, return bad request to the client and rotate KEK.
+   */
+
   if (otpToken[ATTEMPTS]) {
     otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
     if (otpToken[OTP_BLOCK]) {
