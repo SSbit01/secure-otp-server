@@ -1,11 +1,11 @@
 /**
- * This server generates keys with their IDs constantly, and it needs to store them somewhere.
- * This file defines functions for storing keys.
+ * This server generates Key Encryption Keys (KEKs) with their IDs, and it needs to store them somewhere.
+ * This file defines functions for storing KEKs.
  * 
  * Therefore, a simple in-memory KMS implementation has been defined using a JavaScript Map.
  * 
  * - It is the cheapest and easiest implementation and works fine if the server is always on.
- * - This implementation does not persist keys, so all keys will be lost when the server restarts.
+ * - This implementation does not persist KEKs, so all KEKs will be lost when the server restarts.
  * - In-memory implementations do not work well in distributed systems (e.g., multiple server instances behind a load balancer).
  * - In-memory implementations do not work well in serverless environments, because they are constantly closing and opening.
  * - Redis, DynamoDB or similar are the best alternatives.
@@ -13,24 +13,23 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { OTP_MAX_AGE_MS } from "@/lib/computed"
-import { createRandomId } from "@/lib/crypto/id"
 
 import type { Context } from "hono"
 
 
 interface CurrentKey {
-  id: string | number
+  id: string
   key: CryptoKey
 }
 
 
 /// CUSTOM
-type KeyData = [expires: number, rotate: number, key: CryptoKey, uses?: number]
+type KeyData = [expires: number, rotate: number, key: CryptoKey]
 
 
-const ROTATE_TIME = 2592000000  // 30 days in miliseconds.
-const ROTATE_USES = 1000000000  // 1 billion.
+const ROTATE_TIME = 7776000000  // 90 days in miliseconds.
 
 const keyStorage = new Map<CurrentKey["id"], KeyData>()
 ///
@@ -48,7 +47,7 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
 
-  let currentKeyEntry: [string | number, KeyData] | undefined
+  let currentKeyEntry: [CurrentKey["id"], KeyData] | undefined
 
   const dateNow = Date.now()
 
@@ -61,27 +60,13 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
     }
   }
 
-  if (!currentKeyEntry) {
+  if (!currentKeyEntry || currentKeyEntry[1][1] <= dateNow) {
     return
   }
-
-  const keyData = currentKeyEntry[1]
-
-  if (keyData[1] <= dateNow || !keyData[3]) {
-    return
-  }
-
-  if (keyData[3] >= ROTATE_USES) {
-    /** Trim the array to save space. */
-    keyData.length = 3
-    return
-  }
-
-  keyData[3]++
 
   return {
     id: currentKeyEntry[0],
-    key: keyData[2]
+    key: currentKeyEntry[1][2]
   }
 
 }
@@ -93,19 +78,21 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
  * @async
  * @function getKey
  * @param {Context} c - Hono context.
- * @param {CurrentKey["id"]} keyId - The ID of the encryption key to retrieve.
+ * @param {Uint8Array<ArrayBuffer>} keyId - The ID of the encryption key to retrieve.
  * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
-export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
+export async function getKey(c: Context, keyId: Uint8Array<ArrayBuffer>): Promise<CryptoKey | undefined> {
 
-  const keyData = keyStorage.get(keyId)
+  const keyIdString = keyId.toBase64(BASE64URL_OPTIONS)
+
+  const keyData = keyStorage.get(keyIdString)
 
   if (!keyData) {
     return
   }
 
   if (keyData[0] <= Date.now()) {
-    keyStorage.delete(keyId)
+    keyStorage.delete(keyIdString)
     return
   }
 
@@ -123,9 +110,10 @@ export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
  * @function storeKey
  * @param {Context} c - Hono context.
  * @param {CryptoKey} key - The encryption key to store.
- * @return {Promise<CurrentKey["id"]>} The ID of the stored key.
+ * @param {string} id - ID of the key, store it too.
+ * @return {Promise<boolean>} A boolean indicating whether the operation was successful.
  */
-export async function storeKey(c: Context, key: CryptoKey): Promise<CurrentKey["id"]> {
+export async function storeKey(c: Context, key: CryptoKey, id: Uint8Array<ArrayBuffer>): Promise<boolean> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
   
@@ -138,16 +126,10 @@ export async function storeKey(c: Context, key: CryptoKey): Promise<CurrentKey["
   }
 
   const rotate = dateNow + ROTATE_TIME
-  const data: KeyData = [rotate + OTP_MAX_AGE_MS, rotate, key, 1]
+  const data: KeyData = [rotate + OTP_MAX_AGE_MS, rotate, key]
 
-  let id: string
+  keyStorage.set(id.toBase64(BASE64URL_OPTIONS), data)
 
-  do {
-    id = createRandomId()
-  } while (keyStorage.has(id))
-
-  keyStorage.set(id, data)
-
-  return id
+  return true
 
 }

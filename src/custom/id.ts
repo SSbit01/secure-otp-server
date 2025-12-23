@@ -190,7 +190,7 @@ export async function updateExpires(c: Context, id: IdData["id"], oldExpires: nu
 
   const newExpires = Date.now() + OTP_MAX_AGE_MS
 
- idStorage[id] = newExpires
+  idStorage[id] = newExpires
 
   return newExpires
 

@@ -2,8 +2,10 @@ import { getCookie } from "hono/cookie"
 
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
+import { getKey } from "@/custom/kms"
 
-import { decompressNumber } from "./lib/compression/number"
+import { decompressNumber } from "@/lib/compression/number"
+import { KEK_ID_BYTES } from "@/lib/crypto/id"
 
 import {
   ERR_OTP_INCORRECT,
@@ -14,7 +16,7 @@ import {
 } from "@/lib/error/static"
 
 import { getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
-import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
+import { getOtpCookieName, deleteOtpCookies } from "@/lib/otp/cookie"
 import { decodeOtpToken } from "@/lib/otp/encode/token"
 import { EXPIRES } from "@/lib/otp/order"
 
@@ -26,14 +28,44 @@ import otpValueValidator from "@/lib/validators/otp"
 import app from "@/setup"
 
 
+/**
+ * AES-KW adds 8 extra bytes of authenticated integrity value (AIV).
+ * That's why we need to add 8 to 32 (AES-256) = 40.
+ */
+const OTP_TOKEN_INDEX = KEK_ID_BYTES + 40
+
+
 app.post("/api/otp/create", credentialValidator, async (c) => {
 
-  const {
-    [getCookieName(c, COOKIE_OTP_KEY_ID)]: keyId,
-    [getCookieName(c, COOKIE_OTP_ENCRYPTED_TOKENS)]: encryptedTokens
-  } = getCookie(c)
+  const { [getOtpCookieName(c)]: encryptedOtpData } = getCookie(c)
 
-  const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedTokens)
+  const otpData = Uint8Array.fromBase64(encryptedOtpData)
+
+  const kekId = otpData.subarray(0, KEK_ID_BYTES)
+
+  if (kekId.length !== KEK_ID_BYTES) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
+  const kek = await getKey(c, kekId)
+
+  if (!kek) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
+
+  const wrappedDek = otpData.subarray(KEK_ID_BYTES, OTP_TOKEN_INDEX)
+
+  const dek = await crypto.subtle.unwrapKey(
+    "raw",
+    wrappedDek,
+    kek,
+    { name: "AES-KW" },
+    { name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"]
+  )
+
+  const otpTokenStrings = await getOtpTokenStrings(c, dek, otpData.subarray(OTP_TOKEN_INDEX))
 
   if (!otpTokenStrings) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))

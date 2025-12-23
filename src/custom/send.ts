@@ -1,7 +1,9 @@
 import type { Context } from "hono"
 import type { createOtp } from "@/custom/otp"
 
+
 type Otp = ReturnType<typeof createOtp>
+
 
 /**
  * Implement here the sending of the OTP code to the credential/ID.

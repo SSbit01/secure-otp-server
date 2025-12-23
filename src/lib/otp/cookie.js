@@ -9,8 +9,10 @@ import isProduction from "@/lib/production"
  */
 
 
-export const COOKIE_OTP_ENCRYPTED_TOKENS = "t"
-export const COOKIE_OTP_KEY_ID = "k"
+const COOKIE_OTP = "o"
+
+
+let cookieOtp = ""
 
 
 /**
@@ -18,19 +20,23 @@ export const COOKIE_OTP_KEY_ID = "k"
  * @param {Context} c
  */
 export function deleteOtpCookies(c) {
-  deleteCookie(c, getCookieName(c, COOKIE_OTP_ENCRYPTED_TOKENS))
-  deleteCookie(c, getCookieName(c, COOKIE_OTP_KEY_ID))
+  deleteCookie(c, getOtpCookieName(c))
 }
 
 
 /**
- * @function getCookieName
+ * @function getOtpCookieName
  * @param {Context} c
- * @param {string} name
  * @returns {string}
  */
-export function getCookieName(c, name) {
-  return isProduction(c)
-    ? (OTP_COOKIE_PREFIX + name)
-    : name
+export function getOtpCookieName(c) {
+
+  if (!cookieOtp) {
+    cookieOtp = isProduction(c)
+      ? (OTP_COOKIE_PREFIX + COOKIE_OTP)
+      : COOKIE_OTP
+  }
+
+  return cookieOtp
+  
 }

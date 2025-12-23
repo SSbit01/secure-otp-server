@@ -15,7 +15,7 @@ import sendOtp from "@/custom/send"
 
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { createSymmetricKey, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
+import { SYMMETRIC_ENCRYPTION_ALGORITHM, IV_BYTES, createSymmetricKey, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
 import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
 import { encodeOtpToken } from "@/lib/otp/encode/token"
@@ -49,28 +49,20 @@ const ARRAY_SEPARATOR = ","
 /**
  * @function getOtpTokenStrings
  * @param {Context} c
- * @param {(string|number)} keyId
- * @param {string} encryptedOtpTokens
+ * @param {CryptoKey} key
+ * @param {Uint8Array<ArrayBuffer>} data
  * @returns {Promise<string[]|undefined>}
  */
-export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
-
-  if (!keyId || !encryptedOtpTokens) {
-    return
-  }
-
-  const key = await getKey(c, keyId)
-
-  if (!key) {
-    return
-  }
+export async function getOtpTokenStrings(c, key, data) {
 
   try {
-    return (await decryptTextSymmetrically(
-      key,
-      encryptedOtpTokens,
-      textDecoder
-    ))?.split(ARRAY_SEPARATOR)
+    return textDecoder.decode(
+      await crypto.subtle.decrypt(
+        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv: data.subarray(0, IV_BYTES) },
+        key,
+        data.subarray(IV_BYTES)
+      )
+    )?.split(ARRAY_SEPARATOR)
   } catch {
     // It simply returns `undefined`.
   }
@@ -82,7 +74,6 @@ export async function getOtpTokenStrings(c, keyId, encryptedOtpTokens) {
 export class OtpTokenList {
 
   #context
-  #dateNow
   #expires
   #id
   #tokens
@@ -93,16 +84,12 @@ export class OtpTokenList {
    * @param {OtpToken[]} [tokens]
    * @param {(string|number)} [id]
    * @param {number} [expires]
-   * @param {number} [createdAt]
    */
-  constructor(c, tokens = [], id, expires = 0, createdAt = Date.now()) {
-
+  constructor(c, tokens = [], id, expires = 0) {
     this.#context = c
     this.#id = id
     this.#expires = expires
     this.#tokens = tokens.length > OTP_MAX_CREDENTIALS ? tokens.slice(0, OTP_MAX_CREDENTIALS) : tokens
-    this.#dateNow = createdAt
-
   }
 
 
@@ -212,13 +199,12 @@ export class OtpTokenList {
     // @ts-expect-error: `#idValid` is true.
     encodedTokens.push(this.#id)
 
-    this.#dateNow = Date.now()
-
-    encodedTokens.push(compressNumber(this.#dateNow))
+    encodedTokens.push(compressNumber(Date.now()))
 
     const encryptedTokens = await encryptTextSymmetrically(
       key,
       encodedTokens.join(ARRAY_SEPARATOR),
+      additionalData,
       textEncoder
     )
 
@@ -301,7 +287,10 @@ export class OtpTokenList {
       // @ts-expect-error: `#current` and `#idValid` are not falsy.
       this.#current.length = OTP
     } else if (OTP_INVALID_BLOCK_MS && attempts <= OTP_ATTEMPTS_BLOCK) {
-      this.#current[OTP_BLOCK] = this.#dateNow + OTP_INVALID_BLOCK_MS
+      const otpBlock = Date.now() + OTP_INVALID_BLOCK_MS
+      otpBlock >= (this.#current[EXPIRES] - 1000)
+        ? this.#current.length = OTP
+        : this.#current[OTP_BLOCK] = otpBlock
     } else {
       /** Trim the array to save space. */
       this.#current.length = OTP_BLOCK
@@ -323,7 +312,7 @@ export class OtpTokenList {
       !this.#idValid ||
       !this.#expires ||
       !this.#current?.[RESEND_BLOCK] ||
-      this.#dateNow < this.#current[RESEND_BLOCK]
+      Date.now() < this.#current[RESEND_BLOCK]
     ) {
       return
     }
@@ -350,7 +339,7 @@ export class OtpTokenList {
         this.#current.length = RESEND_BLOCK
       }
     } else {
-      this.#current[RESEND_BLOCK] = this.#dateNow + OTP_RESEND_BLOCK_MS
+      this.#current[RESEND_BLOCK] = Date.now() + OTP_RESEND_BLOCK_MS
     }
 
     await this.#save()
@@ -409,7 +398,7 @@ export class OtpTokenList {
 
     sendOtp(this.#context, credential, otp)
 
-    const resendBlock = this.#dateNow + OTP_RESEND_BLOCK_MS
+    const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
 
     this.#tokens.push([encodedCredential, this.#expires, otp, OTP_MAX_ATTEMPTS, resendBlock])
 

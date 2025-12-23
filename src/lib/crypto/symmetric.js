@@ -1,15 +1,15 @@
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 
-const encryptionAlgorithm = "AES-GCM"
+export const IV_BYTES = 12
+export const SYMMETRIC_ENCRYPTION_ALGORITHM = "AES-GCM"
 
-const ivBytesLength = 12
 
 /**
  * @type {AesKeyGenParams}
  */
 const KEY_PARAMS = Object.freeze({
-  name: encryptionAlgorithm,
+  name: SYMMETRIC_ENCRYPTION_ALGORITHM,
   length: 256
 })
 
@@ -44,9 +44,10 @@ export async function createSymmetricKey() {
  * 
  * @async
  * @function encryptTextSymmetrically
- * @param   {CryptoKey}       key           - Symmetric key generated with `createSymmetricKeyFromText`.
- * @param   {string}          text          - String value to be encrypted.
- * @param   {TextEncoder}     [textEncoder] - If you have an instance of a `TextEncoder`, you can reuse it.
+ * @param   {CryptoKey}       key            - Symmetric key generated with `createSymmetricKeyFromText`.
+ * @param   {string}          text           - String value to be encrypted.
+ * @param   {BufferSource}    additionalData - Additional data for authentication.
+ * @param   {TextEncoder}     [textEncoder]  - If you have an instance of a `TextEncoder`, you can reuse it.
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
  * @throws  {DOMException}    Raised when:
  * - The provided key is not valid.
@@ -55,16 +56,17 @@ export async function createSymmetricKey() {
 export async function encryptTextSymmetrically(
   key,
   text,
+  additionalData,
   textEncoder = new TextEncoder()
 ) {
 
-  const iv = crypto.getRandomValues(new Uint8Array(ivBytesLength))
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
 
   return (
     iv.toBase64(BASE64URL_OPTIONS) +
     new Uint8Array(
       await crypto.subtle.encrypt(
-        { name: encryptionAlgorithm, iv },
+        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv, additionalData },
         key,
         textEncoder.encode(text)
       )
@@ -99,9 +101,9 @@ export async function decryptTextSymmetrically(
 
   return textDecoder.decode(
     await crypto.subtle.decrypt(
-      { name: encryptionAlgorithm, iv: data.subarray(0, ivBytesLength) },
+      { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv: data.subarray(0, IV_BYTES) },
       key,
-      data.subarray(ivBytesLength)
+      data.subarray(IV_BYTES)
     )
   )
 
