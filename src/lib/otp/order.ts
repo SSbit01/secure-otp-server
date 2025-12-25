@@ -3,7 +3,7 @@ export type OtpToken = [
   expires: number,
   otp?: string,
   attempts?: number,
-  resendBlock?: number,
+  resent?: 1 | 0,
   otpBlock?: number
 ]
 

@@ -78,13 +78,12 @@ export function getOtpTokenData(otpToken) {
 
 
 /**
- * @function getOtpTokenStrings
- * @param {Context} c
+ * @function getOtpTokenList
  * @param {CryptoKey} key
  * @param {Uint8Array<ArrayBuffer>} data
  * @returns {Promise<string[]|undefined>}
  */
-export async function getOtpTokenStrings(c, key, data) {
+export async function getOtpTokenList(key, data) {
 
   try {
     return textDecoder.decode(

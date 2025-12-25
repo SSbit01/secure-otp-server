@@ -3,8 +3,9 @@ import { getCookie } from "hono/cookie"
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
 import { getKey } from "@/custom/kms"
+import { OTP_MAX_ATTEMPTS } from "@/custom/otp"
 
-import { decompressNumber } from "@/lib/compression/number"
+import { compressNumber, decompressNumber } from "@/lib/compression/number"
 import { KEK_ID_BYTES } from "@/lib/crypto/id"
 
 import {
@@ -15,11 +16,11 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { getOtpTokenData, getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
+import { getOtpTokenList, getOtpTokenData, OtpTokenList } from "@/lib/otp"
 import { getOtpCookieName, deleteOtpCookies } from "@/lib/otp/cookie"
 import { encodeCredential } from "@/lib/otp/encode/credential"
-import { decodeOtpToken } from "@/lib/otp/encode/token"
-import { CREDENTIAL, EXPIRES } from "@/lib/otp/order"
+import { OTP_SEPARATOR } from "@/lib/otp/encode/token"
+import { CREDENTIAL, EXPIRES, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
 
 import { isLessThanDelay } from "@/lib/time"
 
@@ -70,13 +71,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     ["encrypt", "decrypt"]
   )
 
-  const otpTokenStrings = await getOtpTokenStrings(c, dek, otpData.subarray(OTP_TOKEN_INDEX))
+  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(OTP_TOKEN_INDEX))
 
-  if (!otpTokenStrings) {
+  if (!encodedOtpTokenList) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const lastAccessString = otpTokenStrings.pop()
+  const lastAccessString = encodedOtpTokenList.pop()
 
   if (!lastAccessString) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
@@ -87,38 +88,54 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  const id = otpTokenStrings.pop()
+  const id = encodedOtpTokenList.pop()
 
   if (!id) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
+  let currentEncodedOtpToken
   let currentOtpTokenData
-  let currentOtpTokenString
   let expires = 0
 
   const encodedCredential = encodeCredential(c.req.valid("json"))
-  const otpTokens = []
+  const newEncodedOtpTokenList = []
   const dateNow = Date.now()
 
-  for (const otpTokenString of otpTokenStrings) {
-    const otpToken = decodeOtpToken(otpTokenString, dateNow)
-    if (otpToken) {
-      if (expires < otpToken[EXPIRES]) {
-        expires = otpToken[EXPIRES]
+  for (let encodedOtpToken of encodedOtpTokenList) {
+    const otpToken: any[] = encodedOtpToken.split(OTP_SEPARATOR)
+    const currentExpires = decompressNumber(otpToken[EXPIRES])
+    if (dateNow < currentExpires) {
+      if (otpToken[ATTEMPTS]) {
+        otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
+        /**
+         * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
+         */
+        if (
+          isNaN(otpToken[ATTEMPTS]) ||
+          otpToken[ATTEMPTS] > OTP_MAX_ATTEMPTS ||
+          otpToken[ATTEMPTS] <= 0
+        ) {
+          // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
+          return c.json(ERR_OTP_INVALID_COOKIE, 400)
+        }
+        if (otpToken[OTP_BLOCK] && dateNow >= decompressNumber(otpToken[OTP_BLOCK])) {
+          otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
+          encodedOtpToken = otpToken.join(OTP_SEPARATOR)
+        }
       }
-      if (!currentOtpTokenString && encodedCredential === otpToken[CREDENTIAL]) {
-        currentOtpTokenData = getOtpTokenData(otpToken)
-        currentOtpTokenString = otpTokenString
+      if (expires < currentExpires) {
+        expires = currentExpires
+      }
+      if (!currentEncodedOtpToken && encodedCredential === otpToken[CREDENTIAL]) {
+        currentEncodedOtpToken = encodedOtpToken
+        currentOtpTokenData = {
+          expires: new Date(getReducedTimePrecision(currentExpires))
+        }
       } else {
-        otpTokens.push(otpTokenString)
+        newEncodedOtpTokenList.push(encodedOtpToken)
       }
     }
-  }
-
-  if (currentOtpTokenData) {
-    otpTokens.push(currentOtpTokenString)
-    return c.json(currentOtpTokenData)
   }
 
   /**
@@ -128,7 +145,18 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const data = await new OtpTokenList(c, otpTokens, id, expires).set(c.req.valid("json"))
+  if (currentEncodedOtpToken) {
+    newEncodedOtpTokenList.push(currentEncodedOtpToken, id, compressNumber(dateNow))
+    return c.json(currentOtpTokenData)
+  } else {
+    await updateExpires(c, id, expires)
+    if (!this.#expires) {
+      deleteOtpCookies(this.#context)
+      return
+    }
+  }
+
+  const data = await new OtpTokenList(c, newEncodedOtpTokenList, id, expires).set(c.req.valid("json"))
 
   if (!data) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)

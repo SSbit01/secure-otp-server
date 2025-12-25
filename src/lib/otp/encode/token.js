@@ -7,7 +7,7 @@ import { EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order
  */
 
 
-const OTP_SEPARATOR = "|"
+export const OTP_SEPARATOR = "|"
 
 
 /**
@@ -23,9 +23,7 @@ export function decodeOtpToken(otpTokenString, dateNow = Date.now()) {
    */
   const otpToken = otpTokenString.split(OTP_SEPARATOR)
 
-  otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES])
-
-  if (dateNow >= otpToken[EXPIRES]) {
+  if (dateNow >= decompressNumber(otpToken[EXPIRES])) {
     return
   }
 
@@ -45,17 +43,13 @@ export function decodeOtpToken(otpTokenString, dateNow = Date.now()) {
       const otpBlock = decompressNumber(otpToken[OTP_BLOCK])
       if (dateNow < otpBlock) {
         otpToken[OTP_BLOCK] = otpBlock
-        otpToken[RESEND_BLOCK] &&= decompressNumber(otpToken[RESEND_BLOCK])
       } else if (otpToken[RESEND_BLOCK]) {
-        otpToken[RESEND_BLOCK] = decompressNumber(otpToken[RESEND_BLOCK])
         /** Trim the array to save space. */
         otpToken.length = OTP_BLOCK
       } else {
         /** Trim the array to save space. */
         otpToken.length = RESEND_BLOCK
       }
-    } else {
-      otpToken[RESEND_BLOCK] &&= decompressNumber(otpToken[RESEND_BLOCK])
     }
   }
 
