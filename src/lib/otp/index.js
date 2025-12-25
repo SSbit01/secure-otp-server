@@ -47,6 +47,37 @@ const ARRAY_SEPARATOR = ","
 
 
 /**
+ * @function getOtpTokenData
+ * @param {OtpToken} otpToken
+ * @returns {OtpTokenData}
+ */
+export function getOtpTokenData(otpToken) {
+
+  /**
+   * @type {OtpTokenData}
+   */
+  const result = {
+    expires: new Date(getReducedTimePrecision(otpToken[EXPIRES]))
+  }
+
+  if (!otpToken[OTP]) {
+    result.blocked = true
+  } else {
+    if (otpToken[RESEND_BLOCK]) {
+      result.resendBlock = new Date(getReducedTimePrecision(otpToken[RESEND_BLOCK], Math.ceil))
+    }
+    if (otpToken[OTP_BLOCK]) {
+      result.otpBlock = new Date(getReducedTimePrecision(otpToken[OTP_BLOCK], Math.ceil))
+    }
+  }
+
+  return result
+
+}
+
+
+
+/**
  * @function getOtpTokenStrings
  * @param {Context} c
  * @param {CryptoKey} key

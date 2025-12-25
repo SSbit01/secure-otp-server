@@ -15,10 +15,11 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
+import { getOtpTokenData, getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
 import { getOtpCookieName, deleteOtpCookies } from "@/lib/otp/cookie"
+import { encodeCredential } from "@/lib/otp/encode/credential"
 import { decodeOtpToken } from "@/lib/otp/encode/token"
-import { EXPIRES } from "@/lib/otp/order"
+import { CREDENTIAL, EXPIRES } from "@/lib/otp/order"
 
 import { isLessThanDelay } from "@/lib/time"
 
@@ -92,20 +93,32 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
+  let currentOtpTokenData
+  let currentOtpTokenString
   let expires = 0
 
+  const encodedCredential = encodeCredential(c.req.valid("json"))
   const otpTokens = []
-
   const dateNow = Date.now()
 
   for (const otpTokenString of otpTokenStrings) {
     const otpToken = decodeOtpToken(otpTokenString, dateNow)
     if (otpToken) {
-      otpTokens.push(otpToken)
       if (expires < otpToken[EXPIRES]) {
         expires = otpToken[EXPIRES]
       }
+      if (!currentOtpTokenString && encodedCredential === otpToken[CREDENTIAL]) {
+        currentOtpTokenData = getOtpTokenData(otpToken)
+        currentOtpTokenString = otpTokenString
+      } else {
+        otpTokens.push(otpTokenString)
+      }
     }
+  }
+
+  if (currentOtpTokenData) {
+    otpTokens.push(currentOtpTokenString)
+    return c.json(currentOtpTokenData)
   }
 
   /**
