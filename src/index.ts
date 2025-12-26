@@ -7,6 +7,7 @@ import { OTP_MAX_ATTEMPTS } from "@/custom/otp"
 
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
 import { KEK_ID_BYTES, KEK_ID_LENGTH } from "@/lib/crypto/id"
+import { unwrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
   ERR_OTP_INCORRECT,
@@ -61,15 +62,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const dek = await crypto.subtle.unwrapKey(
-    "raw",
-    wrappedDek,
-    kek,
-    { name: "AES-KW" },
-    { name: "AES-GCM" },
-    false,
-    ["encrypt", "decrypt"]
-  )
+  const dek = await unwrapKey(wrappedDek, kek)
 
   const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(DEK_BYTES))
 
@@ -145,11 +138,12 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   if (currentEncodedOtpToken) {
     newEncodedOtpTokenList.push(currentEncodedOtpToken, id, compressNumber(dateNow))
+    
     return c.json(currentOtpTokenData)
   } else {
-    await updateExpires(c, id, expires)
-    if (!this.#expires) {
-      deleteOtpCookies(this.#context)
+    expires = await updateExpires(c, id, expires)
+    if (!expires) {
+      deleteOtpCookies(c)
       return
     }
   }

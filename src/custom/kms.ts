@@ -39,11 +39,11 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
  * Retrieves an encryption key by its ID.
  * 
  * @async
- * @function getCurrentKey
+ * @function getCurrentKeyId
  * @param {Context} c - Hono context.
- * @return {Promise<CurrentKey|undefined>} A promise that resolves to the `CurrentKey` if found, otherwise `undefined`.
+ * @return {Promise<CurrentKey["id"]|undefined>} A promise that resolves to the key ID if found, otherwise `undefined`.
  */
-export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined> {
+export async function getCurrentKeyId(c: Context): Promise<CurrentKey["id"] | undefined> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
 
@@ -64,10 +64,7 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
     return
   }
 
-  return {
-    id: currentKeyEntry[0],
-    key: currentKeyEntry[1][2]
-  }
+  return currentKeyEntry[0]
 
 }
 
@@ -78,10 +75,10 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
  * @async
  * @function getKey
  * @param {Context} c - Hono context.
- * @param {string} keyId - The ID of the encryption key to retrieve.
+ * @param {CurrentKey["id"]} keyId - The ID of the encryption key to retrieve.
  * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
-export async function getKey(c: Context, keyId: string): Promise<CryptoKey | undefined> {
+export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
 
   const keyData = keyStorage.get(keyId)
 
@@ -111,7 +108,7 @@ export async function getKey(c: Context, keyId: string): Promise<CryptoKey | und
  * @param {string} id - ID of the key, store it too.
  * @return {Promise<boolean>} A boolean indicating whether the operation was successful.
  */
-export async function storeKey(c: Context, key: CryptoKey, id: string): Promise<boolean> {
+export async function storeKey(c: Context, key: CryptoKey, id: CurrentKey["id"]): Promise<boolean> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
   

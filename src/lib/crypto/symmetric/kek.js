@@ -22,12 +22,10 @@ const KEY_WRAP_USAGES = Object.freeze(["wrapKey", "unwrapKey"])
  */
 export async function createKek() {
 
-  return (
-    await crypto.subtle.generateKey(
-      KEY_WRAP_PARAMS,
-      true,
-      KEY_WRAP_USAGES
-    )
+  return await crypto.subtle.generateKey(
+    KEY_WRAP_PARAMS,
+    true,
+    KEY_WRAP_USAGES
   )
 
 }

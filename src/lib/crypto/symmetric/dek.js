@@ -31,12 +31,10 @@ Object.freeze(KEY_ENCRYPTION_USAGES)
  */
 export async function createDek() {
 
-  return (
-    await crypto.subtle.generateKey(
-      KEY_ENCRYPTION_PARAMS,
-      true,
-      KEY_ENCRYPTION_USAGES
-    )
+  return await crypto.subtle.generateKey(
+    KEY_ENCRYPTION_PARAMS,
+    true,
+    KEY_ENCRYPTION_USAGES
   )
 
 }
