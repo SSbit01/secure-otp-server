@@ -7,7 +7,7 @@ import { OTP_MAX_ATTEMPTS } from "@/custom/otp"
 
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
 import { KEK_ID_BYTES, KEK_ID_LENGTH } from "@/lib/crypto/id"
-import { unwrapKey } from "@/lib/crypto/symmetric/kek"
+import { wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
   ERR_OTP_INCORRECT,
@@ -40,7 +40,11 @@ const DEK_BYTES = 40
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
 
-  const { [getOtpCookieName(c)]: encryptedOtpData } = getCookie(c)
+  const encryptedOtpData = getCookie(c, getOtpCookieName(c))
+
+  if (!encryptedOtpData) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
 
   const kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
 
@@ -56,7 +60,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH))
 
-  const wrappedDek = otpData.subarray(0, DEK_BYTES)
+  let wrappedDek = otpData.subarray(0, DEK_BYTES)
 
   if (wrappedDek.length !== DEK_BYTES) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
@@ -141,8 +145,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   } else {
     expires = await updateExpires(c, id, expires)
     if (!expires) {
-      deleteOtpCookies(c)
-      return
+      return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
     }
   }
 
@@ -151,18 +154,12 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   if (!currentKekId) {
     
   } else if (currentKekId !== kekId) {
-    kek &&= await getKek(c, currentKekId)
+    kek = await getKek(c, currentKekId)
+    // @ts-ignore: `kek` is not undefined.
+    wrappedDek = await wrapKey(dek, kek)
   }
 
   return c.json(currentOtpTokenData)
-
-  const data = await new OtpTokenList(c, newEncodedOtpTokenList, id, expires).set(c.req.valid("json"))
-
-  if (!data) {
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  return c.json(data)
 
 })
 

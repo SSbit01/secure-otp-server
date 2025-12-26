@@ -33,6 +33,25 @@ export async function createKek() {
 
 /**
  * @async
+ * @function wrapKey
+ * @param {CryptoKey} key 
+ * @param {CryptoKey} kek 
+ * @returns {Promise<ArrayBuffer>}
+ */
+export async function wrapKey(key, kek) {
+
+  return await crypto.subtle.wrapKey(
+    "raw",
+    key,
+    kek,
+    KEY_WRAP_PARAMS
+  )
+
+}
+
+
+/**
+ * @async
  * @function unwrapKey
  * @param {Uint8Array<ArrayBuffer>} wrappedKey 
  * @param {CryptoKey} kek 
