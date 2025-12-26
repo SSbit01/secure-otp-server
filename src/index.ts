@@ -2,7 +2,7 @@ import { getCookie } from "hono/cookie"
 
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
-import { getKey } from "@/custom/kms"
+import { getCurrentKekId, getKek } from "@/custom/kms"
 import { OTP_MAX_ATTEMPTS } from "@/custom/otp"
 
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
@@ -48,7 +48,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const kek = await getKey(c, kekId)
+  let kek = await getKek(c, kekId)
 
   if (!kek) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
@@ -138,8 +138,6 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   if (currentEncodedOtpToken) {
     newEncodedOtpTokenList.push(currentEncodedOtpToken, id, compressNumber(dateNow))
-    
-    return c.json(currentOtpTokenData)
   } else {
     expires = await updateExpires(c, id, expires)
     if (!expires) {
@@ -147,6 +145,16 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       return
     }
   }
+
+  const currentKekId = await getCurrentKekId(c)
+
+  if (!currentKekId) {
+    
+  } else if (currentKekId !== kekId) {
+    kek &&= await getKek(c, currentKekId)
+  }
+
+  return c.json(currentOtpTokenData)
 
   const data = await new OtpTokenList(c, newEncodedOtpTokenList, id, expires).set(c.req.valid("json"))
 

@@ -1,7 +1,7 @@
 import { setCookie } from "hono/cookie"
 
 import { createId, deleteId, replaceId, updateExpires } from "@/custom/id"
-import { getCurrentKey, getKey, storeKey } from "@/custom/kms"
+import { getCurrentKey, getKek, storeKek } from "@/custom/kms"
 
 import {
   OTP_ALLOW_ONLY_ONE_RESENDING,
@@ -221,7 +221,7 @@ export class OtpTokenList {
       keyId = currentKey.id
     } else {
       key = await createSymmetricEncryptionKey()
-      keyId = await storeKey(this.#context, key)
+      keyId = await storeKek(this.#context, key)
     }
 
     const encodedTokens = this.#tokens.map(encodeOtpToken)

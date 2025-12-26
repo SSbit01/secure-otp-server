@@ -13,7 +13,6 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
-import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { OTP_MAX_AGE_MS } from "@/lib/computed"
 
 import type { Context } from "hono"
@@ -39,11 +38,11 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
  * Retrieves an encryption key by its ID.
  * 
  * @async
- * @function getCurrentKeyId
+ * @function getCurrentKekId
  * @param {Context} c - Hono context.
  * @return {Promise<CurrentKey["id"]|undefined>} A promise that resolves to the key ID if found, otherwise `undefined`.
  */
-export async function getCurrentKeyId(c: Context): Promise<CurrentKey["id"] | undefined> {
+export async function getCurrentKekId(c: Context): Promise<CurrentKey["id"] | undefined> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
 
@@ -73,12 +72,12 @@ export async function getCurrentKeyId(c: Context): Promise<CurrentKey["id"] | un
  * Retrieves an encryption key by its ID.
  * 
  * @async
- * @function getKey
+ * @function getKek
  * @param {Context} c - Hono context.
  * @param {CurrentKey["id"]} keyId - The ID of the encryption key to retrieve.
  * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
-export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
+export async function getKek(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
 
   const keyData = keyStorage.get(keyId)
 
@@ -102,13 +101,13 @@ export async function getKey(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
  * If the key could not be saved due to a technical error, an error should be thrown.
  * 
  * @async
- * @function storeKey
+ * @function storeKek
  * @param {Context} c - Hono context.
  * @param {CryptoKey} key - The encryption key to store.
  * @param {string} id - ID of the key, store it too.
  * @return {Promise<boolean>} A boolean indicating whether the operation was successful.
  */
-export async function storeKey(c: Context, key: CryptoKey, id: CurrentKey["id"]): Promise<boolean> {
+export async function storeKek(c: Context, key: CryptoKey, id: CurrentKey["id"]): Promise<boolean> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
   
