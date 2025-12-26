@@ -6,7 +6,7 @@ import { getKey } from "@/custom/kms"
 import { OTP_MAX_ATTEMPTS } from "@/custom/otp"
 
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
-import { KEK_ID_BYTES } from "@/lib/crypto/id"
+import { KEK_ID_BYTES, KEK_ID_LENGTH } from "@/lib/crypto/id"
 
 import {
   ERR_OTP_INCORRECT,
@@ -20,7 +20,7 @@ import { getOtpTokenList, getOtpTokenData, OtpTokenList } from "@/lib/otp"
 import { getOtpCookieName, deleteOtpCookies } from "@/lib/otp/cookie"
 import { encodeCredential } from "@/lib/otp/encode/credential"
 import { OTP_SEPARATOR } from "@/lib/otp/encode/token"
-import { CREDENTIAL, EXPIRES, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
+import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
 
 import { isLessThanDelay } from "@/lib/time"
 
@@ -34,22 +34,16 @@ import app from "@/setup"
  * AES-KW adds 8 extra bytes of authenticated integrity value (AIV).
  * That's why we need to add 8 to 32 (AES-256) = 40.
  */
-const OTP_TOKEN_INDEX = KEK_ID_BYTES + 40
+const DEK_BYTES = 40
 
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const { [getOtpCookieName(c)]: encryptedOtpData } = getCookie(c)
 
-  if (!encryptedOtpData) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
-  }
+  const kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
 
-  const otpData = Uint8Array.fromBase64(encryptedOtpData)
-
-  const kekId = otpData.subarray(0, KEK_ID_BYTES)
-
-  if (kekId.length !== KEK_ID_BYTES) {
+  if (kekId.length !== KEK_ID_LENGTH) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
@@ -59,7 +53,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
   }
 
-  const wrappedDek = otpData.subarray(KEK_ID_BYTES, OTP_TOKEN_INDEX)
+  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH))
+
+  const wrappedDek = otpData.subarray(0, DEK_BYTES)
+
+  if (wrappedDek.length !== DEK_BYTES) {
+    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+  }
 
   const dek = await crypto.subtle.unwrapKey(
     "raw",
@@ -71,7 +71,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     ["encrypt", "decrypt"]
   )
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(OTP_TOKEN_INDEX))
+  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(DEK_BYTES))
 
   if (!encodedOtpTokenList) {
     return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
@@ -103,7 +103,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const dateNow = Date.now()
 
   for (let encodedOtpToken of encodedOtpTokenList) {
-    const otpToken: any[] = encodedOtpToken.split(OTP_SEPARATOR)
+    const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
     const currentExpires = decompressNumber(otpToken[EXPIRES])
     if (dateNow < currentExpires) {
       if (otpToken[ATTEMPTS]) {
@@ -129,9 +129,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       }
       if (!currentEncodedOtpToken && encodedCredential === otpToken[CREDENTIAL]) {
         currentEncodedOtpToken = encodedOtpToken
-        currentOtpTokenData = {
-          expires: new Date(getReducedTimePrecision(currentExpires))
-        }
+        currentOtpTokenData = getOtpTokenData(otpToken)
       } else {
         newEncodedOtpTokenList.push(encodedOtpToken)
       }

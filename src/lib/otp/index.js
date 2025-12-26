@@ -15,7 +15,7 @@ import sendOtp from "@/custom/send"
 
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { SYMMETRIC_ENCRYPTION_ALGORITHM, IV_BYTES, createSymmetricKey, encryptTextSymmetrically } from "@/lib/crypto/symmetric"
+import { SYMMETRIC_ENCRYPTION_ALGORITHM, IV_BYTES, createSymmetricEncryptionKey, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
 import { encodeOtpToken } from "@/lib/otp/encode/token"
@@ -220,7 +220,7 @@ export class OtpTokenList {
       key = currentKey.key
       keyId = currentKey.id
     } else {
-      key = await createSymmetricKey()
+      key = await createSymmetricEncryptionKey()
       keyId = await storeKey(this.#context, key)
     }
 

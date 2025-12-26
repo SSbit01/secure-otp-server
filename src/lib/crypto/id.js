@@ -1,10 +1,19 @@
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 
+const BYTES_BASE64_RATIO = 8 / 6
+
+
 /**
  * @type {number}
  */
 export const KEK_ID_BYTES = 12
+
+/**
+ * @type {number}
+ */
+export const KEK_ID_LENGTH = KEK_ID_BYTES * BYTES_BASE64_RATIO
+
 
 /**
  * - Offers higher entropy than UUIDv4 (144 bits vs 122 bits).
@@ -13,6 +22,11 @@ export const KEK_ID_BYTES = 12
  * @type {number}
  */
 export const OTP_ID_BYTES = 18
+
+/**
+ * @type {number}
+ */
+export const OTP_ID_LENGTH = OTP_ID_BYTES * BYTES_BASE64_RATIO
 
 
 /**

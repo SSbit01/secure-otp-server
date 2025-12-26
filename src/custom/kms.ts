@@ -78,21 +78,19 @@ export async function getCurrentKey(c: Context): Promise<CurrentKey | undefined>
  * @async
  * @function getKey
  * @param {Context} c - Hono context.
- * @param {Uint8Array<ArrayBuffer>} keyId - The ID of the encryption key to retrieve.
+ * @param {string} keyId - The ID of the encryption key to retrieve.
  * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
-export async function getKey(c: Context, keyId: Uint8Array<ArrayBuffer>): Promise<CryptoKey | undefined> {
+export async function getKey(c: Context, keyId: string): Promise<CryptoKey | undefined> {
 
-  const keyIdString = keyId.toBase64(BASE64URL_OPTIONS)
-
-  const keyData = keyStorage.get(keyIdString)
+  const keyData = keyStorage.get(keyId)
 
   if (!keyData) {
     return
   }
 
   if (keyData[0] <= Date.now()) {
-    keyStorage.delete(keyIdString)
+    keyStorage.delete(keyId)
     return
   }
 
@@ -113,7 +111,7 @@ export async function getKey(c: Context, keyId: Uint8Array<ArrayBuffer>): Promis
  * @param {string} id - ID of the key, store it too.
  * @return {Promise<boolean>} A boolean indicating whether the operation was successful.
  */
-export async function storeKey(c: Context, key: CryptoKey, id: Uint8Array<ArrayBuffer>): Promise<boolean> {
+export async function storeKey(c: Context, key: CryptoKey, id: string): Promise<boolean> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
   
@@ -128,7 +126,7 @@ export async function storeKey(c: Context, key: CryptoKey, id: Uint8Array<ArrayB
   const rotate = dateNow + ROTATE_TIME
   const data: KeyData = [rotate + OTP_MAX_AGE_MS, rotate, key]
 
-  keyStorage.set(id.toBase64(BASE64URL_OPTIONS), data)
+  keyStorage.set(id, data)
 
   return true
 
