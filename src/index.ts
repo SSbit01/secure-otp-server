@@ -17,7 +17,7 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { getOtpTokenList, getOtpTokenData, OtpTokenList } from "@/lib/otp"
+import { createOtpToken, getOtpTokenList, getOtpTokenData, OtpTokenList } from "@/lib/otp"
 import { getOtpCookieName, deleteOtpCookies } from "@/lib/otp/cookie"
 import { encodeCredential } from "@/lib/otp/encode/credential"
 import { OTP_SEPARATOR } from "@/lib/otp/encode/token"
@@ -43,19 +43,19 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const encryptedOtpData = getCookie(c, getOtpCookieName(c))
 
   if (!encryptedOtpData) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodeCredential(c.req.valid("json"))))
   }
 
   const kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
 
   if (kekId.length !== KEK_ID_LENGTH) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodeCredential(c.req.valid("json"))))
   }
 
   let kek = await getKek(c, kekId)
 
   if (!kek) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodeCredential(c.req.valid("json"))))
   }
 
   const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH))
@@ -63,7 +63,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   let wrappedDek = otpData.subarray(0, DEK_BYTES)
 
   if (wrappedDek.length !== DEK_BYTES) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodeCredential(c.req.valid("json"))))
   }
 
   const dek = await unwrapKey(wrappedDek, kek)
@@ -71,13 +71,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(DEK_BYTES))
 
   if (!encodedOtpTokenList) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodeCredential(c.req.valid("json"))))
   }
 
   const lastAccessString = encodedOtpTokenList.pop()
 
   if (!lastAccessString) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodeCredential(c.req.valid("json"))))
   }
 
   if (isLessThanDelay(decompressNumber(lastAccessString))) {
@@ -90,7 +90,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const id = encodedOtpTokenList.pop()
 
   if (!id) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodedCredential))
   }
 
   let currentEncodedOtpToken
@@ -138,7 +138,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
    * Check if all OTP tokens are expired.
    */
   if (!expires) {
-    return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+    return c.json(await createOtpToken(c, encodedCredential))
   }
 
   if (currentEncodedOtpToken) {
@@ -146,7 +146,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   } else {
     expires = await updateExpires(c, id, expires)
     if (!expires) {
-      return c.json(await new OtpTokenList(c).set(c.req.valid("json")))
+      return c.json(await createOtpToken(c, encodedCredential))
     }
   }
 
