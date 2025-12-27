@@ -130,17 +130,12 @@ export async function createOtpToken(c, encodedCredential) {
     await storeKek(c, kek, kekId)
   }
 
-  const otp = createOtp()
-
   const dek = await createSymmetricEncryptionKey()
-
   const { id, expires } = await createOtpTokenId(c)
-
-  const dateNow = Date.now()
-
-  const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
-
   const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
+  const otp = createOtp()
+  const dateNow = Date.now()
+  const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
 
   setCookie(
     c,
