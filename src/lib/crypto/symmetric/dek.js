@@ -47,7 +47,6 @@ export async function createDek() {
  * @function encryptTextSymmetrically
  * @param   {CryptoKey}       key            - Symmetric key generated with `createDek`.
  * @param   {string}          text           - String value to be encrypted.
- * @param   {BufferSource}    additionalData - Additional data for authentication.
  * @param   {TextEncoder}     [textEncoder]  - If you have an instance of a `TextEncoder`, you can reuse it.
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
  * @throws  {DOMException}    Raised when:
@@ -57,7 +56,6 @@ export async function createDek() {
 export async function encryptTextSymmetrically(
   key,
   text,
-  additionalData,
   textEncoder = new TextEncoder()
 ) {
 
@@ -67,7 +65,7 @@ export async function encryptTextSymmetrically(
     iv.toBase64(BASE64URL_OPTIONS) +
     new Uint8Array(
       await crypto.subtle.encrypt(
-        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv, additionalData },
+        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv },
         key,
         textEncoder.encode(text)
       )

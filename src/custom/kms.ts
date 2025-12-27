@@ -35,7 +35,7 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
 
 
 /**
- * Retrieves an encryption key by its ID.
+ * Retrieves current KEK ID.
  * 
  * @async
  * @function getCurrentKekId

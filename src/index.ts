@@ -85,6 +85,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
+  const encodedCredential = encodeCredential(c.req.valid("json"))
+
   const id = encodedOtpTokenList.pop()
 
   if (!id) {
@@ -95,7 +97,6 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   let currentOtpTokenData
   let expires = 0
 
-  const encodedCredential = encodeCredential(c.req.valid("json"))
   const newEncodedOtpTokenList = []
   const dateNow = Date.now()
 

@@ -1,7 +1,7 @@
 import { setCookie } from "hono/cookie"
 
-import { createId, deleteId, replaceId, updateExpires } from "@/custom/id"
-import { getCurrentKey, getKek, storeKek } from "@/custom/kms"
+import { createOtpTokenId, deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id"
+import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import {
   OTP_ALLOW_ONLY_ONE_RESENDING,
@@ -13,12 +13,15 @@ import {
 
 import sendOtp from "@/custom/send"
 
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { SYMMETRIC_ENCRYPTION_ALGORITHM, IV_BYTES, createSymmetricEncryptionKey, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
-import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
+import { SYMMETRIC_ENCRYPTION_ALGORITHM, createSymmetricEncryptionKey, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
+import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
+import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
+import { deleteOtpCookies, getOtpCookieName } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
-import { encodeOtpToken } from "@/lib/otp/encode/token"
+import { encodeOtpToken, OTP_SEPARATOR } from "@/lib/otp/encode/token"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
@@ -95,6 +98,79 @@ export async function getOtpTokenList(key, data) {
     )?.split(ARRAY_SEPARATOR)
   } catch {
     // It simply returns `undefined`.
+  }
+
+}
+
+
+
+/**
+ * @async
+ * @function createOtpToken
+ * @param {Context} c
+ * @param {string} encodedCredential
+ * @return {Promise<OtpTokenData>}
+ */
+export async function createOtpToken(c, encodedCredential) {
+
+  let kekId = await getCurrentKekId(c)
+
+  /**
+   * @type {(CryptoKey|undefined)}
+   */
+  let kek
+
+  if (kekId) {
+    kek = await getKek(c, kekId)
+  }
+
+  if (!kek) {
+    kek = await createKek()
+    kekId = createRandomIdString(KEK_ID_BYTES)
+    await storeKek(c, kek, kekId)
+  }
+
+  const otp = createOtp()
+
+  const dek = await createSymmetricEncryptionKey()
+
+  const { id, expires } = await createOtpTokenId(c)
+
+  const dateNow = Date.now()
+
+  const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
+
+  const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
+
+  setCookie(
+    c,
+    getOtpCookieName(c),
+    (
+      kekId +
+      new Uint8Array(await wrapKey(kek, dek)).toBase64(BASE64URL_OPTIONS) +
+      await encryptTextSymmetrically(
+        dek,
+        encodedCredential + OTP_SEPARATOR + compressNumber(expires) + OTP_SEPARATOR + otp + OTP_SEPARATOR + OTP_MAX_ATTEMPTS + OTP_SEPARATOR + compressNumber(resendBlock) + ARRAY_SEPARATOR +
+        id + ARRAY_SEPARATOR +
+        compressNumber(dateNow),
+        textEncoder
+      )
+    ),
+    {
+      expires: lessPreciseExpiresDate,
+      httpOnly: true,
+      path: "/",
+      secure: isProduction(c),
+      sameSite: "strict",
+      partitioned: false
+    }
+  )
+
+  await sendOtp(c, encodedCredential, otp)
+
+  return {
+    expires: lessPreciseExpiresDate,
+    resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
   }
 
 }
