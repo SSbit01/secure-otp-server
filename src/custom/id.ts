@@ -33,11 +33,11 @@ const idStorage: Array<number | undefined> = []
  * If the key could not be saved due to a technical error, an error should be thrown.
  * 
  * @async
- * @function createOtpTokenId
+ * @function createEncryptedOtpTokenListId
  * @param {Context} c - Hono context.
  * @return {Promise<IdData>} The new ID and the expiration date.
  */
-export async function createOtpTokenId(c: Context): Promise<IdData> {
+export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData> {
 
   // Manually clean up expired IDs, as this implementation cannot automatically delete them.
   

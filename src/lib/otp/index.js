@@ -1,6 +1,6 @@
 import { setCookie } from "hono/cookie"
 
-import { createOtpTokenId, deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id"
+import { createEncryptedOtpTokenListId, deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import {
@@ -16,13 +16,12 @@ import sendOtp from "@/custom/send"
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { SYMMETRIC_ENCRYPTION_ALGORITHM, createSymmetricEncryptionKey, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
+import { SYMMETRIC_ENCRYPTION_ALGORITHM, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { deleteOtpCookies, getOtpCookieName } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
-import { encodeOtpToken, OTP_SEPARATOR } from "@/lib/otp/encode/token"
-import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/order"
+import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, encodeOtpToken } from "@/lib/otp/encode/token"
 import isProduction from "@/lib/production"
 import { textEncoder, textDecoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
@@ -31,7 +30,7 @@ import { getReducedTimePrecision } from "@/lib/time"
 
 /**
  * @import { Context } from "hono"
- * @import { OtpToken } from "@/lib/otp/order"
+ * @import { OtpToken } from "@/lib/otp/encode/token"
  */
 
 
@@ -42,10 +41,6 @@ import { getReducedTimePrecision } from "@/lib/time"
  * @property {Date} [resendBlock]
  * @property {Date} [otpBlock]
  */
-
-
-
-const ARRAY_SEPARATOR = ","
 
 
 
@@ -95,7 +90,7 @@ export async function getOtpTokenList(key, data) {
         key,
         data.subarray(IV_BYTES)
       )
-    )?.split(ARRAY_SEPARATOR)
+    )?.split(",")
   } catch {
     // It simply returns `undefined`.
   }
@@ -106,12 +101,12 @@ export async function getOtpTokenList(key, data) {
 
 /**
  * @async
- * @function createOtpToken
+ * @function createEncryptedOtpTokenList
  * @param {Context} c
  * @param {string} encodedCredential
  * @return {Promise<OtpTokenData>}
  */
-export async function createOtpToken(c, encodedCredential) {
+export async function createEncryptedOtpTokenList(c, encodedCredential) {
 
   let kekId = await getCurrentKekId(c)
 
@@ -137,7 +132,7 @@ export async function createOtpToken(c, encodedCredential) {
 
   await sendOtp(c, encodedCredential, otp)
 
-  const { id, expires } = await createOtpTokenId(c)
+  const { id, expires } = await createEncryptedOtpTokenListId(c)
 
   const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
   const dateNow = Date.now()
@@ -151,8 +146,8 @@ export async function createOtpToken(c, encodedCredential) {
       wrappedDek +
       await encryptTextSymmetrically(
         dek,
-        encodedCredential + OTP_SEPARATOR + compressNumber(expires) + OTP_SEPARATOR + otp + OTP_SEPARATOR + OTP_MAX_ATTEMPTS + OTP_SEPARATOR + compressNumber(resendBlock) + ARRAY_SEPARATOR +
-        id + ARRAY_SEPARATOR +
+        encodeOtpToken(encodedCredential, expires, otp, resendBlock) + "," +
+        id + "," +
         compressNumber(dateNow),
         textEncoder
       )
@@ -308,7 +303,7 @@ export class OtpTokenList {
 
     const encryptedTokens = await encryptTextSymmetrically(
       key,
-      encodedTokens.join(ARRAY_SEPARATOR),
+      encodedTokens.join(","),
       additionalData,
       textEncoder
     )

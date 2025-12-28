@@ -16,6 +16,13 @@ const KEY_WRAP_USAGES = Object.freeze(["wrapKey", "unwrapKey"])
 
 
 /**
+ * AES-KW adds 8 extra bytes of authenticated integrity value (AIV).
+ * That's why we need to add 8 to 32 (AES-256) = 40.
+ */
+export const WRAPPED_DEK_BYTES = 40
+
+
+/**
  * @async
  * @function createKek
  * @returns {Promise<CryptoKey>}
@@ -53,7 +60,7 @@ export async function wrapKey(key, kek) {
 /**
  * @async
  * @function unwrapKey
- * @param {Uint8Array<ArrayBuffer>} wrappedKey 
+ * @param {BufferSource} wrappedKey 
  * @param {CryptoKey} kek 
  * @returns {Promise<CryptoKey>}
  */
