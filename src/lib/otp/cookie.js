@@ -1,4 +1,4 @@
-import { deleteCookie } from "hono/cookie"
+import { deleteCookie, setCookie } from "hono/cookie"
 
 import { OTP_COOKIE_PREFIX } from "@/custom/otp"
 import isProduction from "@/lib/production"
@@ -16,10 +16,10 @@ let cookieOtp = ""
 
 
 /**
- * @function deleteOtpCookies
+ * @function deleteOtpCookie
  * @param {Context} c
  */
-export function deleteOtpCookies(c) {
+export function deleteOtpCookie(c) {
   deleteCookie(c, getOtpCookieName(c))
 }
 
@@ -38,5 +38,30 @@ export function getOtpCookieName(c) {
   }
 
   return cookieOtp
+  
+}
+
+
+/**
+ * @function setOtpCookie
+ * @param {Context} c
+ * @param {string} otpData
+ * @param {Date} [expires]
+ */
+export function setOtpCookie(c, otpData, expires) {
+
+  setCookie(
+    c,
+    getOtpCookieName(c),
+    otpData,
+    {
+      expires,
+      httpOnly: true,
+      path: "/",
+      secure: isProduction(c),
+      sameSite: "strict",
+      partitioned: false
+    }
+  )
   
 }

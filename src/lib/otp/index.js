@@ -16,14 +16,14 @@ import sendOtp from "@/custom/send"
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { SYMMETRIC_ENCRYPTION_ALGORITHM, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
+import { SYMMETRIC_ENCRYPTION_ALGORITHM, createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
-import { deleteOtpCookies, getOtpCookieName } from "@/lib/otp/cookie"
+import { deleteOtpCookie, setOtpCookie } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, encodeOtpToken } from "@/lib/otp/encode/token"
 import isProduction from "@/lib/production"
-import { textEncoder, textDecoder } from "@/lib/text"
+import { textEncoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
 
 
@@ -125,8 +125,8 @@ export async function createEncryptedOtpTokenList(c, encodedCredential) {
     await storeKek(c, kek, kekId)
   }
 
-  const dek = await createSymmetricEncryptionKey()
-  const wrappedDek = new Uint8Array(await wrapKey(kek, dek)).toBase64(BASE64URL_OPTIONS)
+  const dek = await createDek()
+  const wrappedDekString = new Uint8Array(await wrapKey(kek, dek)).toBase64(BASE64URL_OPTIONS)
 
   const otp = createOtp()
 
@@ -138,12 +138,11 @@ export async function createEncryptedOtpTokenList(c, encodedCredential) {
   const dateNow = Date.now()
   const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
 
-  setCookie(
+  setOtpCookie(
     c,
-    getOtpCookieName(c),
     (
       kekId +
-      wrappedDek +
+      wrappedDekString +
       await encryptTextSymmetrically(
         dek,
         encodeOtpToken(encodedCredential, expires, otp, resendBlock) + "," +
@@ -152,14 +151,7 @@ export async function createEncryptedOtpTokenList(c, encodedCredential) {
         textEncoder
       )
     ),
-    {
-      expires: lessPreciseExpiresDate,
-      httpOnly: true,
-      path: "/",
-      secure: isProduction(c),
-      sameSite: "strict",
-      partitioned: false
-    }
+    lessPreciseExpiresDate
   )
 
   return {
@@ -270,7 +262,7 @@ export class OtpTokenList {
       !this.#expires ||
       !this.#idValid
     ) {
-      deleteOtpCookies(this.#context)
+      deleteOtpCookie(this.#context)
       return
     }
 
@@ -362,7 +354,7 @@ export class OtpTokenList {
     
     // @ts-expect-error: `#current` is defined.
     if (this.#current[OTP] === otp) {
-      deleteOtpCookies(this.#context)
+      deleteOtpCookie(this.#context)
       // @ts-expect-error: `#current` and `#idValid` are not falsy.
       return await deleteId(this.#context, this.#id, this.#expires) ? decodeCredential(this.#current[CREDENTIAL]) : undefined
     }
@@ -371,7 +363,7 @@ export class OtpTokenList {
     const id = await replaceId(this.#context, this.#id, this.#expires)
 
     if (!id) {
-      deleteOtpCookies(this.#context)
+      deleteOtpCookie(this.#context)
       return
     }
 
@@ -421,7 +413,7 @@ export class OtpTokenList {
     this.#expires = await updateExpires(this.#context, this.#id, this.#expires)
 
     if (!this.#expires) {
-      deleteOtpCookies(this.#context)
+      deleteOtpCookie(this.#context)
       return 
     }
 
@@ -487,7 +479,7 @@ export class OtpTokenList {
       // @ts-expect-error: `#idValid` is true.
       this.#expires = await updateExpires(this.#context, this.#id, this.#expires)
       if (!this.#expires) {
-        deleteOtpCookies(this.#context)
+        deleteOtpCookie(this.#context)
         return
       }
     } else {

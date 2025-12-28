@@ -4,7 +4,7 @@ import { decompressNumber } from "@/lib/compression/number"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE, ERR_OTP_TOO_MANY_REQUESTS } from "@/lib/error/static"
 
 import { getOtpTokenStrings, OtpTokenList } from "@/lib/otp"
-import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookies, getCookieName } from "@/lib/otp/cookie"
+import { COOKIE_OTP_ENCRYPTED_TOKENS, COOKIE_OTP_KEY_ID, deleteOtpCookie, getCookieName } from "@/lib/otp/cookie"
 import { decodeOtpToken } from "@/lib/otp/encode/token"
 import { EXPIRES } from "@/lib/otp/order"
 
@@ -22,42 +22,42 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   const otpTokenStrings = await getOtpTokenStrings(c, keyId, encryptedOtpTokens)
 
   if (!otpTokenStrings) {
-    deleteOtpCookies(c)
+    deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const lastAccessString = otpTokenStrings.pop()
 
   if (!lastAccessString) {
-    deleteOtpCookies(c)
+    deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const dateNow = Date.now()
 
   if (isLessThanDelay(decompressNumber(lastAccessString), dateNow)) {
-    deleteOtpCookies(c)
+    deleteOtpCookie(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
   const id = otpTokenStrings.pop()
 
   if (!id) {
-    deleteOtpCookies(c)
+    deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const currentString = otpTokenStrings.pop()
 
   if (!currentString) {
-    deleteOtpCookies(c)
+    deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const current = decodeOtpToken(currentString, dateNow)
 
   if (!current) {
-    deleteOtpCookies(c)
+    deleteOtpCookie(c)
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 
