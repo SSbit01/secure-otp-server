@@ -83,7 +83,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const id = encodedOtpTokenList.pop()
 
-  if (!lastAccessString || !id) {
+  if (!lastAccessString || !id || encodedOtpTokenList.length > OTP_MAX_ATTEMPTS) {
     // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
     await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
     deleteOtpCookie(c)
@@ -96,6 +96,12 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   }
 
   const encodedCredential = encodeCredential(c.req.valid("json"))
+
+  if (!encodedOtpTokenList.length) {
+    // No OTP tokens left, create a new one.
+    return c.json(await createEncryptedOtpTokenList(c, encodedCredential))
+  }
+
   const newEncodedOtpTokenList = []
 
   let currentOtpTokenData: OtpTokenData | undefined
@@ -140,10 +146,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     }
   }
 
-  /**
-   * Check if all OTP tokens are expired.
-   */
   if (!expires) {
+    // All OTP tokens have expired, create a new list.
     return c.json(await createEncryptedOtpTokenList(c, encodedCredential))
   }
 
