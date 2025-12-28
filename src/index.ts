@@ -5,10 +5,13 @@ import finalAction from "@/custom/final"
 import { updateOtpTokenExpires } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import { createOtp, OTP_MAX_ATTEMPTS } from "@/custom/otp"
+import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
+import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
+import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
@@ -25,18 +28,14 @@ import { encodeCredential } from "@/lib/otp/encode/credential"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, OTP_SEPARATOR, encodeOtpToken } from "@/lib/otp/encode/token"
 
 import { textEncoder } from "@/lib/text"
-import { isLessThanDelay } from "@/lib/time"
+import { isLessThanDelay, getReducedTimePrecision } from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
 
 import app from "@/setup"
 
-
-
-/**
- * @import { OtpTokenData } from "@/lib/otp"
- */
+import type { OtpTokenData } from "@/lib/otp"
 
 
 
@@ -60,7 +59,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await createEncryptedOtpTokenList(c, encodeCredential(c.req.valid("json"))))
   }
 
-  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH))
+  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
 
   let wrappedDek: Uint8Array<ArrayBuffer> | ArrayBuffer = otpData.subarray(0, WRAPPED_DEK_BYTES)
 
@@ -92,21 +91,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  /**
-   * @type {string}
-   */
-  let currentEncodedOtpToken
-
-  /**
-   * @type {OtpTokenData}
-   */
-  let currentOtpTokenData
-
-  let expires = 0
-
   const encodedCredential = encodeCredential(c.req.valid("json"))
   const newEncodedOtpTokenList = []
+
+  let currentOtpTokenData: OtpTokenData | undefined
   
+  let currentEncodedOtpToken = ""
+  let expires = 0
   let dateNow = Date.now()
 
   for (let encodedOtpToken of encodedOtpTokenList) {
