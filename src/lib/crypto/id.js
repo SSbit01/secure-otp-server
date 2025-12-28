@@ -1,7 +1,7 @@
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 
-const BYTES_BASE64_RATIO = 8 / 6
+const BYTES_BASE64_RATIO = 4 / 3
 
 
 /**

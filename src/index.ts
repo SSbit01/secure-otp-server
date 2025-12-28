@@ -39,7 +39,7 @@ import type { OtpTokenData } from "@/lib/otp"
 
 
 
-const METADATA_STRING_LENGTH = KEK_ID_LENGTH + Math.ceil(WRAPPED_DEK_BYTES / 6) * 8  // Because of Base64 padding.
+const METADATA_STRING_LENGTH = KEK_ID_LENGTH + Math.ceil(WRAPPED_DEK_BYTES / 3) * 4  // Because of Base64 padding.
 
 
 
@@ -174,8 +174,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
     }
   } else {
-    kek = await createKek()
     kekId = createRandomIdString(KEK_ID_BYTES)
+    kek = await createKek()
     await storeKek(c, kek, kekId)
     metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
