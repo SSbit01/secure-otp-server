@@ -130,10 +130,15 @@ export async function createOtpToken(c, encodedCredential) {
     await storeKek(c, kek, kekId)
   }
 
-  const dek = await createSymmetricEncryptionKey()
-  const { id, expires } = await createOtpTokenId(c)
-  const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
   const otp = createOtp()
+
+  await sendOtp(c, encodedCredential, otp)
+
+  const dek = await createSymmetricEncryptionKey()
+  const wrappedDek = new Uint8Array(await wrapKey(kek, dek)).toBase64(BASE64URL_OPTIONS)
+  const { id, expires } = await createOtpTokenId(c)
+  
+  const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
   const dateNow = Date.now()
   const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
 
@@ -142,7 +147,7 @@ export async function createOtpToken(c, encodedCredential) {
     getOtpCookieName(c),
     (
       kekId +
-      new Uint8Array(await wrapKey(kek, dek)).toBase64(BASE64URL_OPTIONS) +
+      wrappedDek +
       await encryptTextSymmetrically(
         dek,
         encodedCredential + OTP_SEPARATOR + compressNumber(expires) + OTP_SEPARATOR + otp + OTP_SEPARATOR + OTP_MAX_ATTEMPTS + OTP_SEPARATOR + compressNumber(resendBlock) + ARRAY_SEPARATOR +
@@ -160,8 +165,6 @@ export async function createOtpToken(c, encodedCredential) {
       partitioned: false
     }
   )
-
-  await sendOtp(c, encodedCredential, otp)
 
   return {
     expires: lessPreciseExpiresDate,
