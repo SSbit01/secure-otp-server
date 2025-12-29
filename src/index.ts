@@ -22,7 +22,7 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
+import { createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData, isAttemptsNumberValid } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 import { encodeCredential } from "@/lib/otp/encode/credential"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, OTP_SEPARATOR, encodeOtpToken } from "@/lib/otp/encode/token"
@@ -120,11 +120,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
         /**
          * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
          */
-        if (
-          isNaN(otpToken[ATTEMPTS]) ||
-          otpToken[ATTEMPTS] > OTP_MAX_ATTEMPTS ||
-          otpToken[ATTEMPTS] <= 0
-        ) {
+        if (!isAttemptsNumberValid(otpToken[ATTEMPTS])) {
           // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
           await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
           deleteOtpCookie(c)
@@ -306,11 +302,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
         /**
          * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
          */
-        if (
-          isNaN(otpToken[ATTEMPTS]) ||
-          otpToken[ATTEMPTS] > OTP_MAX_ATTEMPTS ||
-          otpToken[ATTEMPTS] <= 0
-        ) {
+        if (!isAttemptsNumberValid(otpToken[ATTEMPTS])) {
           // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
           await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
           deleteOtpCookie(c)

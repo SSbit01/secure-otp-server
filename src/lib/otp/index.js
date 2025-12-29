@@ -45,61 +45,6 @@ import { getReducedTimePrecision } from "@/lib/time"
 
 
 /**
- * @function getOtpTokenData
- * @param {OtpToken} otpToken
- * @returns {OtpTokenData}
- */
-export function getOtpTokenData(otpToken) {
-
-  /**
-   * @type {OtpTokenData}
-   */
-  const result = {
-    expires: new Date(getReducedTimePrecision(otpToken[EXPIRES]))
-  }
-
-  if (!otpToken[OTP]) {
-    result.blocked = true
-  } else {
-    if (otpToken[RESEND_BLOCK]) {
-      result.resendBlock = new Date(getReducedTimePrecision(otpToken[RESEND_BLOCK], Math.ceil))
-    }
-    if (otpToken[OTP_BLOCK]) {
-      result.otpBlock = new Date(getReducedTimePrecision(otpToken[OTP_BLOCK], Math.ceil))
-    }
-  }
-
-  return result
-
-}
-
-
-
-/**
- * @function getOtpTokenList
- * @param {CryptoKey} key
- * @param {Uint8Array<ArrayBuffer>} data
- * @returns {Promise<string[]|undefined>}
- */
-export async function getOtpTokenList(key, data) {
-
-  try {
-    return textDecoder.decode(
-      await crypto.subtle.decrypt(
-        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv: data.subarray(0, IV_BYTES) },
-        key,
-        data.subarray(IV_BYTES)
-      )
-    )?.split(",")
-  } catch {
-    // It simply returns `undefined`.
-  }
-
-}
-
-
-
-/**
  * @async
  * @function createEncryptedOtpTokenList
  * @param {Context} c
@@ -158,6 +103,77 @@ export async function createEncryptedOtpTokenList(c, encodedCredential) {
     expires: lessPreciseExpiresDate,
     resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
   }
+
+}
+
+
+/**
+ * @function getOtpTokenData
+ * @param {OtpToken} otpToken
+ * @returns {OtpTokenData}
+ */
+export function getOtpTokenData(otpToken) {
+
+  /**
+   * @type {OtpTokenData}
+   */
+  const result = {
+    expires: new Date(getReducedTimePrecision(otpToken[EXPIRES]))
+  }
+
+  if (!otpToken[OTP]) {
+    result.blocked = true
+  } else {
+    if (otpToken[RESEND_BLOCK]) {
+      result.resendBlock = new Date(getReducedTimePrecision(otpToken[RESEND_BLOCK], Math.ceil))
+    }
+    if (otpToken[OTP_BLOCK]) {
+      result.otpBlock = new Date(getReducedTimePrecision(otpToken[OTP_BLOCK], Math.ceil))
+    }
+  }
+
+  return result
+
+}
+
+
+
+/**
+ * @function getOtpTokenList
+ * @param {CryptoKey} key
+ * @param {Uint8Array<ArrayBuffer>} data
+ * @returns {Promise<string[]|undefined>}
+ */
+export async function getOtpTokenList(key, data) {
+
+  try {
+    return textDecoder.decode(
+      await crypto.subtle.decrypt(
+        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv: data.subarray(0, IV_BYTES) },
+        key,
+        data.subarray(IV_BYTES)
+      )
+    )?.split(",")
+  } catch {
+    // It simply returns `undefined`.
+  }
+
+}
+
+
+
+/**
+ * @function isAttemptsNumberValid
+ * @param {number} attempts 
+ * @returns {boolean}
+ */
+export function isAttemptsNumberValid(attempts) {
+
+  return (
+    !isNaN(attempts) &&
+    attempts <= OTP_MAX_ATTEMPTS &&
+    attempts > 0
+  )
 
 }
 
