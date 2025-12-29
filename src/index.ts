@@ -15,6 +15,7 @@ import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
+  ERR_OTP_EXPIRED,
   ERR_OTP_INCORRECT,
   ERR_OTP_INVALID_COOKIE,
   ERR_OTP_RESENT_NOT_ALLOWED,
@@ -269,7 +270,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
   const id = encodedOtpTokenList.pop()
 
-  const currentEncodedOtpToken = encodedOtpTokenList.pop()
+  let currentEncodedOtpToken = encodedOtpTokenList.pop()
 
   if (!lastAccessString || !id || !currentEncodedOtpToken || encodedOtpTokenList.length >= OTP_MAX_ATTEMPTS) {
     // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
@@ -283,15 +284,35 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
-  if (!encodedOtpTokenList.length) {
+  const currentOtpToken: any = currentEncodedOtpToken.split(OTP_SEPARATOR)
+
+  let expires = decompressNumber(currentOtpToken[EXPIRES])
+
+  let dateNow = Date.now()
+
+  if (dateNow > expires) {
     deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    return c.json(ERR_OTP_EXPIRED, 400)
+  }
+
+  if (currentOtpToken[ATTEMPTS]) {
+    currentOtpToken[ATTEMPTS] = +currentOtpToken[ATTEMPTS]
+    /**
+     * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
+     */
+    if (!isAttemptsNumberValid(currentOtpToken[ATTEMPTS])) {
+      // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
+      await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
+      deleteOtpCookie(c)
+      return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    }
+    if (currentOtpToken[OTP_BLOCK] && dateNow >= decompressNumber(currentOtpToken[OTP_BLOCK])) {
+      currentOtpToken.length = currentOtpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
+      currentEncodedOtpToken = currentOtpToken.join(OTP_SEPARATOR)
+    }
   }
 
   const newEncodedOtpTokenList = []
-  
-  let expires = 0
-  let dateNow = Date.now()
 
   for (let encodedOtpToken of encodedOtpTokenList) {
     const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
