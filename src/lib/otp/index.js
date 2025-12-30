@@ -163,38 +163,6 @@ export async function getOtpTokenList(key, data) {
 
 
 
-/**
- * @function isOtpTokenStrange
- * @param {OtpToken} otpToken 
- * @returns {boolean}
- */
-export function isOtpTokenStrange(otpToken) {
-
-  return (
-    !otpToken[CREDENTIAL] ||
-    !otpToken[EXPIRES] ||
-    isNaN(otpToken[EXPIRES]) ||
-    !isLessThanDelay(otpToken[EXPIRES], Date.now(), OTP_MAX_AGE) ||
-    Boolean(otpToken[OTP]
-      ? (
-          !otpToken[ATTEMPTS] ||
-          isNaN(otpToken[ATTEMPTS]) &&
-          otpToken[ATTEMPTS] <= OTP_MAX_ATTEMPTS &&
-          /**
-           * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
-           */
-          otpToken[ATTEMPTS] > 0 ||
-          (otpToken[RESEND_BLOCK] && isNaN(otpToken[RESEND_BLOCK]) && !isLessThanDelay(otpToken[RESEND_BLOCK], Date.now(), OTP_RESEND_BLOCK_MS)) ||
-          (otpToken[OTP_BLOCK] && isNaN(otpToken[OTP_BLOCK]) && !isLessThanDelay(otpToken[OTP_BLOCK], Date.now(), OTP_INVALID_BLOCK_MS))
-        )
-      : (otpToken[ATTEMPTS] || otpToken[RESEND_BLOCK] || otpToken[OTP_BLOCK])
-    )
-  )
-
-}
-
-
-
 export class OtpTokenList {
 
   #context

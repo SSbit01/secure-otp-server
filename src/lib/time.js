@@ -31,11 +31,10 @@ export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.
  * @param {number} time
  * @param {number} [dateNow]
  * @param {number} [delay]
+ * @returns {boolean}
  */
 export function isLessThanDelay(time, dateNow = Date.now(), delay = MINIMUM_DELAY_BETWEEN_REQUESTS_MS) {
-
   return (dateNow - time) < delay
-  
 }
 
 

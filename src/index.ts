@@ -27,7 +27,7 @@ import { rotateKek } from "@/lib/kms"
 
 import { createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData, isOtpTokenStrange } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
-import { encodeCredential } from "@/lib/otp/encode/credential"
+import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, OTP_SEPARATOR, encodeOtpToken } from "@/lib/otp/encode/token"
 
 import { textEncoder } from "@/lib/text"
@@ -113,21 +113,39 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   for (let encodedOtpToken of encodedOtpTokenList) {
     const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
-    if (
-      !otpToken[CREDENTIAL] ||
-      !otpToken[EXPIRES]
-    ) {
+    try {
+      if (!otpToken[CREDENTIAL] || !decodeCredential(otpToken[CREDENTIAL])) {
+        await rotateKek(c, kekId)
+        return c.json(ERR_OTP_INVALID_COOKIE, 400)
+      }
+    } catch {
       await rotateKek(c, kekId)
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     }
     const currentExpires = decompressNumber(otpToken[EXPIRES])
-    if (
-      isNaN(currentExpires) ||
-      !isLessThanDelay(currentExpires, Date.now(), OTP_MAX_AGE)
-    ) {
+    if (!isLessThanDelay(currentExpires, dateNow, OTP_MAX_AGE)) {
       await rotateKek(c, kekId)
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     }
+    if (otpToken[OTP]) {
+      const attempts = decompressNumber(otpToken[ATTEMPTS])
+      /**
+       * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
+       */
+      if (
+        isNaN(attempts) || attempts <= 0 || attempts > OTP_MAX_ATTEMPTS ||
+        (otpToken[RESEND_BLOCK] && !isLessThanDelay(decompressNumber(otpToken[RESEND_BLOCK]), dateNow, OTP_RESEND_BLOCK_MS)) ||
+        (otpToken[OTP_BLOCK] && !isLessThanDelay(decompressNumber(otpToken[OTP_BLOCK]), dateNow, OTP_INVALID_BLOCK_MS))
+      ) {
+        await rotateKek(c, kekId)
+        return c.json(ERR_OTP_INVALID_COOKIE, 400)
+      }
+    } else if (otpToken[ATTEMPTS] || otpToken[RESEND_BLOCK] || otpToken[OTP_BLOCK]) {
+      await rotateKek(c, kekId)
+      return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    }
+
+    
     if (dateNow < currentExpires) {
       if (otpToken[ATTEMPTS]) {
         if (otpToken[OTP_BLOCK] && dateNow >= decompressNumber(otpToken[OTP_BLOCK])) {
