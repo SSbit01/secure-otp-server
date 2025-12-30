@@ -6,6 +6,7 @@ import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import {
   OTP_ALLOW_ONLY_ONE_RESENDING,
   OTP_ATTEMPTS_BLOCK,
+  OTP_MAX_AGE,
   OTP_MAX_ATTEMPTS,
   OTP_MAX_CREDENTIALS,
   createOtp
@@ -24,7 +25,7 @@ import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, encodeOtpToken } from "@/lib/otp/encode/token"
 import isProduction from "@/lib/production"
 import { textEncoder } from "@/lib/text"
-import { getReducedTimePrecision } from "@/lib/time"
+import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
 
 
 
@@ -163,16 +164,31 @@ export async function getOtpTokenList(key, data) {
 
 
 /**
- * @function isAttemptsNumberValid
- * @param {number} attempts 
+ * @function isOtpTokenStrange
+ * @param {OtpToken} otpToken 
  * @returns {boolean}
  */
-export function isAttemptsNumberValid(attempts) {
+export function isOtpTokenStrange(otpToken) {
 
   return (
-    !isNaN(attempts) &&
-    attempts <= OTP_MAX_ATTEMPTS &&
-    attempts > 0
+    !otpToken[CREDENTIAL] ||
+    !otpToken[EXPIRES] ||
+    isNaN(otpToken[EXPIRES]) ||
+    !isLessThanDelay(otpToken[EXPIRES], Date.now(), OTP_MAX_AGE) ||
+    Boolean(otpToken[OTP]
+      ? (
+          !otpToken[ATTEMPTS] ||
+          isNaN(otpToken[ATTEMPTS]) &&
+          otpToken[ATTEMPTS] <= OTP_MAX_ATTEMPTS &&
+          /**
+           * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
+           */
+          otpToken[ATTEMPTS] > 0 ||
+          (otpToken[RESEND_BLOCK] && isNaN(otpToken[RESEND_BLOCK]) && !isLessThanDelay(otpToken[RESEND_BLOCK], Date.now(), OTP_RESEND_BLOCK_MS)) ||
+          (otpToken[OTP_BLOCK] && isNaN(otpToken[OTP_BLOCK]) && !isLessThanDelay(otpToken[OTP_BLOCK], Date.now(), OTP_INVALID_BLOCK_MS))
+        )
+      : (otpToken[ATTEMPTS] || otpToken[RESEND_BLOCK] || otpToken[OTP_BLOCK])
+    )
   )
 
 }

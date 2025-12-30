@@ -23,7 +23,9 @@ import {
   ERR_OTP_TOO_MANY_REQUESTS
 } from "@/lib/error/static"
 
-import { createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData, isAttemptsNumberValid } from "@/lib/otp"
+import { rotateKek } from "@/lib/kms"
+
+import { createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData, isOtpTokenStrange } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 import { encodeCredential } from "@/lib/otp/encode/credential"
 import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, OTP_SEPARATOR, encodeOtpToken } from "@/lib/otp/encode/token"
@@ -77,7 +79,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(WRAPPED_DEK_BYTES))
 
-  if (!encodedOtpTokenList) {
+  if (!encodedOtpTokenList || !encodedOtpTokenList.length) {
     return c.json(await createEncryptedOtpTokenList(c, encodeCredential(c.req.valid("json"))))
   }
 
@@ -86,14 +88,11 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const id = encodedOtpTokenList.pop()
 
   if (!lastAccessString || !id || encodedOtpTokenList.length > OTP_MAX_ATTEMPTS) {
-    // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
-    await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
-    deleteOtpCookie(c)
+    await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   if (isLessThanDelay(decompressNumber(lastAccessString))) {
-    deleteOtpCookie(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
@@ -114,19 +113,23 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   for (let encodedOtpToken of encodedOtpTokenList) {
     const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
+    if (
+      !otpToken[CREDENTIAL] ||
+      !otpToken[EXPIRES]
+    ) {
+      await rotateKek(c, kekId)
+      return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    }
     const currentExpires = decompressNumber(otpToken[EXPIRES])
+    if (
+      isNaN(currentExpires) ||
+      !isLessThanDelay(currentExpires, Date.now(), OTP_MAX_AGE)
+    ) {
+      await rotateKek(c, kekId)
+      return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    }
     if (dateNow < currentExpires) {
       if (otpToken[ATTEMPTS]) {
-        otpToken[ATTEMPTS] = +otpToken[ATTEMPTS]
-        /**
-         * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
-         */
-        if (!isAttemptsNumberValid(otpToken[ATTEMPTS])) {
-          // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
-          await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
-          deleteOtpCookie(c)
-          return c.json(ERR_OTP_INVALID_COOKIE, 400)
-        }
         if (otpToken[OTP_BLOCK] && dateNow >= decompressNumber(otpToken[OTP_BLOCK])) {
           otpToken.length = otpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
           encodedOtpToken = otpToken.join(OTP_SEPARATOR)
@@ -280,7 +283,6 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   }
 
   if (isLessThanDelay(decompressNumber(lastAccessString))) {
-    deleteOtpCookie(c)
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
@@ -291,25 +293,30 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   let dateNow = Date.now()
 
   if (dateNow > expires) {
-    deleteOtpCookie(c)
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 
-  if (currentOtpToken[ATTEMPTS]) {
-    currentOtpToken[ATTEMPTS] = +currentOtpToken[ATTEMPTS]
-    /**
-     * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
-     */
-    if (!isAttemptsNumberValid(currentOtpToken[ATTEMPTS])) {
-      // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
-      await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
-      deleteOtpCookie(c)
-      return c.json(ERR_OTP_INVALID_COOKIE, 400)
-    }
-    if (currentOtpToken[OTP_BLOCK] && dateNow >= decompressNumber(currentOtpToken[OTP_BLOCK])) {
-      currentOtpToken.length = currentOtpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
-      currentEncodedOtpToken = currentOtpToken.join(OTP_SEPARATOR)
-    }
+  if (!currentOtpToken[ATTEMPTS]) {
+    return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
+  }
+
+  /**
+   * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
+   */
+  if (isOtpTokenStrange(currentOtpToken)) {
+    // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
+    await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
+    deleteOtpCookie(c)
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
+  }
+
+  if (currentOtpToken[RESEND_BLOCK]) {
+
+  }
+
+  if (currentOtpToken[OTP_BLOCK] && dateNow >= decompressNumber(currentOtpToken[OTP_BLOCK])) {
+    currentOtpToken.length = currentOtpToken[RESEND_BLOCK] ? OTP_BLOCK : RESEND_BLOCK
+    currentEncodedOtpToken = currentOtpToken.join(OTP_SEPARATOR)
   }
 
   const newEncodedOtpTokenList = []
@@ -323,7 +330,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
         /**
          * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
          */
-        if (!isAttemptsNumberValid(otpToken[ATTEMPTS])) {
+        if (isOtpTokenStrange(otpToken[ATTEMPTS])) {
           // KEYS MIGHT BE COMPROMISED, TRIGGER KEY ROTATION.
           await storeKek(c, await createKek(), await createRandomIdString(KEK_ID_BYTES))
           deleteOtpCookie(c)
