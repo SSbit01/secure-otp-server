@@ -4,12 +4,24 @@ import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
 import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
-import { createOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_MAX_ATTEMPTS, OTP_MAX_CREDENTIALS } from "@/custom/otp"
+
+import {
+  OTP_ALLOW_ONLY_ONE_RESENDING,
+  OTP_ATTEMPTS_BLOCK,
+  OTP_MAX_CREDENTIALS,
+  createOtp
+} from "@/custom/otp"
+
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
-import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+
+import {
+  OTP_INVALID_BLOCK_MS,
+  OTP_RESEND_BLOCK_MS
+} from "@/lib/computed"
+
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
@@ -508,6 +520,9 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
     blockOtpToken(currentOtpToken)
   } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK) {
     currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS
+    /**
+     * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
+     */
     if (currentOtpToken[OTP_BLOCK] >= (currentOtpToken[EXPIRES] - 1000)) {
       blockOtpToken(currentOtpToken)
     }
@@ -538,11 +553,6 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
   // return c.json(ERR_OTP_INCORRECT, 400)
 
   /**
-   * Current KEK is retrieved before `updateOtpTokenExpires` because generating and wrapping keys takes some time.
-   * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
-   */
-
-  /**
    * Kek ID + Wrapped DEK.
    */
   let metadata: string
@@ -570,26 +580,7 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
     metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
-  expires = await updateOtpTokenExpires(c, id, expires)
-
-  if (!expires) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  currentOtpToken[EXPIRES] = expires
-
-  currentOtpToken[OTP] = createOtp()
-
-  await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])
-
   dateNow = Date.now()
-
-  if (OTP_ALLOW_ONLY_ONE_RESENDING) {
-    delete currentOtpToken[RESEND_BLOCK]
-  } else {
-    currentOtpToken[RESEND_BLOCK] = dateNow + OTP_RESEND_BLOCK_MS
-  }
 
   newEncodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
