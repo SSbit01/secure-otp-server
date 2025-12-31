@@ -2,9 +2,9 @@ import { getCookie } from "hono/cookie"
 
 import credentialValidator from "@/custom/credential"
 import finalAction from "@/custom/final"
-import { updateOtpTokenExpires } from "@/custom/id"
+import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
-import { createOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_MAX_ATTEMPTS } from "@/custom/otp"
+import { createOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_MAX_ATTEMPTS, OTP_MAX_CREDENTIALS } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
@@ -20,14 +20,27 @@ import {
   ERR_OTP_INVALID_COOKIE,
   ERR_OTP_RESENT_NOT_ALLOWED,
   ERR_OTP_TOO_MANY_ATTEMPTS,
-  ERR_OTP_TOO_MANY_REQUESTS
+  ERR_OTP_TOO_MANY_CREDENTIALS,
+  ERR_OTP_TOO_MANY_REQUESTS,
+  ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "@/lib/error/static"
 
 import { rotateKek } from "@/lib/kms"
 
-import { createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
+import { blockOtpToken, createEncryptedOtpTokenList, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
-import { CREDENTIAL, EXPIRES, OTP, RESEND_BLOCK, OTP_BLOCK, decodeOtpToken, encodeOtpToken, createEncodedOtpToken } from "@/lib/otp/encode/token"
+
+import {
+  CREDENTIAL,
+  EXPIRES,
+  OTP,
+  ATTEMPTS,
+  RESEND_BLOCK,
+  OTP_BLOCK,
+  decodeOtpToken,
+  encodeOtpToken,
+  createEncodedOtpToken
+} from "@/lib/otp/encode/token"
 
 import { textEncoder } from "@/lib/text"
 import { isLessThanDelay, getReducedTimePrecision } from "@/lib/time"
@@ -37,7 +50,7 @@ import otpValueValidator from "@/lib/validators/otp"
 
 import app from "@/setup"
 
-import type { OtpTokenData } from "@/lib/otp"
+import type { ContentfulStatusCode } from "hono/utils/http-status"
 
 
 
@@ -87,14 +100,14 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const id = encodedOtpTokenList.pop()
 
-  if (!lastAccessString || !id || !encodedOtpTokenList.length || encodedOtpTokenList.length > OTP_MAX_ATTEMPTS) {
+  if (!lastAccessString || !id || !encodedOtpTokenList.length || encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
     await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
   const newEncodedOtpTokenList = []
 
-  let currentOtpTokenData: OtpTokenData | undefined
+  let currentOtpTokenData: any
   
   let currentEncodedOtpToken = ""
   let expires = 0
@@ -165,7 +178,12 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
-  if (!currentEncodedOtpToken) {
+  let status: ContentfulStatusCode = 200
+
+  if (currentEncodedOtpToken) {
+    dateNow = Date.now()
+    newEncodedOtpTokenList.push(currentEncodedOtpToken)
+  } else if (encodedOtpTokenList.length < OTP_MAX_CREDENTIALS) {
     /**
      * `updateOtpTokenExpires` is used to verify too.
      * Verify OTP Token List ID before sending the OTP.
@@ -184,10 +202,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       expires: new Date(getReducedTimePrecision(expires)),
       resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
     }
+    newEncodedOtpTokenList.push(currentEncodedOtpToken)
+  } else {
+    currentOtpTokenData = ERR_OTP_TOO_MANY_CREDENTIALS
+    status = 400
   }
 
   newEncodedOtpTokenList.push(
-    currentEncodedOtpToken,
     id,
     compressNumber(dateNow)
   )
@@ -205,7 +226,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     currentOtpTokenData?.expires
   )
   
-  return c.json(currentOtpTokenData)
+  return c.json(currentOtpTokenData, status)
 
 })
 
@@ -254,7 +275,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   const id = encodedOtpTokenList.pop()
   const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
 
-  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_ATTEMPTS) {
+  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
     await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -417,10 +438,12 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
   }
 
   const lastAccessString = encodedOtpTokenList.pop()
-  const id = encodedOtpTokenList.pop()
+
+  let id: string | number | undefined = encodedOtpTokenList.pop()
+
   const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
 
-  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_ATTEMPTS) {
+  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
     await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -461,42 +484,33 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
   /**
    * [OTP_BLOCK] already filtered in `decodeOtpString`.
    */
-  if (currentOtpToken[OTP_BLOCK]) {
-    return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
+  if (currentOtpToken[OTP_BLOCK] || !currentOtpToken[ATTEMPTS]) {
+    return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 400)
   }
 
   if (currentOtpToken[OTP] === c.req.valid("form")) {
     deleteOtpCookie(c)
-    return await deleteId(c, id, expires) ? await finalAction(c, currentOtpToken[CREDENTIAL]) : undefined
+    return await deleteOtpTokenId(c, id, expires)
+      ? await finalAction(c, currentOtpToken[CREDENTIAL])
+      : c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  // @ts-expect-error: `#idValid` is true.
-  const id = await replaceId(this.#context, this.#id, this.#expires)
+  id = await replaceOtpTokenId(c, id, expires)
 
   if (!id) {
-    deleteOtpCookie(this.#context)
-    return
+    deleteOtpCookie(c)
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  this.#id = id
+  currentOtpToken[ATTEMPTS]--
 
-  // @ts-expect-error: `#current` is defined.
-  this.#current[ATTEMPTS]--
-
-  const attempts = this.#current?.[ATTEMPTS]
-
-  if (!attempts) {
-    /** Trim the array to save space. */
-    // @ts-expect-error: `#current` and `#idValid` are not falsy.
-    this.#current.length = OTP
-  } else if (OTP_INVALID_BLOCK_MS && attempts <= OTP_ATTEMPTS_BLOCK) {
-    const otpBlock = Date.now() + OTP_INVALID_BLOCK_MS
-    otpBlock >= (this.#current[EXPIRES] - 1000)
-      ? this.#current.length = OTP
-      : this.#current[OTP_BLOCK] = otpBlock
-  } else {
-    /** Trim the array to save space. */
-    this.#current.length = OTP_BLOCK
+  if (!currentOtpToken[ATTEMPTS]) {
+    blockOtpToken(currentOtpToken)
+  } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK) {
+    currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS
+    if (currentOtpToken[OTP_BLOCK] >= (currentOtpToken[EXPIRES] - 1000)) {
+      blockOtpToken(currentOtpToken)
+    }
   }
 
   // const credential = await otpTokenList.check(c.req.valid("form"))

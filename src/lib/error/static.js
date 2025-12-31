@@ -8,7 +8,9 @@ import {
   OTP_INVALID_FORMAT,
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS,
+  OTP_TOO_MANY_CREDENTIALS,
   OTP_TOO_MANY_REQUESTS,
+  OTP_VERIFICATION_NOT_ALLOWED,
   SERVER
 } from "@/lib/error/names"
 
@@ -58,9 +60,19 @@ export const ERR_OTP_TOO_MANY_ATTEMPTS = {
   message: "Too many attempts. For security reasons, the OTP has been blocked. Please wait for it to expire and then try again."
 }
 
+export const ERR_OTP_TOO_MANY_CREDENTIALS = {
+  error: OTP_TOO_MANY_CREDENTIALS,
+  message: "Too many credentials."
+}
+
 export const ERR_OTP_TOO_MANY_REQUESTS = {
   error: OTP_TOO_MANY_REQUESTS,
   message: "Too many requests, slow down :)"
+}
+
+export const ERR_OTP_VERIFICATION_NOT_ALLOWED = {
+  error: OTP_VERIFICATION_NOT_ALLOWED,
+  message: "Verification not allowed."
 }
 
 export const ERR_SERVER = {

@@ -137,7 +137,7 @@ export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: nu
  * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
  * @returns {Promise<Id|null|undefined>} New Id.
  */
-export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires: number): Promise<IdData["id"] | null | undefined> {
+export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires: number): Promise<IdData["id"] | undefined> {
   
   // @ts-ignore: JavaScript allows number string indexes in arrays.
   if (idStorage[oldId] !== expires) {

@@ -111,19 +111,6 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
     return
   }
 
-
-  /**
-   * Remove empty elements from the end of the array.
-   */
-
-  let i = otpToken.length - 1
-
-  while (!otpToken[i]) {
-    i--
-  }
-
-  otpToken.length = i + 1
-
   return otpToken
 
 }
@@ -146,6 +133,18 @@ export function encodeOtpToken(otpToken: OtpToken) {
     otpTokenCopy[RESEND_BLOCK] &&= compressNumber(otpTokenCopy[RESEND_BLOCK])
     otpTokenCopy[OTP_BLOCK] &&= compressNumber(otpTokenCopy[OTP_BLOCK])
   }
+
+  /**
+   * Remove empty elements from the end of the array.
+   */
+
+  let i = otpTokenCopy.length - 1
+
+  while (!otpTokenCopy[i]) {
+    i--
+  }
+
+  otpTokenCopy.length = i + 1
 
   return otpTokenCopy.join(OTP_SEPARATOR)
 
