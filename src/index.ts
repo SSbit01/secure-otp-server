@@ -128,7 +128,10 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     }
     if (otpToken[OTP]) {
-      const attempts = decompressNumber(otpToken[ATTEMPTS])
+      if (otpToken[OTP].length !== OTP_LENGTH || !OTP_REGEX.test(otpToken[OTP])) {
+        return
+      }
+      const attempts = +otpToken[ATTEMPTS]
       /**
        * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
        */
