@@ -178,7 +178,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
-  let status: ContentfulStatusCode = 200
+  let status: ContentfulStatusCode | undefined
 
   if (currentEncodedOtpToken) {
     dateNow = Date.now()
