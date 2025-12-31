@@ -18,6 +18,7 @@ import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
 
 import {
+  METADATA_STRING_LENGTH,
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
@@ -66,10 +67,6 @@ import type { ContentfulStatusCode } from "hono/utils/http-status"
 
 
 
-const METADATA_STRING_LENGTH = KEK_ID_LENGTH + Math.ceil(WRAPPED_DEK_BYTES / 3) * 4  // Because of Base64 padding.
-
-
-
 app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const credential = c.req.valid("json")
@@ -94,7 +91,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
 
-  const wrappedDek: Uint8Array<ArrayBuffer> | ArrayBuffer = otpData.subarray(0, WRAPPED_DEK_BYTES)
+  const wrappedDek = otpData.subarray(0, WRAPPED_DEK_BYTES)
 
   if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
@@ -117,6 +114,9 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
+  /**
+   * @type {string[]}
+   */
   const newEncodedOtpTokenList = []
 
   let currentOtpTokenData: any
@@ -245,121 +245,17 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
 app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
-  const encryptedOtpData = getCookie(c, getOtpCookieName(c))
+  let {
+    currentOtpToken,
+    dek,
+    encodedOtpTokenList,
+    expires,
+    id,
+    metadata
+  } = c.req.valid("cookie")
 
-  if (!encryptedOtpData) {
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  let kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
-
-  if (kekId.length !== KEK_ID_LENGTH) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  let kek = await getKek(c, kekId)
-
-  if (!kek) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
-
-  const wrappedDek: Uint8Array<ArrayBuffer> | ArrayBuffer = otpData.subarray(0, WRAPPED_DEK_BYTES)
-
-  if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const dek = await unwrapKey(wrappedDek, kek)
-
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(WRAPPED_DEK_BYTES))
-
-  if (!encodedOtpTokenList || !encodedOtpTokenList.length) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const lastAccessString = encodedOtpTokenList.pop()
-  const id = encodedOtpTokenList.pop()
-  const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
-
-  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
-    await rotateKek(c, kekId)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const newEncodedOtpTokenList = []
-  
-  let expires = currentOtpToken[EXPIRES]
-  let dateNow = Date.now()
-
-  for (const encodedOtpToken of encodedOtpTokenList) {
-    const otpToken = decodeOtpToken(encodedOtpToken)
-    if (!otpToken) {
-      await rotateKek(c, kekId)
-      return c.json(ERR_OTP_INVALID_COOKIE, 400)
-    }
-    if (dateNow < otpToken[EXPIRES]) {
-      if (expires < otpToken[EXPIRES]) {
-        expires = otpToken[EXPIRES]
-      }
-      newEncodedOtpTokenList.push(encodeOtpToken(otpToken))
-    }
-  }
-
-  /**
-   * It should be verified after checking all OTP tokens.
-   */
-  if (isLessThanDelay(decompressNumber(lastAccessString))) {
-    return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
-  }
-
-  /**
-   * It should be verified after checking all OTP tokens.
-   */
-  if (dateNow >= currentOtpToken[EXPIRES]) {
-    return c.json(ERR_OTP_EXPIRED, 400)
-  }
-
-  if (currentOtpToken[RESEND_BLOCK] && dateNow < currentOtpToken[RESEND_BLOCK]) {
+  if (currentOtpToken[RESEND_BLOCK] && Date.now() < currentOtpToken[RESEND_BLOCK]) {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
-  }
-
-  /**
-   * Current KEK is retrieved before `updateOtpTokenExpires` because generating and wrapping keys takes some time.
-   * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
-   */
-
-  /**
-   * Kek ID + Wrapped DEK.
-   */
-  let metadata: string
-
-  const currentKekId = await getCurrentKekId(c)
-
-  if (currentKekId) {
-    if (currentKekId === kekId) {
-      metadata = encryptedOtpData.substring(0, METADATA_STRING_LENGTH)
-    } else {
-      kek = await getKek(c, currentKekId)
-      if (kek) {
-        kekId = currentKekId
-      } else {
-        kekId = createRandomIdString(KEK_ID_BYTES)
-        kek = await createKek()
-        await storeKek(c, kek, kekId)
-      }
-      metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-    }
-  } else {
-    kekId = createRandomIdString(KEK_ID_BYTES)
-    kek = await createKek()
-    await storeKek(c, kek, kekId)
-    metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
   expires = await updateOtpTokenExpires(c, id, expires)
@@ -375,7 +271,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
   await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])
 
-  dateNow = Date.now()
+  const dateNow = Date.now()
 
   if (OTP_ALLOW_ONLY_ONE_RESENDING) {
     delete currentOtpToken[RESEND_BLOCK]
@@ -383,7 +279,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     currentOtpToken[RESEND_BLOCK] = dateNow + OTP_RESEND_BLOCK_MS
   }
 
-  newEncodedOtpTokenList.push(
+  encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
     id,
     compressNumber(dateNow)
@@ -397,7 +293,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
       metadata +
       await encryptTextSymmetrically(
         dek,
-        newEncodedOtpTokenList.join(","),
+        encodedOtpTokenList.join(","),
         textEncoder
       )
     ),
@@ -409,89 +305,16 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 })
 
 
-app.post("/api/otp/verify", otpValueValidator, async (c) => {
+app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => {
 
-  const encryptedOtpData = getCookie(c, getOtpCookieName(c))
-
-  if (!encryptedOtpData) {
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  let kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
-
-  if (kekId.length !== KEK_ID_LENGTH) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  let kek = await getKek(c, kekId)
-
-  if (!kek) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
-
-  const wrappedDek: Uint8Array<ArrayBuffer> | ArrayBuffer = otpData.subarray(0, WRAPPED_DEK_BYTES)
-
-  if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const dek = await unwrapKey(wrappedDek, kek)
-
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(WRAPPED_DEK_BYTES))
-
-  if (!encodedOtpTokenList || !encodedOtpTokenList.length) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const lastAccessString = encodedOtpTokenList.pop()
-
-  let id: string | number | undefined = encodedOtpTokenList.pop()
-
-  const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
-
-  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
-    await rotateKek(c, kekId)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const newEncodedOtpTokenList = []
-  
-  let expires = currentOtpToken[EXPIRES]
-  let dateNow = Date.now()
-
-  for (const encodedOtpToken of encodedOtpTokenList) {
-    const otpToken = decodeOtpToken(encodedOtpToken)
-    if (!otpToken) {
-      await rotateKek(c, kekId)
-      return c.json(ERR_OTP_INVALID_COOKIE, 400)
-    }
-    if (dateNow < otpToken[EXPIRES]) {
-      if (expires < otpToken[EXPIRES]) {
-        expires = otpToken[EXPIRES]
-      }
-      newEncodedOtpTokenList.push(encodeOtpToken(otpToken))
-    }
-  }
-
-  /**
-   * It should be verified after checking all OTP tokens.
-   */
-  if (isLessThanDelay(decompressNumber(lastAccessString))) {
-    return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
-  }
-
-  /**
-   * It should be verified after checking all OTP tokens.
-   */
-  if (dateNow >= currentOtpToken[EXPIRES]) {
-    return c.json(ERR_OTP_EXPIRED, 400)
-  }
+  let {
+    currentOtpToken,
+    dek,
+    encodedOtpTokenList,
+    expires,
+    id,
+    metadata
+  } = c.req.valid("cookie")
 
   /**
    * [OTP_BLOCK] already filtered in `decodeOtpString`.
@@ -507,6 +330,7 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
       : c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
+  // @ts-ignore: it does not affect if the ID is a number or a string.
   id = await replaceOtpTokenId(c, id, expires)
 
   if (!id) {
@@ -552,40 +376,10 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
 
   // return c.json(ERR_OTP_INCORRECT, 400)
 
-  /**
-   * Kek ID + Wrapped DEK.
-   */
-  let metadata: string
-
-  const currentKekId = await getCurrentKekId(c)
-
-  if (currentKekId) {
-    if (currentKekId === kekId) {
-      metadata = encryptedOtpData.substring(0, METADATA_STRING_LENGTH)
-    } else {
-      kek = await getKek(c, currentKekId)
-      if (kek) {
-        kekId = currentKekId
-      } else {
-        kekId = createRandomIdString(KEK_ID_BYTES)
-        kek = await createKek()
-        await storeKek(c, kek, kekId)
-      }
-      metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-    }
-  } else {
-    kekId = createRandomIdString(KEK_ID_BYTES)
-    kek = await createKek()
-    await storeKek(c, kek, kekId)
-    metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-  }
-
-  dateNow = Date.now()
-
-  newEncodedOtpTokenList.push(
+  encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
-    id,
-    compressNumber(dateNow)
+    id.toString(),
+    compressNumber(Date.now())
   )
 
   const currentOtpTokenData = getOtpTokenData(currentOtpToken)
@@ -596,7 +390,7 @@ app.post("/api/otp/verify", otpValueValidator, async (c) => {
       metadata +
       await encryptTextSymmetrically(
         dek,
-        newEncodedOtpTokenList.join(","),
+        encodedOtpTokenList.join(","),
         textEncoder
       )
     ),
