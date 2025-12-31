@@ -17,7 +17,7 @@ import type { Context } from "hono"
 
 
 interface IdData {
-  id: number
+  id: string | number
   /**
    * Expiration time in milliseconds since epoch.
    */
@@ -35,7 +35,7 @@ const idStorage: Array<number | undefined> = []
  * @async
  * @function createEncryptedOtpTokenListId
  * @param {Context} c - Hono context.
- * @return {Promise<IdData>} The new ID and the expiration date.
+ * @return {IdData} The new ID and the expiration date.
  */
 export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData> {
 
@@ -106,6 +106,7 @@ export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: nu
     }
   }
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   const storedExpires = idStorage[id]
 
   if (!storedExpires || storedExpires !== expires) {
@@ -116,6 +117,7 @@ export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: nu
   if (id == lastValidId) {
     idStorage.length = lastValidId
   } else {
+    // @ts-ignore: JavaScript allows number string indexes in arrays.
     delete idStorage[id]
     idStorage.length = lastValidId + 1
   }
@@ -137,6 +139,7 @@ export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: nu
  */
 export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires: number): Promise<IdData["id"] | null | undefined> {
   
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   if (idStorage[oldId] !== expires) {
     return
   }
@@ -146,6 +149,7 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
 
   const dateNow = Date.now()
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   for (let i = oldId + 1; i < idStorage.length; i++) {
     const expires = idStorage[i]
     if (expires) {
@@ -161,6 +165,7 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
     }
   }
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   idStorage.length = lastValidId + 1
 
   newId ??= idStorage.length
@@ -184,12 +189,14 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
  */
 export async function updateOtpTokenExpires(c: Context, id: IdData["id"], oldExpires: number): Promise<number> {
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   if (idStorage[id] !== oldExpires) {
     return 0
   }
 
   const newExpires = Date.now() + OTP_MAX_AGE_MS
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   idStorage[id] = newExpires
 
   return newExpires

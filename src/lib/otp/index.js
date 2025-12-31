@@ -22,7 +22,7 @@ import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { deleteOtpCookie, setOtpCookie } from "@/lib/otp/cookie"
 import { encodeCredential, decodeCredential } from "@/lib/otp/encode/credential"
-import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, encodeOtpToken } from "@/lib/otp/encode/token"
+import { CREDENTIAL, EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, createEncodedOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
 import isProduction from "@/lib/production"
 import { textEncoder } from "@/lib/text"
 import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
@@ -49,10 +49,10 @@ import { getReducedTimePrecision, isLessThanDelay } from "@/lib/time"
  * @async
  * @function createEncryptedOtpTokenList
  * @param {Context} c
- * @param {string} encodedCredential
+ * @param {string} credential
  * @return {Promise<OtpTokenData>}
  */
-export async function createEncryptedOtpTokenList(c, encodedCredential) {
+export async function createEncryptedOtpTokenList(c, credential) {
 
   let kekId = await getCurrentKekId(c)
 
@@ -76,7 +76,7 @@ export async function createEncryptedOtpTokenList(c, encodedCredential) {
 
   const otp = createOtp()
 
-  await sendOtp(c, encodedCredential, otp)
+  await sendOtp(c, credential, otp)
 
   const { id, expires } = await createEncryptedOtpTokenListId(c)
 
@@ -91,7 +91,7 @@ export async function createEncryptedOtpTokenList(c, encodedCredential) {
       wrappedDekString +
       await encryptTextSymmetrically(
         dek,
-        encodeOtpToken(encodedCredential, expires, otp, resendBlock) + "," +
+        createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
         id + "," +
         compressNumber(dateNow),
         textEncoder

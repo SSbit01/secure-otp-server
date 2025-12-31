@@ -40,7 +40,7 @@ export const ERR_OTP_INCORRECT = {
 
 export const ERR_OTP_INVALID_COOKIE = {
   error: OTP_INVALID_COOKIE,
-  message: "The OTP cookies are invalid."
+  message: "The OTP cookie is invalid."
 }
 
 export const ERR_OTP_INVALID_FORMAT = {

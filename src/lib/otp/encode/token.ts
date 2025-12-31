@@ -1,6 +1,6 @@
 import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/custom/otp"
 
-import { decodeCredential } from "@/lib/otp/encode/credential"
+import { decodeCredential, encodeCredential } from "@/lib/otp/encode/credential"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { isLessThanDelay } from "@/lib/time"
@@ -23,26 +23,27 @@ export const ATTEMPTS = 3
 export const RESEND_BLOCK = 4
 export const OTP_BLOCK = 5
 
-export const OTP_SEPARATOR = "|"
+
+const OTP_SEPARATOR = "|"
 
 
 /**
  * @function createOtpToken
- * @param {string} encodedCredential
+ * @param {string} credential
  * @param {number} expires
  * @param {string} otp
  * @param {number} resendBlock
  * @returns {string}
  */
 export function createEncodedOtpToken(
-  encodedCredential: string,
+  credential: string,
   expires: number,
   otp: string,
   resendBlock: number
 ) {
 
   return (
-    encodedCredential + OTP_SEPARATOR +
+    encodeCredential(credential) + OTP_SEPARATOR +
     compressNumber(expires) + OTP_SEPARATOR +
     otp + OTP_SEPARATOR +
     OTP_MAX_ATTEMPTS + OTP_SEPARATOR +
@@ -56,9 +57,9 @@ export function createEncodedOtpToken(
  * @function decodeOtpToken
  * @param {string} encodedOtpToken 
  * @param {number} [dateNow]
- * @returns {(OtpToken|undefined)} If it doesn't return anything, it means the token is invalid, and maybe the keys were compromised.
+ * @returns {OtpToken|undefined} If it doesn't return anything, it means the token is invalid, and maybe the keys were compromised.
  */
-export async function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()) {
+export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): OtpToken | undefined {
 
   const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
 
@@ -110,6 +111,19 @@ export async function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now
     return
   }
 
+
+  /**
+   * Remove empty elements from the end of the array.
+   */
+
+  let i = otpToken.length - 1
+
+  while (!otpToken[i]) {
+    i--
+  }
+
+  otpToken.length = i + 1
+
   return otpToken
 
 }
@@ -122,27 +136,17 @@ export async function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now
  */
 export function encodeOtpToken(otpToken: OtpToken) {
 
-  const encodedToken: any = otpToken.slice()
+  const otpTokenCopy: any = otpToken.slice()
 
-  encodedToken[EXPIRES] = compressNumber(encodedToken[EXPIRES])
+  otpTokenCopy[CREDENTIAL] = encodeCredential(otpTokenCopy[CREDENTIAL])
 
-  if (encodedToken[OTP]) {
-    encodedToken[RESEND_BLOCK] &&= compressNumber(encodedToken[RESEND_BLOCK])
-    encodedToken[OTP_BLOCK] &&= compressNumber(encodedToken[OTP_BLOCK])
+  otpTokenCopy[EXPIRES] = compressNumber(otpTokenCopy[EXPIRES])
+
+  if (otpTokenCopy[OTP]) {
+    otpTokenCopy[RESEND_BLOCK] &&= compressNumber(otpTokenCopy[RESEND_BLOCK])
+    otpTokenCopy[OTP_BLOCK] &&= compressNumber(otpTokenCopy[OTP_BLOCK])
   }
 
-  /**
-   * Remove empty elements from the end of the array.
-   */
-
-  let i = encodedToken.length - 1
-
-  while (!encodedToken[i]) {
-    i--
-  }
-
-  encodedToken.length = i + 1
-
-  return encodedToken.join(OTP_SEPARATOR)
+  return otpTokenCopy.join(OTP_SEPARATOR)
 
 }
