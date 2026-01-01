@@ -25,7 +25,7 @@ import { isWithinDelay } from "@/lib/time"
 
 const otpCookieValidator = validator("cookie", async (cookies, c) => {
   
-  const encryptedOtpData = cookies[getOtpCookieName(c)]
+  const encryptedOtpData = cookies[getOtpCookieName(c)]?.trim()
   
   if (!encryptedOtpData) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)

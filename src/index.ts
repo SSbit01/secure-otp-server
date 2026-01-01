@@ -70,7 +70,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const credential = c.req.valid("json")
 
-  const encryptedOtpData = getCookie(c, getOtpCookieName(c))
+  const encryptedOtpData = getCookie(c, getOtpCookieName(c))?.trim()
 
   if (!encryptedOtpData) {
     return c.json(await createEncryptedOtpTokenList(c, credential))

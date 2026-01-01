@@ -5,7 +5,7 @@ import { textDecoder, textEncoder } from "@/lib/text"
 /** @type {Parameters<Uint8Array<ArrayBuffer>["toBase64"]>[0]} */
 const DATA_BASE64_OPTIONS = {
   ...BASE64URL_OPTIONS,
-  omitPadding: true
+  omitPadding: false
 }
 
 const IV_BYTES = 12
