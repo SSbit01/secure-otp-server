@@ -45,7 +45,14 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+  let otpData
+
+  try {
+    otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+  } catch {
+    deleteOtpCookie(c)
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
+  }
 
   const wrappedDek = otpData.subarray(0, WRAPPED_DEK_BYTES)
 

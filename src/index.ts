@@ -89,7 +89,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 
-  const otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+  let otpData
+
+  try {
+    otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+  } catch {
+    return c.json(await createEncryptedOtpTokenList(c, credential))
+  }
 
   const wrappedDek = otpData.subarray(0, WRAPPED_DEK_BYTES)
 
@@ -111,13 +117,10 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   if (!lastAccessString || !id || !encodedOtpTokenList.length || encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
     await rotateKek(c, kekId)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
+    return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 
-  /**
-   * @type {string[]}
-   */
-  const newEncodedOtpTokenList = []
+  const newEncodedOtpTokenList: string[] = []
 
   let currentOtpTokenData: any
   
