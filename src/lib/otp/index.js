@@ -54,6 +54,10 @@ export function blockOtpToken(otpToken) {
  */
 export async function createEncryptedOtpTokenList(c, credential) {
 
+  const otp = createOtp()
+
+  await sendOtp(c, credential, otp)
+
   let kekId = await getCurrentKekId(c)
 
   /**
@@ -72,11 +76,7 @@ export async function createEncryptedOtpTokenList(c, credential) {
   }
 
   const dek = await createDek()
-  const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-
-  const otp = createOtp()
-
-  await sendOtp(c, credential, otp)
+  const wrappedDek = new Uint8Array(await wrapKey(dek, kek))
 
   const { id, expires } = await createEncryptedOtpTokenListId(c)
 
@@ -84,18 +84,23 @@ export async function createEncryptedOtpTokenList(c, credential) {
   const dateNow = Date.now()
   const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
 
+  const encryptedOtpTokenList = await encryptTextSymmetrically(
+    dek,
+    createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
+    id + "," +
+    compressNumber(dateNow)
+  )
+
+  const encryptedOtpData = new Uint8Array(
+    wrappedDek.length + encryptedOtpTokenList.length
+  )
+
+  encryptedOtpData.set(wrappedDek)
+  encryptedOtpData.set(encryptedOtpTokenList, wrappedDek.length)
+
   setOtpCookie(
     c,
-    (
-      kekId +
-      wrappedDekString +
-      await encryptTextSymmetrically(
-        dek,
-        createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
-        id + "," +
-        compressNumber(dateNow)
-      )
-    ),
+    kekId + encryptedOtpData.toBase64(BASE64URL_OPTIONS),
     lessPreciseExpiresDate
   )
 

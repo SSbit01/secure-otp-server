@@ -48,7 +48,7 @@ export async function createDek() {
  * @function encryptTextSymmetrically
  * @param {CryptoKey} key - Symmetric key generated with `createDek`.
  * @param {string} text - String value to be encrypted.
- * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
+ * @returns {Promise<Uint8Array<ArrayBuffer>>} The value encrypted.
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
  * - The operation failed (e.g., AES-GCM plaintext longer than 2^39−256 bytes).
@@ -60,16 +60,18 @@ export async function encryptTextSymmetrically(
 
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
 
-  return (
-    iv.toBase64(BASE64URL_OPTIONS) +
-    new Uint8Array(
-      await crypto.subtle.encrypt(
-        { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv },
-        key,
-        textEncoder.encode(text)
-      )
-    ).toBase64(BASE64URL_OPTIONS)
-  )
+  const encryptedText = new Uint8Array(await crypto.subtle.encrypt(
+    { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv },
+    key,
+    textEncoder.encode(text)
+  ))
+
+  const result = new Uint8Array(IV_BYTES + encryptedText.length)
+
+  result.set(iv)
+  result.set(encryptedText, IV_BYTES)
+
+  return result
 
 }
 

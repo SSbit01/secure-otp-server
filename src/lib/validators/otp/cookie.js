@@ -48,6 +48,8 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   let encryptedOtpData
 
   try {
+    console.log(otpData)
+    console.log(otpData.substring(KEK_ID_LENGTH))
     encryptedOtpData = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
   } catch {
     deleteOtpCookie(c)
