@@ -1,15 +1,11 @@
 import { KEY_ENCRYPTION_PARAMS, KEY_ENCRYPTION_USAGES } from "@/lib/crypto/symmetric/dek"
 
 
-const KEY_WRAP_ALGORITHM = Object.freeze({
-  name: "AES-KW"
-})
-
 /**
  * @type {AesKeyGenParams}
  */
 const KEY_WRAP_PARAMS = Object.freeze({
-  ...KEY_WRAP_ALGORITHM,
+  name: "AES-KW",
   length: 256
 })
 
@@ -58,7 +54,7 @@ export async function wrapKey(key, kek) {
     "raw",
     key,
     kek,
-    KEY_WRAP_ALGORITHM
+    KEY_WRAP_PARAMS
   )
 
 }

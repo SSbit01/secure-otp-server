@@ -8,7 +8,6 @@ const DATA_BASE64_OPTIONS = {
   omitPadding: true
 }
 
-
 const IV_BYTES = 12
 const SYMMETRIC_ENCRYPTION_ALGORITHM_NAME = "AES-GCM"
 

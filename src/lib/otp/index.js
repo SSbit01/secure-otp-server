@@ -72,7 +72,7 @@ export async function createEncryptedOtpTokenList(c, credential) {
   }
 
   const dek = await createDek()
-  const wrappedDekString = new Uint8Array(await wrapKey(kek, dek)).toBase64(BASE64URL_OPTIONS)
+  const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
 
   const otp = createOtp()
 
