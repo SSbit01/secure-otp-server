@@ -1,4 +1,4 @@
-import { createEncryptedOtpTokenListId, deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id"
+import { createEncryptedOtpTokenListId } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import { createOtp } from "@/custom/otp"
