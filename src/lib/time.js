@@ -27,13 +27,13 @@ export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.
 /**
  * Checks if the time elapsed since the provided time is less than the minimum delay between verifications.
  * 
- * @function isLessThanDelay
+ * @function isWithinDelay
  * @param {number} time
- * @param {number} [dateNow]
  * @param {number} [delay]
+ * @param {number} [dateNow]
  * @returns {boolean}
  */
-export function isLessThanDelay(time, dateNow = Date.now(), delay = MINIMUM_DELAY_BETWEEN_REQUESTS_MS) {
+export function isWithinDelay(time, delay = MINIMUM_DELAY_BETWEEN_REQUESTS_MS, dateNow = Date.now()) {
   return (dateNow - time) < delay
 }
 

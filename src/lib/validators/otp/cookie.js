@@ -1,7 +1,7 @@
 import { validator } from "hono/validator"
 
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
-import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
+import { OTP_MAX_CREDENTIALS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS } from "@/custom/otp"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { decompressNumber } from "@/lib/compression/number"
@@ -19,7 +19,7 @@ import { rotateKek } from "@/lib/kms"
 import { getOtpTokenList } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName } from "@/lib/otp/cookie"
 import { EXPIRES, decodeOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
-import { isLessThanDelay, getReducedTimePrecision } from "@/lib/time"
+import { isWithinDelay } from "@/lib/time"
 
 
 
@@ -98,7 +98,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   /**
    * It should be verified after checking all OTP tokens.
    */
-  if (isLessThanDelay(decompressNumber(lastAccessString))) {
+  if (isWithinDelay(decompressNumber(lastAccessString), MINIMUM_DELAY_BETWEEN_REQUESTS_MS, dateNow)) {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 

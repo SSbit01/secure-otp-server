@@ -6,6 +6,7 @@ import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/cu
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import {
+  MINIMUM_DELAY_BETWEEN_REQUESTS_MS,
   OTP_ALLOW_ONLY_ONE_RESENDING,
   OTP_ATTEMPTS_BLOCK,
   OTP_MAX_CREDENTIALS,
@@ -28,7 +29,6 @@ import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
-  ERR_OTP_EXPIRED,
   ERR_OTP_INCORRECT,
   ERR_OTP_INVALID_COOKIE,
   ERR_OTP_RESENT_NOT_ALLOWED,
@@ -56,7 +56,7 @@ import {
 } from "@/lib/otp/encode/token"
 
 import { textEncoder } from "@/lib/text"
-import { isLessThanDelay, getReducedTimePrecision } from "@/lib/time"
+import { isWithinDelay, getReducedTimePrecision } from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -148,7 +148,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   /**
    * It should be verified after checking all OTP tokens.
    */
-  if (isLessThanDelay(decompressNumber(lastAccessString))) {
+  if (isWithinDelay(decompressNumber(lastAccessString), MINIMUM_DELAY_BETWEEN_REQUESTS_MS, dateNow)) {
     return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
@@ -352,33 +352,9 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     }
   }
 
-  // const credential = await otpTokenList.check(c.req.valid("form"))
-
-  // if (credential) {
-  //   /**
-  //    * VERIFIED
-  //    */
-  //   return await finalAction(c, credential)
-  // }
-
-  // if (otpTokenList.blocked) {
-  //   return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)
-  // }
-
-  // const otpBlock = otpTokenList.otpBlock
-
-  // if (otpBlock) {
-  //   return c.json({
-  //     ...ERR_OTP_INCORRECT,
-  //     otpBlock: otpBlock
-  //   }, 400)
-  // }
-
-  // return c.json(ERR_OTP_INCORRECT, 400)
-
   encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
-    id.toString(),
+    id,
     compressNumber(Date.now())
   )
 
@@ -396,8 +372,19 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     ),
     currentOtpTokenData.expires
   )
+
+  if (currentOtpTokenData.blocked) {
+    return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)
+  }
+
+  if (currentOtpTokenData.otpBlock) {
+    return c.json({
+      ...ERR_OTP_INCORRECT,
+      otpBlock: currentOtpTokenData.otpBlock
+    }, 400)
+  }
   
-  return c.json(currentOtpTokenData)
+  return c.json(ERR_OTP_INCORRECT, 400)
 
 })
 
