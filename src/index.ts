@@ -70,13 +70,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const credential = c.req.valid("json")
 
-  const encryptedOtpData = getCookie(c, getOtpCookieName(c))?.trim()
+  const otpData = getCookie(c, getOtpCookieName(c))?.trim()
 
-  if (!encryptedOtpData) {
+  if (!otpData) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 
-  let kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
+  let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
   if (kekId.length !== KEK_ID_LENGTH) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
@@ -88,15 +88,15 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 
-  let otpData
+  let encryptedOtpData
 
   try {
-    otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+    encryptedOtpData = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
   } catch {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 
-  const wrappedDek = otpData.subarray(0, WRAPPED_DEK_BYTES)
+  const wrappedDek = encryptedOtpData.subarray(0, WRAPPED_DEK_BYTES)
 
   if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
@@ -104,7 +104,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const dek = await unwrapKey(wrappedDek, kek)
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(WRAPPED_DEK_BYTES))
+  const encodedOtpTokenList = await getOtpTokenList(dek, encryptedOtpData.subarray(WRAPPED_DEK_BYTES))
 
   if (!encodedOtpTokenList || !encodedOtpTokenList.length) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
@@ -173,7 +173,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      metadata = encryptedOtpData.substring(0, METADATA_STRING_LENGTH)
+      metadata = otpData.substring(0, METADATA_STRING_LENGTH)
     } else {
       kek = await getKek(c, currentKekId)
       if (kek) {

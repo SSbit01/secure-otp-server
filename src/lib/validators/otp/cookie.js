@@ -25,13 +25,13 @@ import { isWithinDelay } from "@/lib/time"
 
 const otpCookieValidator = validator("cookie", async (cookies, c) => {
   
-  const encryptedOtpData = cookies[getOtpCookieName(c)]?.trim()
+  const otpData = cookies[getOtpCookieName(c)]?.trim()
   
-  if (!encryptedOtpData) {
+  if (!otpData) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  let kekId = encryptedOtpData.substring(0, KEK_ID_LENGTH)
+  let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
   if (kekId.length !== KEK_ID_LENGTH) {
     deleteOtpCookie(c)
@@ -45,16 +45,16 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  let otpData
+  let encryptedOtpData
 
   try {
-    otpData = Uint8Array.fromBase64(encryptedOtpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+    encryptedOtpData = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
   } catch {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const wrappedDek = otpData.subarray(0, WRAPPED_DEK_BYTES)
+  const wrappedDek = encryptedOtpData.subarray(0, WRAPPED_DEK_BYTES)
 
   if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
     deleteOtpCookie(c)
@@ -63,7 +63,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
 
   const dek = await unwrapKey(wrappedDek, kek)
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.subarray(WRAPPED_DEK_BYTES))
+  const encodedOtpTokenList = await getOtpTokenList(dek, encryptedOtpData.subarray(WRAPPED_DEK_BYTES))
 
   if (!encodedOtpTokenList || !encodedOtpTokenList.length) {
     deleteOtpCookie(c)
@@ -127,7 +127,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      metadata = encryptedOtpData.substring(0, METADATA_STRING_LENGTH)
+      metadata = otpData.substring(0, METADATA_STRING_LENGTH)
     } else {
       kek = await getKek(c, currentKekId)
       if (kek) {

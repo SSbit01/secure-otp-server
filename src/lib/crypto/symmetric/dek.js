@@ -2,12 +2,6 @@ import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { textDecoder, textEncoder } from "@/lib/text"
 
 
-/** @type {Parameters<Uint8Array<ArrayBuffer>["toBase64"]>[0]} */
-const DATA_BASE64_OPTIONS = {
-  ...BASE64URL_OPTIONS,
-  omitPadding: false
-}
-
 const IV_BYTES = 12
 const SYMMETRIC_ENCRYPTION_ALGORITHM_NAME = "AES-GCM"
 
@@ -74,7 +68,7 @@ export async function encryptTextSymmetrically(
         key,
         textEncoder.encode(text)
       )
-    ).toBase64(DATA_BASE64_OPTIONS)
+    ).toBase64(BASE64URL_OPTIONS)
   )
 
 }
