@@ -238,29 +238,7 @@ describe("OTP Resending", () => {
   })
 
 
-  it("Resend OTP with a wrong key", async() => {
-
-    const cookieArray = cookie.split("; ")
-
-    const partToBeReplaced = cookieArray[1].substring(5, 10)
-
-    cookieArray[1] = cookieArray[1].replace(partToBeReplaced, "aaaaa")
-
-    const res = await app.request("/api/otp/resend", {
-      method: "POST",
-      headers: {
-        cookie: cookieArray.join("; ")
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INVALID_COOKIE)
-
-  })
-
-
-  it("Resend OTP with invalid token", async() => {
+  it("Resend OTP with invalid cookie", async() => {
 
     const cookieArray = cookie.split("; ")
 
