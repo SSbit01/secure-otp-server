@@ -231,8 +231,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       metadata +
       await encryptTextSymmetrically(
         dek,
-        newEncodedOtpTokenList.join(","),
-        textEncoder
+        newEncodedOtpTokenList.join(",")
       )
     ),
     currentOtpTokenData?.expires
@@ -293,8 +292,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
       metadata +
       await encryptTextSymmetrically(
         dek,
-        encodedOtpTokenList.join(","),
-        textEncoder
+        encodedOtpTokenList.join(",")
       )
     ),
     currentOtpTokenData.expires
@@ -366,8 +364,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       metadata +
       await encryptTextSymmetrically(
         dek,
-        encodedOtpTokenList.join(","),
-        textEncoder
+        encodedOtpTokenList.join(",")
       )
     ),
     currentOtpTokenData.expires

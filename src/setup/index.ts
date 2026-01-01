@@ -58,6 +58,7 @@ app.use(bodyLimit({
 app.onError((error, c) => {
   
   if (!(error instanceof HTTPException)) {
+    console.error(error)
     return c.json(ERR_SERVER, 500)
   }
 

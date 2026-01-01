@@ -8,12 +8,11 @@ import sendOtp from "@/custom/send"
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { SYMMETRIC_ENCRYPTION_ALGORITHM, IV_BYTES, createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
+import { createDek, encryptTextSymmetrically, decryptDataSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { setOtpCookie } from "@/lib/otp/cookie"
 import { EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, createEncodedOtpToken } from "@/lib/otp/encode/token"
-import { textDecoder, textEncoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
 
 
@@ -94,8 +93,7 @@ export async function createEncryptedOtpTokenList(c, credential) {
         dek,
         createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
         id + "," +
-        compressNumber(dateNow),
-        textEncoder
+        compressNumber(dateNow)
       )
     ),
     lessPreciseExpiresDate
@@ -149,13 +147,7 @@ export function getOtpTokenData(otpToken) {
 export async function getOtpTokenList(key, encryptedData) {
 
   try {
-    return textDecoder.decode(
-      await crypto.subtle.decrypt(
-        { name: SYMMETRIC_ENCRYPTION_ALGORITHM, iv: encryptedData.subarray(0, IV_BYTES) },
-        key,
-        encryptedData.subarray(IV_BYTES)
-      )
-    )?.split(",")
+    return (await decryptDataSymmetrically(key, encryptedData))?.split(",")
   } catch {
     // It simply returns `undefined`.
   }

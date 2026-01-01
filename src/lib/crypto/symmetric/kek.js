@@ -1,11 +1,15 @@
 import { KEY_ENCRYPTION_PARAMS, KEY_ENCRYPTION_USAGES } from "@/lib/crypto/symmetric/dek"
 
 
+const KEY_WRAP_ALGORITHM = Object.freeze({
+  name: "AES-KW"
+})
+
 /**
  * @type {AesKeyGenParams}
  */
 const KEY_WRAP_PARAMS = Object.freeze({
-  name: "AES-KW",
+  ...KEY_WRAP_ALGORITHM,
   length: 256
 })
 
@@ -44,6 +48,9 @@ export async function createKek() {
  * @param {CryptoKey} key 
  * @param {CryptoKey} kek 
  * @returns {Promise<ArrayBuffer>}
+ * @throws {InvalidAccessError} Raised when the wrapping key is not a key for the requested wrap algorithm.
+ * @throws {NotSupported} Raised when trying to use an algorithm that is either unknown or isn't suitable for encryption or wrapping.
+ * @throws {TypeError} Raised when trying to use an invalid format.
  */
 export async function wrapKey(key, kek) {
 
@@ -51,7 +58,7 @@ export async function wrapKey(key, kek) {
     "raw",
     key,
     kek,
-    KEY_WRAP_PARAMS
+    KEY_WRAP_ALGORITHM
   )
 
 }
@@ -63,6 +70,10 @@ export async function wrapKey(key, kek) {
  * @param {BufferSource} wrappedKey 
  * @param {CryptoKey} kek 
  * @returns {Promise<CryptoKey>}
+ * @throws {InvalidAccessError} Raised when the wrapping key is not a key for the requested wrap algorithm.
+ * @throws {NotSupported} Raised when trying to use an algorithm that is either unknown or isn't suitable for encryption or wrapping.
+ * @throws {SyntaxError} Raised when `keyUsages` is empty but the unwrapped key is of type `secret` or `private`.
+ * @throws {TypeError} Raised when trying to use an invalid format.
  */
 export async function unwrapKey(wrappedKey, kek) {
 
