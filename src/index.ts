@@ -55,7 +55,6 @@ import {
   createEncodedOtpToken
 } from "@/lib/otp/encode/token"
 
-import { textEncoder } from "@/lib/text"
 import { isWithinDelay, getReducedTimePrecision } from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/otp/cookie"
