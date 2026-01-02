@@ -63,9 +63,9 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
 
   const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
 
-  const currentExpires = decompressNumber(otpToken[EXPIRES])
+  otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES])
 
-  if (!isWithinDelay(currentExpires, OTP_MAX_AGE_MS, dateNow)) {
+  if (!isWithinDelay(otpToken[EXPIRES], OTP_MAX_AGE_MS, dateNow)) {
     return
   }
 

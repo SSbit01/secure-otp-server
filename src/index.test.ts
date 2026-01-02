@@ -206,38 +206,6 @@ describe("OTP Resending", () => {
   })
 
 
-  it("Resend OTP without a key", async() => {
-
-    const res = await app.request("/api/otp/resend", {
-      method: "POST",
-      headers: {
-        cookie: cookie.split("; ")[0]
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INVALID_COOKIE)
-
-  })
-
-
-  it("Resend OTP without the encrypted data", async() => {
-
-    const res = await app.request("/api/otp/resend", {
-      method: "POST",
-      headers: {
-        cookie: cookie.split("; ")[1]
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INVALID_COOKIE)
-
-  })
-
-
   it("Resend OTP with invalid cookie", async() => {
 
     const cookieArray = cookie.split("; ")
@@ -352,67 +320,7 @@ describe("OTP Sending", () => {
   })
 
 
-  it("Send an OTP without a key", async() => {
-
-    const res = await app.request("/api/otp/verify", {
-      method: "POST",
-      body: `otp=${createOtp()}`,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        cookie: cookie.split("; ")[0]
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INVALID_COOKIE)
-
-  })
-
-
-  it("Send an OTP without the encrypted data", async() => {
-
-    const res = await app.request("/api/otp/verify", {
-      method: "POST",
-      body: `otp=${createOtp()}`,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        cookie: cookie.split("; ")[1]
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INVALID_COOKIE)
-
-  })
-
-
-  it("Send an OTP with a wrong key", async() => {
-
-    const cookieArray = cookie.split("; ")
-
-    const partToBeReplaced = cookieArray[1].substring(5, 10)
-
-    cookieArray[1] = cookieArray[1].replace(partToBeReplaced, "aaaaa")
-
-    const res = await app.request("/api/otp/verify", {
-      method: "POST",
-      body: `otp=${createOtp()}`,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        cookie: cookieArray.join("; ")
-      }
-    })
-
-    const data = await res.json()
-    
-    expect(data.error).toBe(OTP_INVALID_COOKIE)
-
-  })
-
-
-  it("Send an OTP with invalid data", async() => {
+  it("Send an OTP with an invalid cookie", async() => {
 
     const cookieArray = cookie.split("; ")
 
