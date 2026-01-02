@@ -17,7 +17,7 @@ Designed for microservices, modern authentication flows, and serverless environm
 
 ### Secure by Design
 
-Generates cryptographically secure OTPs and encrypts session data using [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode),
+Generates cryptographically secure OTPs and encrypts session data using envelope encryption with [AES-KW](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/wrapKey#aes-kw) (KEK) and [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode) (DEK),
 which is extremely fast on modern CPUs because they have dedicated hardware acceleration ([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set)),
 in addition to being quantum-resistant.
 
@@ -51,13 +51,13 @@ For additional deployment targets such as [Fastly Compute](https://www.fastly.co
 
 This server uses a hybrid design to provide stateful security without the overhead of a storage system.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens (one entry per credential) using AES-256-GCM. The list is sent to the client in a secure, `HttpOnly` cookie.
+1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens (one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK). The list is sent to the client in a secure, `HttpOnly` cookie.
 2. A random ID linked to the list is generated and stored on the server.
 3. When the client attempts to verify an OTP, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
 4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
 
 This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks.
-By default, the KMS stores keys in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
+By default, the KMS stores key encryption keys (KEKs) in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
 
 ## Getting Started
 
@@ -130,7 +130,7 @@ Key logic is separated into the following modules:
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
 - [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
 - [`src/custom/id.ts`](/src/custom/id.ts): Storage for OTP token list IDs (defaults to in-memory).
-- [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for encryption keys (defaults to in-memory).
+- [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for encryption key encryptions keys (KEKs; defaults to in-memory).
 - [`src/custom/final.ts`](/src/custom/final.ts): Action to perform after successful OTP verification.
 
 Each file contains detailed comments explaining how to modify the code.
