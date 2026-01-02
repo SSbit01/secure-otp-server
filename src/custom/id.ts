@@ -17,7 +17,7 @@ import type { Context } from "hono"
 
 
 interface IdData {
-  id: string | number
+  id: string
   /**
    * Expiration time in milliseconds since epoch.
    */
@@ -70,7 +70,7 @@ export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData>
   idStorage[newId] = expires
 
   return {
-    id: newId,
+    id: newId.toString(),
     expires
   }
 
@@ -85,11 +85,11 @@ export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData>
  * @async
  * @function deleteOtpTokenId
  * @param {Context} c - Hono context.
- * @param {IdData["id"]} id - The ID to delete.
+ * @param {string} id - The ID to delete.
  * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
  * @returns {Promise<boolean>} If delete was successful.
  */
-export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: number): Promise<boolean> {
+export async function deleteOtpTokenId(c: Context, id: string, expires: number): Promise<boolean> {
 
   let lastValidId = -1
 
@@ -114,6 +114,7 @@ export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: nu
     return false
   }
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   if (id == lastValidId) {
     idStorage.length = lastValidId
   } else {
@@ -133,11 +134,11 @@ export async function deleteOtpTokenId(c: Context, id: IdData["id"], expires: nu
  * @async
  * @function replaceOtpTokenId
  * @param {Context} c - Hono context.
- * @param {IdData["id"]} oldId - The ID to delete.
+ * @param {string} oldId - The ID to delete.
  * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
- * @returns {Promise<Id|null|undefined>} New Id.
+ * @returns {Promise<string|null|undefined>} New Id.
  */
-export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires: number): Promise<IdData["id"] | undefined> {
+export async function replaceOtpTokenId(c: Context, oldId: string, expires: number): Promise<string | undefined> {
   
   // @ts-ignore: JavaScript allows number string indexes in arrays.
   if (idStorage[oldId] !== expires) {
@@ -151,6 +152,7 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
 
   // @ts-ignore: JavaScript allows number string indexes in arrays.
   for (let i = oldId + 1; i < idStorage.length; i++) {
+    // @ts-ignore: JavaScript allows number string indexes in arrays.
     const expires = idStorage[i]
     if (expires) {
       if (expires > dateNow) {
@@ -158,6 +160,7 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
       } else if (newId === undefined) {
         newId = i
       } else {
+        // @ts-ignore: JavaScript allows number string indexes in arrays.
         delete idStorage[i]
       }
     } else {
@@ -170,9 +173,10 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
 
   newId ??= idStorage.length
 
+  // @ts-ignore: JavaScript allows number string indexes in arrays.
   idStorage[newId] = expires
 
-  return newId
+  return newId.toString()
 
 }
 
@@ -183,11 +187,11 @@ export async function replaceOtpTokenId(c: Context, oldId: IdData["id"], expires
  * @async
  * @function updateOtpTokenExpires
  * @param {Context} c - Hono context.
- * @param {IdData["id"]} id - The ID.
+ * @param {string} id - The ID.
  * @param {number} oldExpires - Expiration time in milliseconds since epoch. It may be used to verify the ID. It is not checked because the server already filters expired IDs.
  * @returns {Promise<number>} New expiration time.
  */
-export async function updateOtpTokenExpires(c: Context, id: IdData["id"], oldExpires: number): Promise<number> {
+export async function updateOtpTokenExpires(c: Context, id: string, oldExpires: number): Promise<number> {
 
   // @ts-ignore: JavaScript allows number string indexes in arrays.
   if (idStorage[id] !== oldExpires) {
