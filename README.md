@@ -2,7 +2,7 @@
 
 ![Logo](/logo.png "Secure OTP Server")
 
-A template server for generating, encrypting, and verifying One-Time Passwords (OTP).
+A template server for generating, encrypting, and verifying One-Time Passwords (OTP) sent via direct message delivery (e.g. email, SMS).
 Designed for microservices, modern authentication flows, and serverless environments.
 
 > [!CAUTION]
