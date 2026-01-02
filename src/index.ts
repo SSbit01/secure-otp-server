@@ -206,7 +206,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     }
     const otp = createOtp()
-    sendOtp(c, credential, otp)
+    await sendOtp(c, credential, otp)
     dateNow = Date.now()
     const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
     currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock)
@@ -268,7 +268,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
   currentOtpToken[OTP] = createOtp()
 
-  sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])
+  await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])
 
   const dateNow = Date.now()
 
