@@ -88,15 +88,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 
-  let encryptedOtpData
+  let wrappedDek: Uint8Array<ArrayBuffer>
 
   try {
-    encryptedOtpData = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH), BASE64URL_OPTIONS)
+    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, METADATA_STRING_LENGTH), BASE64URL_OPTIONS)
   } catch {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
-
-  const wrappedDek = encryptedOtpData.subarray(0, WRAPPED_DEK_BYTES)
 
   if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
@@ -104,9 +102,9 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const dek = await unwrapKey(wrappedDek, kek)
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, encryptedOtpData.subarray(WRAPPED_DEK_BYTES))
+  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(METADATA_STRING_LENGTH))
 
-  if (!encodedOtpTokenList || !encodedOtpTokenList.length) {
+  if (!encodedOtpTokenList) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
 

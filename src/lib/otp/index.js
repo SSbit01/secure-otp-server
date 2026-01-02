@@ -8,7 +8,7 @@ import sendOtp from "@/custom/send"
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber } from "@/lib/compression/number"
 import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { createDek, encryptTextSymmetrically, decryptDataSymmetrically } from "@/lib/crypto/symmetric/dek"
+import { createDek, encryptTextSymmetrically, decryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { setOtpCookie } from "@/lib/otp/cookie"
@@ -76,7 +76,7 @@ export async function createEncryptedOtpTokenList(c, credential) {
   }
 
   const dek = await createDek()
-  const wrappedDek = new Uint8Array(await wrapKey(dek, kek))
+  const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
 
   const { id, expires } = await createEncryptedOtpTokenListId(c)
 
@@ -84,24 +84,16 @@ export async function createEncryptedOtpTokenList(c, credential) {
   const dateNow = Date.now()
   const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
 
-  const encryptedOtpTokenList = await encryptTextSymmetrically(
-    dek,
-    createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
-    id + "," +
-    compressNumber(dateNow)
-  )
-
-  const encryptedOtpData = new Uint8Array(
-    wrappedDek.length + encryptedOtpTokenList.length
-  )
-
-  encryptedOtpData.set(wrappedDek)
-  encryptedOtpData.set(encryptedOtpTokenList, wrappedDek.length)
-
   setOtpCookie(
     c,
-    kekId + encryptedOtpData.toBase64(BASE64URL_OPTIONS),
-    lessPreciseExpiresDate
+    kekId +
+    wrappedDekString +
+    await encryptTextSymmetrically(
+      dek,
+      createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
+      id + "," +
+      compressNumber(dateNow)
+    )
   )
 
   return {
@@ -146,13 +138,13 @@ export function getOtpTokenData(otpToken) {
 /**
  * @function getOtpTokenList
  * @param {CryptoKey} key
- * @param {Uint8Array<ArrayBuffer>} encryptedData
+ * @param {string} ciphertext
  * @returns {Promise<string[]|undefined>}
  */
-export async function getOtpTokenList(key, encryptedData) {
+export async function getOtpTokenList(key, ciphertext) {
 
   try {
-    return (await decryptDataSymmetrically(key, encryptedData))?.split(",")
+    return (await decryptTextSymmetrically(key, ciphertext))?.split(",")
   } catch {
     // It simply returns `undefined`.
   }
