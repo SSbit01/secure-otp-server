@@ -18,9 +18,7 @@ import { MINIMUM_DELAY_BETWEEN_REQUESTS_MS } from "@/custom/otp"
  * @returns {number} - The time value with reduced precision.
  */
 export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.floor, precision = 1000) {
-
   return roundFunction(time / precision) * precision
-  
 }
 
 
