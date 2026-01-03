@@ -93,7 +93,8 @@ export async function createEncryptedOtpTokenList(c, credential) {
       createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
       id + "," +
       compressNumber(dateNow)
-    )
+    ),
+    lessPreciseExpiresDate
   )
 
   return {
