@@ -35,7 +35,7 @@ const idStorage: Array<number | undefined> = []
  * @async
  * @function createEncryptedOtpTokenListId
  * @param {Context} c - Hono context.
- * @return {IdData} The new ID and the expiration date.
+ * @return {Promise<IdData>} The new ID and the expiration date.
  */
 export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData> {
 
