@@ -19,7 +19,7 @@ import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
 
 import {
-  METADATA_STRING_LENGTH,
+  OTP_METADATA_STRING_LENGTH,
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
@@ -91,7 +91,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   let wrappedDek: Uint8Array<ArrayBuffer>
 
   try {
-    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, METADATA_STRING_LENGTH), BASE64URL_OPTIONS)
+    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, OTP_METADATA_STRING_LENGTH), BASE64URL_OPTIONS)
   } catch {
     return c.json(await createEncryptedOtpTokenList(c, credential))
   }
@@ -102,7 +102,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const dek = await unwrapKey(wrappedDek, kek)
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(METADATA_STRING_LENGTH))
+  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(OTP_METADATA_STRING_LENGTH))
 
   if (!encodedOtpTokenList) {
     return c.json(await createEncryptedOtpTokenList(c, credential))
@@ -171,7 +171,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      metadata = otpData.substring(0, METADATA_STRING_LENGTH)
+      metadata = otpData.substring(0, OTP_METADATA_STRING_LENGTH)
     } else {
       kek = await getKek(c, currentKekId)
       if (kek) {

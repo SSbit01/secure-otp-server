@@ -5,7 +5,7 @@ import { OTP_MAX_CREDENTIALS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS } from "@/custom
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { decompressNumber } from "@/lib/compression/number"
-import { METADATA_STRING_LENGTH } from "@/lib/computed"
+import { OTP_METADATA_STRING_LENGTH } from "@/lib/computed"
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
@@ -51,7 +51,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   let wrappedDek
   
   try {
-    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, METADATA_STRING_LENGTH), BASE64URL_OPTIONS)
+    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, OTP_METADATA_STRING_LENGTH), BASE64URL_OPTIONS)
   } catch {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
@@ -64,7 +64,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
 
   const dek = await unwrapKey(wrappedDek, kek)
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(METADATA_STRING_LENGTH))
+  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(OTP_METADATA_STRING_LENGTH))
 
   if (!encodedOtpTokenList) {
     deleteOtpCookie(c)
@@ -128,7 +128,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      metadata = otpData.substring(0, METADATA_STRING_LENGTH)
+      metadata = otpData.substring(0, OTP_METADATA_STRING_LENGTH)
     } else {
       kek = await getKek(c, currentKekId)
       if (kek) {
