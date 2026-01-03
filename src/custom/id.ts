@@ -136,7 +136,7 @@ export async function deleteOtpTokenId(c: Context, id: string, expires: number):
  * @param {Context} c - Hono context.
  * @param {string} oldId - The ID to delete.
  * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
- * @returns {Promise<string|null|undefined>} New Id.
+ * @returns {Promise<string|undefined>} New Id.
  */
 export async function replaceOtpTokenId(c: Context, oldId: string, expires: number): Promise<string | undefined> {
   
