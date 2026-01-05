@@ -46,7 +46,7 @@ export function getOtpCookieName(c) {
  * @function setOtpCookie
  * @param {Context} c
  * @param {string} otpData
- * @param {Date} [expires]
+ * @param {Date} expires
  */
 export function setOtpCookie(c, otpData, expires) {
 

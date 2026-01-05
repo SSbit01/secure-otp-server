@@ -192,8 +192,10 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   let status: ContentfulStatusCode | undefined
 
+  let expiresDate: Date
+
   if (currentEncodedOtpToken) {
-    dateNow = Date.now()
+    expiresDate = new Date(getReducedTimePrecision(expires))
     newEncodedOtpTokenList.push(currentEncodedOtpToken)
   } else if (encodedOtpTokenList.length < OTP_MAX_CREDENTIALS) {
     /**
@@ -207,22 +209,23 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     }
     const otp = createOtp()
     await sendOtp(c, credential, otp)
-    dateNow = Date.now()
-    const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
+    const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
     currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock)
+    newEncodedOtpTokenList.push(currentEncodedOtpToken)
+    expiresDate = new Date(getReducedTimePrecision(expires))
     currentOtpTokenData = {
-      expires: new Date(getReducedTimePrecision(expires)),
+      expires: expiresDate,
       resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
     }
-    newEncodedOtpTokenList.push(currentEncodedOtpToken)
   } else {
     currentOtpTokenData = ERR_OTP_TOO_MANY_CREDENTIALS
+    expiresDate = new Date(getReducedTimePrecision(expires))
     status = 400
   }
 
   newEncodedOtpTokenList.push(
     id,
-    compressNumber(dateNow)
+    compressNumber(Date.now())
   )
 
   setOtpCookie(
@@ -234,7 +237,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
         newEncodedOtpTokenList.join(",")
       )
     ),
-    currentOtpTokenData?.expires
+    expiresDate
   )
   
   return c.json(currentOtpTokenData, status)
@@ -356,8 +359,6 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     compressNumber(Date.now())
   )
 
-  const currentOtpTokenData = getOtpTokenData(currentOtpToken)
-
   setOtpCookie(
     c,
     (
@@ -367,8 +368,10 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
         encodedOtpTokenList.join(",")
       )
     ),
-    currentOtpTokenData.expires
+    new Date(getReducedTimePrecision(expires))
   )
+
+  const currentOtpTokenData = getOtpTokenData(currentOtpToken)
 
   if (currentOtpTokenData.blocked) {
     return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)
