@@ -251,7 +251,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
 app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
-  let {
+  const {
     currentOtpToken,
     dek,
     encodedOtpTokenList,
@@ -264,14 +264,12 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
-  expires = await updateOtpTokenExpires(c, id, expires)
+  currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, id, expires)
 
-  if (!expires) {
+  if (!currentOtpToken[EXPIRES]) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
-
-  currentOtpToken[EXPIRES] = expires
 
   currentOtpToken[OTP] = createOtp()
 
@@ -314,7 +312,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
 app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => {
 
-  let {
+  const {
     currentOtpToken,
     dek,
     encodedOtpTokenList,
@@ -336,11 +334,10 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       ? await finalAction(c, currentOtpToken[CREDENTIAL])
       : c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
+  
+  const newId = await replaceOtpTokenId(c, id, expires)
 
-  // @ts-ignore: it does not affect if the ID is a number or a string.
-  id = await replaceOtpTokenId(c, id, expires)
-
-  if (!id) {
+  if (!newId) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -361,7 +358,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
 
   encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
-    id,
+    newId,
     compressNumber(Date.now())
   )
 
