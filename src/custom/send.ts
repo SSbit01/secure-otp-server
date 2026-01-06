@@ -13,9 +13,10 @@ type Otp = ReturnType<typeof createOtp>
  * @param {Context} c - Hono context.
  * @param {string} credential - Client credential / ID.
  * @param {Otp} otp - OTP string code.
+ * @returns {Promise<boolean>} Indicates whether the sending was successful or not. In case an internal error happened, just throw it.
  */
-export default async function sendOtp(c: Context, credential: string, otp: Otp) {
+export default async function sendOtp(c: Context, credential: string, otp: Otp): Promise<boolean> {
 
-  return
+  return true
 
 }
