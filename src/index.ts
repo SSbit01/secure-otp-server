@@ -274,6 +274,9 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   currentOtpToken[OTP] = createOtp()
 
   if (!await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])) {
+    /**
+     * Block the OTP token.
+     */
     blockOtpToken(currentOtpToken)
   } else if (OTP_ALLOW_ONLY_ONE_RESENDING) {
     delete currentOtpToken[RESEND_BLOCK]
@@ -301,7 +304,9 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     currentOtpTokenData.expires
   )
   
-  return c.json(currentOtpTokenData)
+  return currentOtpTokenData.blocked
+    ? c.json(currentOtpTokenData)
+    : c.json(ERR_CREDENTIAL_INVALID, 400)
 
 })
 
