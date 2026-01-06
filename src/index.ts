@@ -62,6 +62,7 @@ import otpValueValidator from "@/lib/validators/otp"
 import app from "@/setup"
 
 import type { ContentfulStatusCode } from "hono/utils/http-status"
+import type { OtpTokenData } from "@/lib/otp"
 
 
 
@@ -116,7 +117,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const newEncodedOtpTokenList: string[] = []
 
-  let currentOtpTokenData: any
+  let currentOtpTokenData: OtpTokenData | undefined
   let currentEncodedOtpToken = ""
   let expires = 0
 
