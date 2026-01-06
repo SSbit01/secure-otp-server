@@ -4,15 +4,6 @@ const isTest = process.env.NODE_ENV === "test"
 
 
 /**
- * Delay based rate limiting between OTP requests.
- * 
- * - It is recommended to set it to 200 milliseconds or higher.
- * - Also, you can add external rate limiting using Cloudflare or other services.
- */
-export const MINIMUM_DELAY_BETWEEN_REQUESTS_MS: number = 200  // 0.2 seconds
-
-
-/**
  * By default, only one resending is allowed per session. You can enable unlimited resendings by setting this variable to `false`.
  * 
  * - It is recommended to set it to `true`.

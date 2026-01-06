@@ -1,25 +1,22 @@
 import { validator } from "hono/validator"
 
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
-import { OTP_MAX_CREDENTIALS, MINIMUM_DELAY_BETWEEN_REQUESTS_MS } from "@/custom/otp"
+import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { decompressNumber } from "@/lib/compression/number"
 import { OTP_METADATA_STRING_LENGTH } from "@/lib/computed"
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
   ERR_OTP_EXPIRED,
-  ERR_OTP_INVALID_COOKIE,
-  ERR_OTP_TOO_MANY_REQUESTS
+  ERR_OTP_INVALID_COOKIE
 } from "@/lib/error/static"
 
 import { rotateKek } from "@/lib/kms"
 import { getOtpTokenList } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName } from "@/lib/otp/cookie"
 import { EXPIRES, decodeOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
-import { isWithinDelay } from "@/lib/time"
 
 
 
@@ -71,11 +68,10 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const lastAccessString = encodedOtpTokenList.pop()
   const id = encodedOtpTokenList.pop()
   const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
 
-  if (!lastAccessString || !id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
+  if (!id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
     await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -101,13 +97,6 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
       }
       newEncodedOtpTokenList.push(encodeOtpToken(otpToken))
     }
-  }
-
-  /**
-   * It should be verified after checking all OTP tokens.
-   */
-  if (isWithinDelay(decompressNumber(lastAccessString), MINIMUM_DELAY_BETWEEN_REQUESTS_MS, dateNow)) {
-    return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
   }
 
   /**

@@ -6,7 +6,6 @@ import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/cu
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import {
-  MINIMUM_DELAY_BETWEEN_REQUESTS_MS,
   OTP_ALLOW_ONLY_ONE_RESENDING,
   OTP_ATTEMPTS_BLOCK,
   OTP_MAX_CREDENTIALS,
@@ -16,7 +15,6 @@ import {
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { compressNumber, decompressNumber } from "@/lib/compression/number"
 
 import {
   OTP_METADATA_STRING_LENGTH,
@@ -35,7 +33,6 @@ import {
   ERR_OTP_RESENT_NOT_ALLOWED,
   ERR_OTP_TOO_MANY_ATTEMPTS,
   ERR_OTP_TOO_MANY_CREDENTIALS,
-  ERR_OTP_TOO_MANY_REQUESTS,
   ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "@/lib/error/static"
 
@@ -57,7 +54,7 @@ import {
 } from "@/lib/otp/encode/token"
 
 import generateOtpTokenCreationResponse from "./lib/otp/response/create"
-import { isWithinDelay, getReducedTimePrecision } from "@/lib/time"
+import { getReducedTimePrecision } from "@/lib/time"
 
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -110,11 +107,9 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return await generateOtpTokenCreationResponse(c, credential)
   }
 
-  const lastAccessString = encodedOtpTokenList.pop()
-
   const id = encodedOtpTokenList.pop()
 
-  if (!lastAccessString || !id || !encodedOtpTokenList.length || encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+  if (!id || encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
     await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -147,11 +142,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     }
   }
 
-  /**
-   * It should be verified after checking all OTP tokens.
-   */
-  if (isWithinDelay(decompressNumber(lastAccessString), MINIMUM_DELAY_BETWEEN_REQUESTS_MS, dateNow)) {
-    return c.json(ERR_OTP_TOO_MANY_REQUESTS, 429)
+  if (newEncodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
+    return c.json(ERR_OTP_TOO_MANY_CREDENTIALS, 400)
   }
 
   if (!expires) {
@@ -194,12 +186,12 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   let status: ContentfulStatusCode | undefined
 
-  let expiresDate: Date
-
+  /**
+   * It should be verified after checking all OTP tokens.
+   */
   if (currentEncodedOtpToken) {
-    expiresDate = new Date(getReducedTimePrecision(expires))
     newEncodedOtpTokenList.push(currentEncodedOtpToken)
-  } else if (encodedOtpTokenList.length < OTP_MAX_CREDENTIALS) {
+  } else {
     /**
      * `updateOtpTokenExpires` is used to verify too.
      * Verify OTP Token List ID before sending the OTP.
@@ -216,21 +208,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
     currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock)
     newEncodedOtpTokenList.push(currentEncodedOtpToken)
-    expiresDate = new Date(getReducedTimePrecision(expires))
     currentOtpTokenData = {
-      expires: expiresDate,
+      expires: new Date(getReducedTimePrecision(expires)),
       resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
     }
-  } else {
-    currentOtpTokenData = ERR_OTP_TOO_MANY_CREDENTIALS
-    expiresDate = new Date(getReducedTimePrecision(expires))
-    status = 400
   }
 
-  newEncodedOtpTokenList.push(
-    id,
-    compressNumber(Date.now())
-  )
+  newEncodedOtpTokenList.push(id)
 
   setOtpCookie(
     c,
@@ -241,7 +225,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
         newEncodedOtpTokenList.join(",")
       )
     ),
-    expiresDate
+    new Date(getReducedTimePrecision(expires))
   )
   
   return c.json(currentOtpTokenData, status)
@@ -286,8 +270,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
   encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
-    id,
-    compressNumber(Date.now())
+    id
   )
 
   const currentOtpTokenData = getOtpTokenData(currentOtpToken)
@@ -359,8 +342,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
 
   encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
-    newId,
-    compressNumber(Date.now())
+    newId
   )
 
   setOtpCookie(

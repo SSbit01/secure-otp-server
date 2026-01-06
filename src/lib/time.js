@@ -1,6 +1,3 @@
-import { MINIMUM_DELAY_BETWEEN_REQUESTS_MS } from "@/custom/otp"
-
-
 /**
  * @callback NumberFunction
  * @param {number} x
@@ -27,11 +24,11 @@ export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.
  * 
  * @function isWithinDelay
  * @param {number} time
- * @param {number} [delay]
+ * @param {number} delay
  * @param {number} [dateNow]
  * @returns {boolean}
  */
-export function isWithinDelay(time, delay = MINIMUM_DELAY_BETWEEN_REQUESTS_MS, dateNow = Date.now()) {
+export function isWithinDelay(time, delay, dateNow = Date.now()) {
   return (dateNow - time) < delay
 }
 

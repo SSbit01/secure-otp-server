@@ -22,7 +22,6 @@ import {
 import {
   OTP_ATTEMPTS_BLOCK,
   OTP_MAX_ATTEMPTS,
-  MINIMUM_DELAY_BETWEEN_REQUESTS_MS as ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS,
   createOtp
 } from "@/custom/otp"
 
@@ -35,11 +34,6 @@ import app from "@/index"
 
 
 const MAX_WAITING_MS = 4000
-
-/**
- * Prevent TOO MANY REQUESTS error
- */
-const MINIMUM_DELAY_BETWEEN_REQUESTS_MS = ORIGINAL_MINIMUM_DELAY_BETWEEN_REQUESTS_MS * 1.5
 
 const ATTEMPTS_WITHOUT_BLOCK = OTP_MAX_ATTEMPTS - OTP_ATTEMPTS_BLOCK
 
@@ -230,8 +224,6 @@ describe("OTP Resending", () => {
 
   it("Resend OTP without waiting", async() => {
 
-    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
-
     const res = await app.request("/api/otp/resend", {
       method: "POST",
       headers: {
@@ -403,8 +395,6 @@ describe("OTP Sending", () => {
 
 
   async function sendInvalidOtp() {
-
-    await sleep(MINIMUM_DELAY_BETWEEN_REQUESTS_MS)
 
     const res = await app.request("/api/otp/verify", {
       method: "POST",

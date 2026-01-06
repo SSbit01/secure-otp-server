@@ -6,7 +6,6 @@ import { createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { compressNumber } from "@/lib/compression/number"
 import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
@@ -61,8 +60,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
   const { id, expires } = await createEncryptedOtpTokenListId(c)
 
   const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
-  const dateNow = Date.now()
-  const resendBlock = dateNow + OTP_RESEND_BLOCK_MS
+  const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
 
   setOtpCookie(
     c,
@@ -70,9 +68,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     wrappedDekString +
     await encryptTextSymmetrically(
       dek,
-      createEncodedOtpToken(credential, expires, otp, resendBlock) + "," +
-      id + "," +
-      compressNumber(dateNow)
+      createEncodedOtpToken(credential, expires, otp, resendBlock) + "," + id
     ),
     lessPreciseExpiresDate
   )
