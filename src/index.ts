@@ -305,8 +305,8 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   )
   
   return currentOtpTokenData.blocked
-    ? c.json(currentOtpTokenData)
-    : c.json(ERR_CREDENTIAL_INVALID, 400)
+    ? c.json(ERR_CREDENTIAL_INVALID, 400)
+    : c.json(currentOtpTokenData)
 
 })
 
