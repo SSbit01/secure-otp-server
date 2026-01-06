@@ -122,10 +122,10 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const newEncodedOtpTokenList: string[] = []
 
   let currentOtpTokenData: any
-  
   let currentEncodedOtpToken = ""
   let expires = 0
-  let dateNow = Date.now()
+
+  const dateNow = Date.now()
 
   for (let encodedOtpToken of encodedOtpTokenList) {
     const otpToken = decodeOtpToken(encodedOtpToken)
@@ -277,18 +277,16 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     return c.json(ERR_CREDENTIAL_INVALID, 400)
   }
 
-  const dateNow = Date.now()
-
   if (OTP_ALLOW_ONLY_ONE_RESENDING) {
     delete currentOtpToken[RESEND_BLOCK]
   } else {
-    currentOtpToken[RESEND_BLOCK] = dateNow + OTP_RESEND_BLOCK_MS
+    currentOtpToken[RESEND_BLOCK] = Date.now() + OTP_RESEND_BLOCK_MS
   }
 
   encodedOtpTokenList.push(
     encodeOtpToken(currentOtpToken),
     id,
-    compressNumber(dateNow)
+    compressNumber(Date.now())
   )
 
   const currentOtpTokenData = getOtpTokenData(currentOtpToken)
