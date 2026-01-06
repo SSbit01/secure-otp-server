@@ -265,7 +265,10 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   } else if (OTP_ALLOW_ONLY_ONE_RESENDING) {
     delete currentOtpToken[RESEND_BLOCK]
   } else {
-    currentOtpToken[RESEND_BLOCK] = Date.now() + OTP_RESEND_BLOCK_MS
+    const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
+    if ((currentOtpToken[EXPIRES] - resendBlock) > 4000) {
+      currentOtpToken[RESEND_BLOCK] = resendBlock
+    }
   }
 
   encodedOtpTokenList.push(
@@ -335,7 +338,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     /**
      * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
      */
-    if (currentOtpToken[OTP_BLOCK] >= (currentOtpToken[EXPIRES] - 1000)) {
+    if ((currentOtpToken[EXPIRES] - currentOtpToken[OTP_BLOCK]) <= 1000) {
       blockOtpToken(currentOtpToken)
     }
   }

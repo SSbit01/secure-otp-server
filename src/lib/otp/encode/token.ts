@@ -3,7 +3,6 @@ import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/c
 import { decodeCredential, encodeCredential } from "@/lib/otp/encode/credential"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
 import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
-import { isWithinDelay } from "@/lib/time"
 
 
 export type OtpToken = [
@@ -65,7 +64,7 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
 
   otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES])
 
-  if (!isWithinDelay(otpToken[EXPIRES], OTP_MAX_AGE_MS, dateNow)) {
+  if ((otpToken[EXPIRES] - dateNow) > OTP_MAX_AGE_MS) {
     return
   }
 
@@ -92,7 +91,7 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
     }
     if (otpToken[RESEND_BLOCK]) {
       otpToken[RESEND_BLOCK] = decompressNumber(otpToken[RESEND_BLOCK])
-      if (!isWithinDelay(otpToken[RESEND_BLOCK], OTP_RESEND_BLOCK_MS, dateNow)) {
+      if ((otpToken[RESEND_BLOCK] - dateNow) > OTP_RESEND_BLOCK_MS) {
         return
       }
     }
@@ -103,7 +102,7 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
       otpToken[OTP_BLOCK] = decompressNumber(otpToken[OTP_BLOCK])
       if (otpToken[OTP_BLOCK] <= dateNow) {
         delete otpToken[OTP_BLOCK]
-      } else if (!isWithinDelay(otpToken[OTP_BLOCK], OTP_INVALID_BLOCK_MS, dateNow)) {
+      } else if ((otpToken[OTP_BLOCK] - dateNow) > OTP_INVALID_BLOCK_MS) {
         return
       }
     }
