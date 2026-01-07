@@ -18,7 +18,7 @@ import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
 import { createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
-import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
+import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
   ERR_CREDENTIAL_INVALID,
@@ -30,7 +30,7 @@ import {
   ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "@/lib/error/static"
 
-import { KEK_ID_BYTES, rotateKek } from "@/lib/kms"
+import { KEK_ID_BYTES, getDek, rotateKek } from "@/lib/kms"
 import { blockOtpToken, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
 
 import {
@@ -55,7 +55,6 @@ import {
 } from "@/lib/otp/encode/token"
 
 import generateOtpTokenCreationResponse from "./lib/otp/response/create"
-import { regexBase64Url } from "@/lib/regex"
 import { getReducedTimePrecision } from "@/lib/time"
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -79,29 +78,11 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
-  if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
+  const dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH))
+
+  if (!dek) {
     return await generateOtpTokenCreationResponse(c, credential)
   }
-
-  let kek = await getKek(c, kekId)
-
-  if (!kek) {
-    return await generateOtpTokenCreationResponse(c, credential)
-  }
-
-  let wrappedDek: Uint8Array<ArrayBuffer>
-
-  try {
-    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH), BASE64URL_OPTIONS)
-  } catch {
-    return await generateOtpTokenCreationResponse(c, credential)
-  }
-
-  if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
-    return await generateOtpTokenCreationResponse(c, credential)
-  }
-
-  const dek = await unwrapKey(wrappedDek, kek)
 
   const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH))
 
@@ -169,7 +150,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     if (currentKekId === kekId) {
       envelopeWrap = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
     } else {
-      kek = await getKek(c, currentKekId)
+      let kek = await getKek(c, currentKekId)
       if (kek) {
         kekId = currentKekId
       } else {
@@ -181,7 +162,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     }
   } else {
     kekId = createRandomIdString(KEK_ID_BYTES)
-    kek = await createKek()
+    const kek = await createKek()
     await storeKek(c, kek, kekId)
     envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }

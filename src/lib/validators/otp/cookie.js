@@ -6,14 +6,13 @@ import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
 import { createRandomIdString } from "@/lib/crypto/id"
-import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
+import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
-import { KEK_ID_BYTES, rotateKek } from "@/lib/kms"
+import { KEK_ID_BYTES, getDek, rotateKek } from "@/lib/kms"
 import { getOtpTokenList } from "@/lib/otp"
 import { ENVELOPE_ENCRYPTION_WRAP_LENGTH } from "@/lib/computed"
 import { deleteOtpCookie, getOtpCookieName } from "@/lib/otp/cookie"
 import { EXPIRES, decodeOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
-import { regexBase64Url } from "@/lib/regex"
 
 
 
@@ -27,36 +26,12 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
 
   let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
-  if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  let kek = await getKek(c, kekId)
-
-  if (!kek) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  /**
-   * @type {Uint8Array<ArrayBuffer>}
-   */
-  let wrappedDek
+  const dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH))
   
-  try {
-    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH), BASE64URL_OPTIONS)
-  } catch {
+  if (!dek) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
-
-  if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
-    deleteOtpCookie(c)
-    return c.json(ERR_OTP_INVALID_COOKIE, 400)
-  }
-
-  const dek = await unwrapKey(wrappedDek, kek)
 
   const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH))
 
@@ -116,7 +91,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     if (currentKekId === kekId) {
       envelopeWrap = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
     } else {
-      kek = await getKek(c, currentKekId)
+      let kek = await getKek(c, currentKekId)
       if (kek) {
         kekId = currentKekId
       } else {
@@ -128,7 +103,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     }
   } else {
     kekId = createRandomIdString(KEK_ID_BYTES)
-    kek = await createKek()
+    const kek = await createKek()
     await storeKek(c, kek, kekId)
     envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
