@@ -54,6 +54,7 @@ import {
 } from "@/lib/otp/encode/token"
 
 import generateOtpTokenCreationResponse from "./lib/otp/response/create"
+import { regexBase64Url } from "@/lib/regex"
 import { getReducedTimePrecision } from "@/lib/time"
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -77,7 +78,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
-  if (kekId.length !== KEK_ID_LENGTH) {
+  if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
     return await generateOtpTokenCreationResponse(c, credential)
   }
 

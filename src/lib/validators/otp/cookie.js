@@ -17,6 +17,7 @@ import { rotateKek } from "@/lib/kms"
 import { getOtpTokenList } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName } from "@/lib/otp/cookie"
 import { EXPIRES, decodeOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
+import { regexBase64Url } from "@/lib/regex"
 
 
 
@@ -30,7 +31,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
 
   let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
-  if (kekId.length !== KEK_ID_LENGTH) {
+  if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
