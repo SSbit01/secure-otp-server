@@ -20,7 +20,7 @@ import {
   OTP_METADATA_STRING_LENGTH,
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
-} from "@/lib/constants"
+} from "@/lib/otp/constants"
 
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"

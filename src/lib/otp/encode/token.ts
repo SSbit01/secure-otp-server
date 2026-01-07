@@ -2,7 +2,7 @@ import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/c
 
 import { decodeCredential, encodeCredential } from "@/lib/otp/encode/credential"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
-import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS, OTP_TOKEN_SEPARATOR } from "@/lib/constants"
+import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS, OTP_TOKEN_SEPARATOR } from "@/lib/otp/constants"
 
 
 export type OtpToken = [

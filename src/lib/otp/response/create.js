@@ -4,7 +4,7 @@ import { createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { OTP_RESEND_BLOCK_MS, OTP_TOKEN_SEPARATOR } from "@/lib/constants"
+import { OTP_RESEND_BLOCK_MS, OTP_TOKEN_SEPARATOR } from "@/lib/otp/constants"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
