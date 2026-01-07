@@ -20,7 +20,7 @@ import {
   OTP_METADATA_STRING_LENGTH,
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
-} from "@/lib/computed"
+} from "@/lib/constants"
 
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
@@ -37,7 +37,6 @@ import {
 } from "@/lib/error/static"
 
 import { rotateKek } from "@/lib/kms"
-
 import { blockOtpToken, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 
@@ -48,14 +47,14 @@ import {
   ATTEMPTS,
   RESEND_BLOCK,
   OTP_BLOCK,
+  createEncodedOtpToken,
   decodeOtpToken,
   encodeOtpToken,
-  createEncodedOtpToken
+  encodeOtpTokenList
 } from "@/lib/otp/encode/token"
 
 import generateOtpTokenCreationResponse from "./lib/otp/response/create"
 import { getReducedTimePrecision } from "@/lib/time"
-
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
 
@@ -223,7 +222,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       metadata +
       await encryptTextSymmetrically(
         dek,
-        newEncodedOtpTokenList.join(",")
+        encodeOtpTokenList(newEncodedOtpTokenList)
       )
     ),
     new Date(getReducedTimePrecision(expires))
@@ -285,7 +284,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
       metadata +
       await encryptTextSymmetrically(
         dek,
-        encodedOtpTokenList.join(",")
+        encodeOtpTokenList(encodedOtpTokenList)
       )
     ),
     currentOtpTokenData.expires
@@ -355,7 +354,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       metadata +
       await encryptTextSymmetrically(
         dek,
-        encodedOtpTokenList.join(",")
+        encodeOtpTokenList(encodedOtpTokenList)
       )
     ),
     new Date(getReducedTimePrecision(expires))

@@ -2,7 +2,7 @@ import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/c
 
 import { decodeCredential, encodeCredential } from "@/lib/otp/encode/credential"
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
-import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS, OTP_TOKEN_SEPARATOR } from "@/lib/constants"
 
 
 export type OtpToken = [
@@ -116,6 +116,17 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
 
 
 /**
+ * @async
+ * @function decodeOtpTokenList
+ * @param {string} encodedOtpTokenListString
+ * @returns {string[]}
+ */
+export function decodeOtpTokenList(encodedOtpTokenListString: string): string[] {
+  return encodedOtpTokenListString.split(OTP_TOKEN_SEPARATOR)
+}
+
+
+/**
  * @function encodeOtpToken
  * @param {OtpToken} otpToken
  * @returns {string}
@@ -147,4 +158,15 @@ export function encodeOtpToken(otpToken: OtpToken) {
 
   return otpTokenCopy.join(OTP_SEPARATOR)
 
+}
+
+
+/**
+ * @async
+ * @function encodeOtpTokenList
+ * @param {string[]} encodedOtpTokenList
+ * @returns {string}
+ */
+export function encodeOtpTokenList(encodedOtpTokenList: string[]): string {
+  return encodedOtpTokenList.join(OTP_TOKEN_SEPARATOR)
 }

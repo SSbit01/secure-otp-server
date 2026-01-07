@@ -4,7 +4,7 @@ import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { OTP_METADATA_STRING_LENGTH } from "@/lib/computed"
+import { OTP_METADATA_STRING_LENGTH } from "@/lib/constants"
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 

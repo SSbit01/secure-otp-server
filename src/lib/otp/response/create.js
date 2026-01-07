@@ -1,19 +1,16 @@
 import { createEncryptedOtpTokenListId } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
-
 import { createOtp } from "@/custom/otp"
-
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+import { OTP_RESEND_BLOCK_MS, OTP_TOKEN_SEPARATOR } from "@/lib/constants"
 import { createRandomIdString, KEK_ID_BYTES } from "@/lib/crypto/id"
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static"
 import { setOtpCookie } from "@/lib/otp/cookie"
 import { createEncodedOtpToken } from "@/lib/otp/encode/token"
-
 import { getReducedTimePrecision } from "@/lib/time"
 
 
@@ -68,7 +65,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     wrappedDekString +
     await encryptTextSymmetrically(
       dek,
-      createEncodedOtpToken(credential, expires, otp, resendBlock) + "," + id
+      createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id
     ),
     lessPreciseExpiresDate
   )

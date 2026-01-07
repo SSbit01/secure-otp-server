@@ -1,5 +1,5 @@
 import { decryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
-import { EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK } from "@/lib/otp/encode/token"
+import { EXPIRES, OTP, ATTEMPTS, RESEND_BLOCK, OTP_BLOCK, decodeOtpTokenList } from "@/lib/otp/encode/token"
 import { getReducedTimePrecision } from "@/lib/time"
 
 
@@ -71,7 +71,7 @@ export function getOtpTokenData(otpToken) {
 export async function getOtpTokenList(key, ciphertext) {
 
   try {
-    return (await decryptTextSymmetrically(key, ciphertext))?.split(",")
+    return decodeOtpTokenList(await decryptTextSymmetrically(key, ciphertext))
   } catch {
     // It simply returns `undefined`.
   }
