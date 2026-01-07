@@ -15,13 +15,6 @@ import {
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-
-import {
-  OTP_METADATA_STRING_LENGTH,
-  OTP_INVALID_BLOCK_MS,
-  OTP_RESEND_BLOCK_MS
-} from "@/lib/otp/constants"
-
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
@@ -38,6 +31,13 @@ import {
 
 import { rotateKek } from "@/lib/kms"
 import { blockOtpToken, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
+
+import {
+  OTP_METADATA_STRING_LENGTH,
+  OTP_INVALID_BLOCK_MS,
+  OTP_RESEND_BLOCK_MS
+} from "@/lib/otp/constants"
+
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 
 import {

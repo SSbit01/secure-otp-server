@@ -4,17 +4,12 @@ import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { OTP_METADATA_STRING_LENGTH } from "@/lib/otp/constants"
 import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
-
-import {
-  ERR_OTP_EXPIRED,
-  ERR_OTP_INVALID_COOKIE
-} from "@/lib/error/static"
-
+import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 import { rotateKek } from "@/lib/kms"
 import { getOtpTokenList } from "@/lib/otp"
+import { OTP_METADATA_STRING_LENGTH } from "@/lib/otp/constants"
 import { deleteOtpCookie, getOtpCookieName } from "@/lib/otp/cookie"
 import { EXPIRES, decodeOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
 import { regexBase64Url } from "@/lib/regex"
