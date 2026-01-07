@@ -28,7 +28,7 @@ import {
 import {
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
-} from "@/lib/otp/constants"
+} from "@/lib/computed"
 
 import app from "@/index"
 

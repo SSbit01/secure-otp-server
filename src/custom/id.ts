@@ -11,7 +11,7 @@
  * - Redis, DynamoDB or similar are the best alternatives.
  */
 
-import { OTP_MAX_AGE_MS } from "@/lib/otp/constants"
+import { OTP_MAX_AGE_MS } from "@/lib/computed"
 
 import type { Context } from "hono"
 

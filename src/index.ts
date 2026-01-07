@@ -36,7 +36,7 @@ import {
   OTP_METADATA_STRING_LENGTH,
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
-} from "@/lib/otp/constants"
+} from "@/lib/computed"
 
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 
