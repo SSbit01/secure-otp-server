@@ -9,7 +9,7 @@ Designed for microservices, modern authentication flows, and serverless environm
 >
 > This server implements several security best practices, but it is not a complete security solution on its own.
 > Additional measures such as DDoS protection, rate limiting, and request throttling are necessary for a production environment.
-> It is recommended to add these externally via a CDN, proxy, or API gateway.
+> It is recommended to configure these externally via a reverse proxy.
 >
 > If you discover a vulnerability, please read the [Security Policy](./SECURITY.md).
 
