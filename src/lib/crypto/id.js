@@ -1,20 +1,6 @@
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 
-const BYTES_BASE64_RATIO = 4 / 3
-
-
-/**
- * @type {number}
- */
-export const KEK_ID_BYTES = 12
-
-/**
- * @type {number}
- */
-export const KEK_ID_LENGTH = KEK_ID_BYTES * BYTES_BASE64_RATIO
-
-
 /**
  * This implementation generates a cryptographically secure 96-bit length random value by default.
  * 

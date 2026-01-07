@@ -1,13 +1,19 @@
 import { getCurrentKekId, storeKek } from "@/custom/kms"
 
 import { createKek } from "@/lib/crypto/symmetric/kek"
-import { KEK_ID_BYTES, createRandomIdString } from "@/lib/crypto/id"
+import { createRandomIdString } from "@/lib/crypto/id"
 import { deleteOtpCookie } from "@/lib/otp/cookie"
 
 
 /**
  * @import { Context } from "hono"
  */
+
+
+/**
+ * @type {number}
+ */
+export const KEK_ID_BYTES = 12
 
 
 /**

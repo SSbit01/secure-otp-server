@@ -15,7 +15,8 @@ import {
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { KEK_ID_BYTES, KEK_ID_LENGTH, createRandomIdString } from "@/lib/crypto/id"
+import { KEK_ID_LENGTH } from "@/lib/computed"
+import { createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { WRAPPED_DEK_BYTES, createKek, wrapKey, unwrapKey } from "@/lib/crypto/symmetric/kek"
 
@@ -29,11 +30,11 @@ import {
   ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "@/lib/error/static"
 
-import { rotateKek } from "@/lib/kms"
+import { KEK_ID_BYTES, rotateKek } from "@/lib/kms"
 import { blockOtpToken, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
 
 import {
-  OTP_METADATA_STRING_LENGTH,
+  ENVELOPE_ENCRYPTION_WRAP_LENGTH,
   OTP_INVALID_BLOCK_MS,
   OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
@@ -91,7 +92,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   let wrappedDek: Uint8Array<ArrayBuffer>
 
   try {
-    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, OTP_METADATA_STRING_LENGTH), BASE64URL_OPTIONS)
+    wrappedDek = Uint8Array.fromBase64(otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH), BASE64URL_OPTIONS)
   } catch {
     return await generateOtpTokenCreationResponse(c, credential)
   }
@@ -102,7 +103,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const dek = await unwrapKey(wrappedDek, kek)
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(OTP_METADATA_STRING_LENGTH))
+  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH))
 
   if (!encodedOtpTokenList) {
     return await generateOtpTokenCreationResponse(c, credential)
@@ -160,13 +161,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   /**
    * Kek ID + Wrapped DEK.
    */
-  let metadata: string
+  let envelopeWrap: string
 
   const currentKekId = await getCurrentKekId(c)
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      metadata = otpData.substring(0, OTP_METADATA_STRING_LENGTH)
+      envelopeWrap = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
     } else {
       kek = await getKek(c, currentKekId)
       if (kek) {
@@ -176,13 +177,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
         kek = await createKek()
         await storeKek(c, kek, kekId)
       }
-      metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+      envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
     }
   } else {
     kekId = createRandomIdString(KEK_ID_BYTES)
     kek = await createKek()
     await storeKek(c, kek, kekId)
-    metadata = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+    envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
   let status: ContentfulStatusCode | undefined
@@ -220,7 +221,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   setOtpCookie(
     c,
     (
-      metadata +
+      envelopeWrap +
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(newEncodedOtpTokenList)
@@ -242,7 +243,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     encodedOtpTokenList,
     expires,
     id,
-    metadata
+    envelopeWrap
   } = c.req.valid("cookie")
 
   if (currentOtpToken[RESEND_BLOCK] && Date.now() < currentOtpToken[RESEND_BLOCK]) {
@@ -282,7 +283,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   setOtpCookie(
     c,
     (
-      metadata +
+      envelopeWrap +
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(encodedOtpTokenList)
@@ -306,7 +307,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     encodedOtpTokenList,
     expires,
     id,
-    metadata
+    envelopeWrap
   } = c.req.valid("cookie")
 
   /**
@@ -352,7 +353,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   setOtpCookie(
     c,
     (
-      metadata +
+      envelopeWrap +
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(encodedOtpTokenList)
