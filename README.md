@@ -51,9 +51,9 @@ For additional deployment targets such as [Fastly Compute](https://www.fastly.co
 
 This server uses a hybrid design to provide stateful security without the overhead of a storage system.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens (one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK). The list is sent to the client in a secure, `HttpOnly` cookie.
+1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens (one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK). The encrypted list is sent to the client in a secure, `HttpOnly` cookie.
 2. A random ID linked to the list is generated and stored on the server.
-3. When the client attempts to verify an OTP, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
+3. When the client attempts to verify an OTP token, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
 4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
 
 This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks.
@@ -103,7 +103,7 @@ For a complete specification, see the [`openapi.json`](/openapi.json) file.
 
 ### `POST /api/otp/create`
 
-Generates a new OTP, encrypts the session data, and sends it to the user. This endpoint returns two `HttpOnly` cookies that must be included in subsequent requests.
+Generates a new OTP, encrypts the session data, and sends it to the user. This endpoint sets one `HttpOnly` cookie that must be included in subsequent requests.
 
 - **Body**: `application/json`. The schema is defined in [`src/custom/credential.ts`](/src/custom/credential.ts).
 - **Logic**: The OTP sending logic is defined in [`src/custom/send.ts`](/src/custom/send.ts).
@@ -111,13 +111,13 @@ Generates a new OTP, encrypts the session data, and sends it to the user. This e
 
 ### `POST /api/otp/resend`
 
-Generates and sends a new OTP for the current token. This endpoint uses the cookies from the `/api/otp/create` request and does not require a request body.
+Generates and sends a new OTP for the current token. This endpoint does not require a request body.
 
 - **Logic**: Resend timing and limits can be configured in [`src/custom/otp.ts`](/src/custom/otp.ts).
 
 ### `POST /api/otp/verify`
 
-Verifies an OTP code. Each verification attempt updates the session token.
+Verifies an OTP code.
 
 - **Body**: `application/x-www-form-urlencoded` with an `otp` parameter (e.g. `otp=12345678`).
 - **Logic**: After successful verification, a final action is triggered, defined in [`src/custom/final.ts`](/src/custom/final.ts).
