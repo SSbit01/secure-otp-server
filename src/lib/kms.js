@@ -1,7 +1,7 @@
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH } from "@/lib/computed"
+import { KEK_ID_LENGTH } from "@/lib/computed"
 import { createRandomIdString } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, unwrapKey } from "@/lib/crypto/symmetric/kek"
 import { deleteOtpCookie } from "@/lib/otp/cookie"

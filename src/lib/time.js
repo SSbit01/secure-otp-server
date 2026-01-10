@@ -10,11 +10,11 @@
  * 
  * @function getReducedTimePrecision
  * @param {number} [time] - The time value in milliseconds to reduce precision for. Defaults to the current time.
- * @param {NumberFunction} [roundFunction] - The rounding function to use (e.g., Math.floor, Math.ceil, Math.round). Defaults to Math.floor.
+ * @param {NumberFunction} [roundFunction] - The rounding function to use (e.g., Math.trunc, Math.ceil, Math.round). Defaults to Math.trunc.
  * @param {number} [precision]
  * @returns {number} - The time value with reduced precision.
  */
-export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.floor, precision = 1000) {
+export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.trunc, precision = 1000) {
   return roundFunction(time / precision) * precision
 }
 
