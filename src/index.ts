@@ -61,7 +61,6 @@ import otpValueValidator from "@/lib/validators/otp"
 
 import app from "@/setup"
 
-import type { ContentfulStatusCode } from "hono/utils/http-status"
 import type { OtpTokenData } from "@/lib/otp"
 
 
@@ -167,8 +166,6 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
-  let status: ContentfulStatusCode | undefined
-
   /**
    * It should be verified after checking all OTP tokens.
    */
@@ -210,8 +207,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     ),
     new Date(getReducedTimePrecision(expires))
   )
-  
-  return c.json(currentOtpTokenData, status)
+
+  return c.json(currentOtpTokenData)
 
 })
 
@@ -272,7 +269,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     ),
     currentOtpTokenData.expires
   )
-  
+
   return currentOtpTokenData.blocked
     ? c.json(ERR_CREDENTIAL_INVALID, 400)
     : c.json(currentOtpTokenData)
@@ -295,7 +292,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
    * [OTP_BLOCK] already filtered in `decodeOtpString`.
    */
   if (currentOtpToken[OTP_BLOCK] || !currentOtpToken[ATTEMPTS]) {
-    return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 400)
+    return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 403)
   }
 
   if (currentOtpToken[OTP] === c.req.valid("form")) {
@@ -304,7 +301,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       ? await finalAction(c, currentOtpToken[CREDENTIAL])
       : c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
-  
+
   const newId = await replaceOtpTokenId(c, id, expires)
 
   if (!newId) {
@@ -346,17 +343,17 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   const currentOtpTokenData = getOtpTokenData(currentOtpToken)
 
   if (currentOtpTokenData.blocked) {
-    return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 400)
+    return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 403)
   }
 
   if (currentOtpTokenData.otpBlock) {
     return c.json({
       ...ERR_OTP_INCORRECT,
       otpBlock: currentOtpTokenData.otpBlock
-    }, 400)
+    }, 403)
   }
-  
-  return c.json(ERR_OTP_INCORRECT, 400)
+
+  return c.json(ERR_OTP_INCORRECT, 403)
 
 })
 
