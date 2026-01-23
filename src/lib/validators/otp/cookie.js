@@ -17,9 +17,9 @@ import { EXPIRES, decodeOtpToken, encodeOtpToken } from "@/lib/otp/encode/token"
 
 
 const otpCookieValidator = validator("cookie", async (cookies, c) => {
-  
+
   const otpData = cookies[getOtpCookieName(c)]?.trim()
-  
+
   if (!otpData) {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -27,7 +27,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
   const dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH))
-  
+
   if (!dek) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
@@ -83,13 +83,13 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
    * 
    * @type {string}
    */
-  let envelopeWrap
+  let envelope
 
   const currentKekId = await getCurrentKekId(c)
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      envelopeWrap = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
+      envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
     } else {
       let kek = await getKek(c, currentKekId)
       if (kek) {
@@ -99,13 +99,13 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
         kek = await createKek()
         await storeKek(c, kek, kekId)
       }
-      envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
     }
   } else {
     kekId = createRandomIdString(KEK_ID_BYTES)
     const kek = await createKek()
     await storeKek(c, kek, kekId)
-    envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+    envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
   return {
@@ -114,7 +114,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     encodedOtpTokenList: newEncodedOtpTokenList,
     expires,
     id,
-    envelopeWrap
+    envelope
   }
 
 })

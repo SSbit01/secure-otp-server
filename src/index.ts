@@ -141,13 +141,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   /**
    * Kek ID + Wrapped DEK.
    */
-  let envelopeWrap: string
+  let envelope: string
 
   const currentKekId = await getCurrentKekId(c)
 
   if (currentKekId) {
     if (currentKekId === kekId) {
-      envelopeWrap = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
+      envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
     } else {
       let kek = await getKek(c, currentKekId)
       if (kek) {
@@ -157,13 +157,13 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
         kek = await createKek()
         await storeKek(c, kek, kekId)
       }
-      envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
     }
   } else {
     kekId = createRandomIdString(KEK_ID_BYTES)
     const kek = await createKek()
     await storeKek(c, kek, kekId)
-    envelopeWrap = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+    envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
   }
 
   /**
@@ -199,7 +199,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   setOtpCookie(
     c,
     (
-      envelopeWrap +
+      envelope +
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(newEncodedOtpTokenList)
@@ -221,7 +221,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     encodedOtpTokenList,
     expires,
     id,
-    envelopeWrap
+    envelope
   } = c.req.valid("cookie")
 
   if (currentOtpToken[RESEND_BLOCK] && Date.now() < currentOtpToken[RESEND_BLOCK]) {
@@ -261,7 +261,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   setOtpCookie(
     c,
     (
-      envelopeWrap +
+      envelope +
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(encodedOtpTokenList)
@@ -285,7 +285,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     encodedOtpTokenList,
     expires,
     id,
-    envelopeWrap
+    envelope
   } = c.req.valid("cookie")
 
   /**
@@ -331,7 +331,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   setOtpCookie(
     c,
     (
-      envelopeWrap +
+      envelope +
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(encodedOtpTokenList)
