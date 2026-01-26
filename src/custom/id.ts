@@ -105,7 +105,7 @@ export async function deleteOtpTokenId(c: Context, id: string, expires?: number)
   }
 
   // @ts-ignore: JavaScript allows number string indexes in arrays.
-  if (expires && (!idStorage[id] || idStorage[id] !== expires)) {
+  if (expires && idStorage[id] !== expires) {
     idStorage.length = lastValidId + 1
     return false
   }
