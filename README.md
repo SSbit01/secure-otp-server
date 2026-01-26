@@ -47,6 +47,8 @@ To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https:/
 
 For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or [AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
 
+It also includes a Dockerfile that leverages [Bun](https://bun.com/) for easy and fast deployment.
+
 ## Architecture
 
 This server uses a hybrid design to provide stateful security without the overhead of a storage system.
