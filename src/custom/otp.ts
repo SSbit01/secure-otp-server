@@ -70,19 +70,19 @@ export const OTP_MAX_ATTEMPTS: number = 3
 
 
 /**
- * You can customize the OTP format using regular expressions.
- * 
- * This will be used to verify OTP values; it has no impact on their creation.
- */
-export const OTP_REGEX: RegExp = /\w+/
-
-
-/**
  * When sending an OTP, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
  * 
  * - It is recommended to set it to 20 seconds.
  */
 export const OTP_RESEND_BLOCK_SECONDS: number = isTest ? 3 : 20
+
+
+/**
+ * You can customize the OTP format using regular expressions.
+ * 
+ * This will be used to verify OTP values; it has no impact on their creation.
+ */
+export const OTP_REGEX: RegExp = /[a-zA-Z0-9]+/
 
 
 /**

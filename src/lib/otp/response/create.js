@@ -74,6 +74,6 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
   return c.json({
     expires: lessPreciseExpiresDate,
     resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
-  }, 201)
+  })
 
 }
