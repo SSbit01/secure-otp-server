@@ -1,5 +1,6 @@
 import { validator } from "hono/validator"
 
+import { deleteOtpTokenId } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 
@@ -41,10 +42,16 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   }
 
   const id = encodedOtpTokenList.pop()
+
+  if (!id) {
+    await rotateKek(c, kekId)
+    return c.json(ERR_OTP_INVALID_COOKIE, 400)
+  }
+
   const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
 
-  if (!id || !currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
-    await rotateKek(c, kekId)
+  if (!currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
+    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)])
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
@@ -60,7 +67,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   for (const encodedOtpToken of encodedOtpTokenList) {
     const otpToken = decodeOtpToken(encodedOtpToken)
     if (!otpToken) {
-      await rotateKek(c, kekId)
+      await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)])
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     }
     if (dateNow < otpToken[EXPIRES]) {

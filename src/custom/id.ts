@@ -80,16 +80,14 @@ export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData>
 /**
  * Deletes an encryption key by its ID.
  * 
- * It is used in a "fire and forget" manner.
- * 
  * @async
  * @function deleteOtpTokenId
  * @param {Context} c - Hono context.
  * @param {string} id - The ID to delete.
- * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
+ * @param {number} [expires] - Expiration time in milliseconds since epoch used to verify the ID; if not provided, the ID will be deleted without verification.
  * @returns {Promise<boolean>} If delete was successful.
  */
-export async function deleteOtpTokenId(c: Context, id: string, expires: number): Promise<boolean> {
+export async function deleteOtpTokenId(c: Context, id: string, expires?: number): Promise<boolean> {
 
   let lastValidId = -1
 
@@ -107,9 +105,7 @@ export async function deleteOtpTokenId(c: Context, id: string, expires: number):
   }
 
   // @ts-ignore: JavaScript allows number string indexes in arrays.
-  const storedExpires = idStorage[id]
-
-  if (!storedExpires || storedExpires !== expires) {
+  if (expires && (!idStorage[id] || idStorage[id] !== expires)) {
     idStorage.length = lastValidId + 1
     return false
   }
