@@ -17,8 +17,11 @@ Designed for microservices, modern authentication flows, and serverless environm
 
 ### Secure by Design
 
-Generates cryptographically secure OTPs and encrypts session data using envelope encryption with [AES-KW](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/wrapKey#aes-kw) (KEK) and [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode) (DEK),
-which is extremely fast on modern CPUs because they have dedicated hardware acceleration ([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set)),
+Generates cryptographically secure OTPs and encrypts session data using envelope encryption with
+[AES-KW](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/wrapKey#aes-kw) (KEK)
+and [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode) (DEK),
+which is extremely fast on modern CPUs because they have dedicated hardware acceleration
+([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set)),
 in addition to being quantum-resistant.
 
 ### Customizable
@@ -32,7 +35,8 @@ Prevents replay attacks by using single-use verification keys, while remaining l
 ### Multi-Credential Sessions
 
 Store several OTP tokens per session, each bound to a different credential.
-Users can move between credentials without restarting the flow, and the session-encrypted cookie enforces a strict cap so tokens stay lightweight.
+Users can move between credentials without restarting the flow,
+and the session-encrypted cookie enforces a strict cap so tokens stay lightweight.
 
 ### High Performance
 
@@ -40,26 +44,37 @@ Built with [Hono](https://hono.dev/) for fast and efficient routing.
 
 ### Web Standards-Based
 
-Runs on modern JavaScript runtimes ([Deno](https://deno.com/), [Bun](https://bun.com/), [Cloudflare Workers](https://workers.cloudflare.com/)...).
+Runs on modern JavaScript runtimes ([Deno](https://deno.com/), [Bun](https://bun.com/),
+[Cloudflare Workers](https://workers.cloudflare.com/)...).
 
-You can run it on [Node.js](https://nodejs.org/) (>=25), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/) are more recommended.
-To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage) adapter and configure it in [`src/index.ts`](/src/index.ts).
+You can run it on [Node.js](https://nodejs.org/) (>=25), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/)
+are more recommended.
+To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage)
+adapter and configure it in [`src/index.ts`](/src/index.ts).
 
-For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or [AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
+For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or
+[AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
 
 It also includes a Dockerfile that leverages [Bun](https://bun.com/) for easy and fast deployment.
 
 ## Architecture
 
-This server uses a hybrid design to provide stateful security without the overhead of a storage system.
+This server uses a hybrid design that provides even more security than a stateful design.
+Since the server only stores random IDs, it cannot know which credentials are currently being verified,
+providing enhanced privacy and security without the overhead of a traditional storage system.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens (one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK). The encrypted list is sent to the client in a secure, `HttpOnly` cookie.
+1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens
+(one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK).
+The encrypted list is sent to the client in a secure, `HttpOnly` cookie.
 2. A random ID linked to the list is generated and stored on the server.
-3. When the client attempts to verify an OTP token, it sends back the encrypted list. The server selects the current credential's token, and after each verification attempt updates its ID.
-4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between multiple credentials without restarting the flow while keeping the session footprint small.
+3. When the client attempts to verify an OTP token, it sends back the encrypted list.
+The server selects the current credential's token, and after each verification attempt updates its ID.
+4. The encrypted cookie stores at most `OTP_MAX_CREDENTIALS` entries, so users can switch between
+multiple credentials without restarting the flow while keeping the session footprint small.
 
 This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks.
-By default, the KMS stores key encryption keys (KEKs) in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
+By default, the KMS stores key encryption keys (KEKs) in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts)
+to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
 
 ## Getting Started
 
@@ -77,7 +92,8 @@ deno task install
 
 ### 2. Configuration
 
-Create a `.env` file in the root of the project. For production, set `NODE_ENV` to `"production"` to enable secure cookies and specify your frontend's origin with `CORS_ORIGIN`.
+Create a `.env` file in the root of the project. For production, set `NODE_ENV` to `"production"` to enable secure cookies
+and specify your frontend's origin with `CORS_ORIGIN`.
 
 ```env
 # .env
@@ -105,11 +121,13 @@ For a complete specification, see the [`openapi.json`](/openapi.json) file.
 
 ### `POST /api/otp/create`
 
-Generates a new OTP, encrypts the session data, and sends it to the user. This endpoint sets one `HttpOnly` cookie that must be included in subsequent requests.
+Generates a new OTP, encrypts the session data, and sends it to the user.
+This endpoint sets one `HttpOnly` cookie that must be included in subsequent requests.
 
 - **Body**: `application/json`. The schema is defined in [`src/custom/credential.ts`](/src/custom/credential.ts).
 - **Logic**: The OTP sending logic is defined in [`src/custom/send.ts`](/src/custom/send.ts).
-- **Multi-credential flow**: Sending this request again with a different credential adds another OTP token (until `OTP_MAX_CREDENTIALS` is reached).
+- **Multi-credential flow**: Sending this request again with a different credential adds another OTP token
+(until `OTP_MAX_CREDENTIALS` is reached).
 
 ### `POST /api/otp/resend`
 
@@ -128,7 +146,8 @@ Verifies an OTP code.
 
 Key logic is separated into the following modules:
 
-- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays, and the `OTP_MAX_CREDENTIALS` cap that governs multi-credential sessions.
+- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays,
+and the `OTP_MAX_CREDENTIALS` cap that governs multi-credential sessions.
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
 - [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
 - [`src/custom/id.ts`](/src/custom/id.ts): Storage for OTP token list IDs (defaults to in-memory).
@@ -160,7 +179,8 @@ Server error responses follow this structure:
 ```
 
 - `error`: A string representing the error code. You can find all error codes in [`src/lib/error/names.js`](/src/lib/error/names.js).
-- `message`: A human-readable description of the error. Static error messages can be changed in [`src/lib/error/static.js`](src/lib/error/static.js).
+- `message`: A human-readable description of the error. Static error messages can be changed in
+[`src/lib/error/static.js`](src/lib/error/static.js).
 
 ## Testing
 
