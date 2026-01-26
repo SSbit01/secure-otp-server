@@ -297,7 +297,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   } = c.req.valid("cookie")
 
   /**
-   * [OTP_BLOCK] already filtered in `decodeOtpString`.
+   * [OTP_BLOCK] already filtered in `decodeOtpToken`.
    */
   if (currentOtpToken[OTP_BLOCK] || !currentOtpToken[ATTEMPTS]) {
     return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 403)
