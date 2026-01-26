@@ -44,6 +44,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   const id = encodedOtpTokenList.pop()
 
   if (!id) {
+    deleteOtpCookie(c)
     await rotateKek(c, kekId)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -51,6 +52,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "")
 
   if (!currentOtpToken || encodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
+    deleteOtpCookie(c)
     await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)])
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
@@ -67,6 +69,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   for (const encodedOtpToken of encodedOtpTokenList) {
     const otpToken = decodeOtpToken(encodedOtpToken)
     if (!otpToken) {
+      deleteOtpCookie(c)
       await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)])
       return c.json(ERR_OTP_INVALID_COOKIE, 400)
     }
