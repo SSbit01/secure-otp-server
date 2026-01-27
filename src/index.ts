@@ -15,7 +15,7 @@ import {
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { KEK_ID_LENGTH } from "@/lib/computed"
+import { KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { createRandomIdString } from "@/lib/crypto/id"
 import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
@@ -32,13 +32,6 @@ import {
 
 import { KEK_ID_BYTES, getDek, rotateKek } from "@/lib/kms"
 import { blockOtpToken, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
-
-import {
-  ENVELOPE_ENCRYPTION_WRAP_LENGTH,
-  OTP_INVALID_BLOCK_MS,
-  OTP_RESEND_BLOCK_MS
-} from "@/lib/computed"
-
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 
 import {
@@ -223,56 +216,84 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
 app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
-  const {
-    currentOtpToken,
-    dek,
-    encodedOtpTokenList,
-    expires,
-    id,
-    envelope
-  } = c.req.valid("cookie")
+  const data = c.req.valid("cookie")
 
-  if (currentOtpToken[RESEND_BLOCK] && Date.now() < currentOtpToken[RESEND_BLOCK]) {
+  if (data.currentOtpToken[RESEND_BLOCK] && Date.now() < data.currentOtpToken[RESEND_BLOCK]) {
     return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400)
   }
 
-  currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, id, expires)
+  /**
+   * Current KEK is retrieved before `updateOtpTokenExpires` because generating and wrapping keys takes some time.
+   * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
+   */
 
-  if (!currentOtpToken[EXPIRES]) {
+  /**
+   * Kek ID + Wrapped DEK.
+   * 
+   * @type {string}
+   */
+  let envelope
+
+  const currentKekId = await getCurrentKekId(c)
+
+  if (currentKekId) {
+    if (currentKekId === data.kekId) {
+      envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
+    } else {
+      let kek = await getKek(c, currentKekId)
+      if (kek) {
+        data.kekId = currentKekId
+      } else {
+        data.kekId = createRandomIdString(KEK_ID_BYTES)
+        kek = await createKek()
+        await storeKek(c, kek, data.kekId)
+      }
+      envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+    }
+  } else {
+    data.kekId = createRandomIdString(KEK_ID_BYTES)
+    const kek = await createKek()
+    await storeKek(c, kek, data.kekId)
+    envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+  }
+
+  data.currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, data.id, data.expires)
+
+  if (!data.currentOtpToken[EXPIRES]) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  currentOtpToken[OTP] = createOtp()
+  data.currentOtpToken[OTP] = createOtp()
 
-  if (!await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])) {
+  if (!await sendOtp(c, data.currentOtpToken[CREDENTIAL], data.currentOtpToken[OTP])) {
     /**
      * Block the OTP token.
      */
-    blockOtpToken(currentOtpToken)
+    blockOtpToken(data.currentOtpToken)
   } else if (OTP_ALLOW_ONLY_ONE_RESENDING) {
-    delete currentOtpToken[RESEND_BLOCK]
+    delete data.currentOtpToken[RESEND_BLOCK]
   } else {
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
-    if ((currentOtpToken[EXPIRES] - resendBlock) > 4000) {
-      currentOtpToken[RESEND_BLOCK] = resendBlock
+    if ((data.currentOtpToken[EXPIRES] - resendBlock) > 4000) {
+      data.currentOtpToken[RESEND_BLOCK] = resendBlock
     }
   }
 
-  encodedOtpTokenList.push(
-    encodeOtpToken(currentOtpToken),
-    id
+  data.encodedOtpTokenList.push(
+    encodeOtpToken(data.currentOtpToken),
+    data.id
   )
 
-  const currentOtpTokenData = getOtpTokenData(currentOtpToken)
+  const currentOtpTokenData = getOtpTokenData(data.currentOtpToken)
 
   setOtpCookie(
     c,
     (
       envelope +
       await encryptTextSymmetrically(
-        dek,
-        encodeOtpTokenList(encodedOtpTokenList)
+        data.dek,
+        encodeOtpTokenList(data.encodedOtpTokenList)
       )
     ),
     currentOtpTokenData.expires
@@ -287,52 +308,83 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
 app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => {
 
-  const {
-    currentOtpToken,
-    dek,
-    encodedOtpTokenList,
-    expires,
-    id,
-    envelope
-  } = c.req.valid("cookie")
+  const data = c.req.valid("cookie")
 
   /**
    * [OTP_BLOCK] already filtered in `decodeOtpToken`.
    */
-  if (currentOtpToken[OTP_BLOCK] || !currentOtpToken[ATTEMPTS]) {
+  if (data.currentOtpToken[OTP_BLOCK] || !data.currentOtpToken[ATTEMPTS]) {
     return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 403)
   }
 
-  if (currentOtpToken[OTP] === c.req.valid("form")) {
+  /**
+   * SUCCESS
+   */
+  if (data.currentOtpToken[OTP] === c.req.valid("form")) {
     deleteOtpCookie(c)
-    return await deleteOtpTokenId(c, id, expires)
-      ? await finalAction(c, currentOtpToken[CREDENTIAL])
+    return await deleteOtpTokenId(c, data.id, data.expires)
+      ? await finalAction(c, data.currentOtpToken[CREDENTIAL])
       : c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const newId = await replaceOtpTokenId(c, id, expires)
+  /**
+   * Current KEK is retrieved before `updateOtpTokenExpires` because generating and wrapping keys takes some time.
+   * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
+   */
+
+  /**
+   * Kek ID + Wrapped DEK.
+   * 
+   * @type {string}
+   */
+  let envelope
+
+  const currentKekId = await getCurrentKekId(c)
+
+  if (currentKekId) {
+    if (currentKekId === data.kekId) {
+      envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
+    } else {
+      let kek = await getKek(c, currentKekId)
+      if (kek) {
+        data.kekId = currentKekId
+      } else {
+        data.kekId = createRandomIdString(KEK_ID_BYTES)
+        kek = await createKek()
+        await storeKek(c, kek, data.kekId)
+      }
+      envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+    }
+  } else {
+    data.kekId = createRandomIdString(KEK_ID_BYTES)
+    const kek = await createKek()
+    await storeKek(c, kek, data.kekId)
+    envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+  }
+
+  const newId = await replaceOtpTokenId(c, data.id, data.expires)
 
   if (!newId) {
     deleteOtpCookie(c)
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  currentOtpToken[ATTEMPTS]--
+  data.currentOtpToken[ATTEMPTS]--
 
-  if (!currentOtpToken[ATTEMPTS]) {
-    blockOtpToken(currentOtpToken)
-  } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK) {
-    currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS
+  if (!data.currentOtpToken[ATTEMPTS]) {
+    blockOtpToken(data.currentOtpToken)
+  } else if (OTP_INVALID_BLOCK_MS && data.currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK) {
+    data.currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS
     /**
      * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
      */
-    if ((currentOtpToken[EXPIRES] - currentOtpToken[OTP_BLOCK]) <= 1000) {
-      blockOtpToken(currentOtpToken)
+    if ((data.currentOtpToken[EXPIRES] - data.currentOtpToken[OTP_BLOCK]) <= 1000) {
+      blockOtpToken(data.currentOtpToken)
     }
   }
 
-  encodedOtpTokenList.push(
-    encodeOtpToken(currentOtpToken),
+  data.encodedOtpTokenList.push(
+    encodeOtpToken(data.currentOtpToken),
     newId
   )
 
@@ -341,14 +393,14 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     (
       envelope +
       await encryptTextSymmetrically(
-        dek,
-        encodeOtpTokenList(encodedOtpTokenList)
+        data.dek,
+        encodeOtpTokenList(data.encodedOtpTokenList)
       )
     ),
-    new Date(getReducedTimePrecision(expires))
+    new Date(getReducedTimePrecision(data.expires))
   )
 
-  const currentOtpTokenData = getOtpTokenData(currentOtpToken)
+  const currentOtpTokenData = getOtpTokenData(data.currentOtpToken)
 
   if (currentOtpTokenData.blocked) {
     return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 403)

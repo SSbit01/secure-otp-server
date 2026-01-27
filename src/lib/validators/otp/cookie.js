@@ -1,15 +1,11 @@
 import { validator } from "hono/validator"
 
 import { deleteOtpTokenId } from "@/custom/id"
-import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 
-import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
-import { createRandomIdString } from "@/lib/crypto/id"
-import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
-import { KEK_ID_BYTES, getDek, rotateKek } from "@/lib/kms"
+import { getDek, rotateKek } from "@/lib/kms"
 import { getOtpTokenList } from "@/lib/otp"
 import { ENVELOPE_ENCRYPTION_WRAP_LENGTH } from "@/lib/computed"
 import { deleteOtpCookie, getOtpCookieName } from "@/lib/otp/cookie"
@@ -88,43 +84,14 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     return c.json(ERR_OTP_EXPIRED, 400)
   }
 
-  /**
-   * Kek ID + Wrapped DEK.
-   * 
-   * @type {string}
-   */
-  let envelope
-
-  const currentKekId = await getCurrentKekId(c)
-
-  if (currentKekId) {
-    if (currentKekId === kekId) {
-      envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
-    } else {
-      let kek = await getKek(c, currentKekId)
-      if (kek) {
-        kekId = currentKekId
-      } else {
-        kekId = createRandomIdString(KEK_ID_BYTES)
-        kek = await createKek()
-        await storeKek(c, kek, kekId)
-      }
-      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-    }
-  } else {
-    kekId = createRandomIdString(KEK_ID_BYTES)
-    const kek = await createKek()
-    await storeKek(c, kek, kekId)
-    envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-  }
-
   return {
     currentOtpToken,
     dek,
     encodedOtpTokenList: newEncodedOtpTokenList,
     expires,
     id,
-    envelope
+    kekId,
+    otpData
   }
 
 })
