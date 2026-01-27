@@ -45,7 +45,12 @@ export async function createOtpTokenListId(c: Context): Promise<[string, number]
   }
 
   const newId = createRandomIdString(ID_BYTES)
-  const expires = dateNow + OTP_MAX_AGE_MS
+
+  /**
+   * The cleanup loop might have taken some milliseconds.
+   * That is the reason `Date.now()` is used instead of the passed date.
+   */
+  const expires = Date.now() + OTP_MAX_AGE_MS
 
   idStorage.set(newId, expires)
 
