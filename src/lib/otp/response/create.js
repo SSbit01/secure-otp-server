@@ -1,4 +1,4 @@
-import { createEncryptedOtpTokenListId } from "@/custom/id"
+import { createOtpTokenListId } from "@/custom/id"
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 import { createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
@@ -55,7 +55,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
   const dek = await createDek()
   const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
 
-  const [id, expires] = await createEncryptedOtpTokenListId(c)
+  const [id, expires] = await createOtpTokenListId(c)
 
   const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires))
   const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
