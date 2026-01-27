@@ -2,7 +2,7 @@
  * This server generates OTP token IDs, and it needs to store them somewhere.
  * This file defines functions for storing IDs.
  * 
- * Therefore, a simple in-memory implementation has been defined using a JavaScript Array.
+ * Therefore, a simple in-memory implementation has been defined using a JavaScript Map.
  * 
  * - It is the cheapest and easiest implementation and works fine if the server is always on.
  * - This implementation does not persist IDs, so all IDs will be lost when the server restarts.
