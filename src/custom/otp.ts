@@ -82,7 +82,7 @@ export const OTP_RESEND_BLOCK_SECONDS: number = isTest ? 3 : 20
  * 
  * This will be used to verify OTP values; it has no impact on their creation.
  */
-export const OTP_REGEX: RegExp = /[a-zA-Z0-9]+/
+export const OTP_REGEX: RegExp = /[a-z0-9]+/
 
 
 /**
