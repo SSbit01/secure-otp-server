@@ -163,8 +163,10 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   } else {
     kekId = createRandomIdString(KEK_ID_BYTES)
     const kek = await createKek()
-    await storeKek(c, kek, kekId)
-    envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+    envelope = (
+      kekId +
+      new Uint8Array((await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+    )
   }
 
   /**
@@ -254,7 +256,10 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     data.kekId = createRandomIdString(KEK_ID_BYTES)
     const kek = await createKek()
     await storeKek(c, kek, data.kekId)
-    envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+    envelope = (
+      data.kekId +
+      new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+    )
   }
 
   data.currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, data.id, data.expires)
@@ -358,8 +363,10 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   } else {
     data.kekId = createRandomIdString(KEK_ID_BYTES)
     const kek = await createKek()
-    await storeKek(c, kek, data.kekId)
-    envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+    envelope = (
+      data.kekId +
+      new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+    )
   }
 
   const newId = await replaceOtpTokenId(c, data.id, data.expires)
