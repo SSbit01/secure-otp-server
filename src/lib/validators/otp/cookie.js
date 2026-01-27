@@ -21,7 +21,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  let kekId = otpData.substring(0, KEK_ID_LENGTH)
+  const kekId = otpData.substring(0, KEK_ID_LENGTH)
 
   const dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH))
 
