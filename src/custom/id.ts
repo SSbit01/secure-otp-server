@@ -19,7 +19,7 @@ import type { Context } from "hono"
 
 const ID_BYTES = 18
 
-const idStorage: Map<string, number> = new Map()
+const idStorage = new Map<string, number>()
 
 
 /**
