@@ -1,4 +1,4 @@
-import { getCurrentKekId, getKek, storeKek } from "@/custom/kms"
+import { deleteKek, getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
@@ -74,5 +74,7 @@ export async function rotateKek(c, kekId) {
     await storeKek(c, await createKek(), createRandomIdString(KEK_ID_BYTES))
     console.log("KEK rotation completed.")
   }
+
+  await deleteKek(c, kekId)
 
 }

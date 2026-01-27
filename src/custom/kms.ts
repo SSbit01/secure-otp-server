@@ -35,6 +35,23 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
 
 
 /**
+ * Deletes KEK.
+ * 
+ * @async
+ * @function deleteKek
+ * @param {Context} c - Hono context.
+ * @param {CurrentKey["id"]} kekId - The ID of the KEK to delete.
+ * @return {Promise<boolean>} A promise that resolves to `true` if the KEK was deleted, otherwise `false`.
+ */
+export async function deleteKek(c: Context, kekId: CurrentKey["id"]): Promise<boolean> {
+
+  console.warn("DELETING KEK: " + kekId)
+  return keyStorage.delete(kekId)
+
+}
+
+
+/**
  * Retrieves current KEK ID.
  * 
  * @async
