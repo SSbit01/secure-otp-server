@@ -17,6 +17,12 @@ import { createRandomIdString } from "@/lib/crypto/id"
 import type { Context } from "hono"
 
 
+/**
+ * Number of bytes used for generating IDs.
+ * 
+ * It is recommended to use a value that is large enough to ensure a low probability of collisions.
+ * 18 bytes is a large number, it has a collision probability of 1 in 2^144, much smaller than UUIDv4 (1 in 2^122).
+ */
 const ID_BYTES = 18
 
 const idStorage = new Map<string, number>()
