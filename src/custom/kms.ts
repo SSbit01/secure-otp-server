@@ -18,12 +18,6 @@ import { OTP_MAX_AGE_MS } from "@/lib/computed"
 import type { Context } from "hono"
 
 
-interface CurrentKey {
-  id: string
-  key: CryptoKey
-}
-
-
 /// CUSTOM
 type KeyData = [expires: number, rotate: number, key: CryptoKey]
 
@@ -32,7 +26,7 @@ const ROTATE_TIME = process.env.NODE_ENV === "test"
   ? 5
   : 7776000000  // 90 days in miliseconds.
 
-const keyStorage = new Map<CurrentKey["id"], KeyData>()
+const keyStorage = new Map<string, KeyData>()
 ///
 
 
@@ -42,9 +36,9 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
  * @async
  * @function deleteKek
  * @param {Context} c - Hono context.
- * @param {CurrentKey["id"]} id - The ID of the KEK to delete.
+ * @param {string} id - The ID of the KEK to delete.
  */
-export async function deleteKek(c: Context, id: CurrentKey["id"]) {
+export async function deleteKek(c: Context, id: string) {
 
   console.warn("DELETING KEK: " + id)
 
@@ -59,13 +53,13 @@ export async function deleteKek(c: Context, id: CurrentKey["id"]) {
  * @async
  * @function getCurrentKekId
  * @param {Context} c - Hono context.
- * @return {Promise<CurrentKey["id"]|undefined>} A promise that resolves to the key ID if found, otherwise `undefined`.
+ * @return {Promise<string|undefined>} A promise that resolves to the key ID if found, otherwise `undefined`.
  */
-export async function getCurrentKekId(c: Context): Promise<CurrentKey["id"] | undefined> {
+export async function getCurrentKekId(c: Context): Promise<string | undefined> {
 
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
 
-  let currentKeyEntry: [CurrentKey["id"], KeyData] | undefined
+  let currentKeyEntry: [string, KeyData] | undefined
 
   const dateNow = Date.now()
 
@@ -98,10 +92,10 @@ export async function getCurrentKekId(c: Context): Promise<CurrentKey["id"] | un
  * @async
  * @function getKek
  * @param {Context} c - Hono context.
- * @param {CurrentKey["id"]} keyId - The ID of the encryption key to retrieve.
+ * @param {string} keyId - The ID of the encryption key to retrieve.
  * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
-export async function getKek(c: Context, keyId: CurrentKey["id"]): Promise<CryptoKey | undefined> {
+export async function getKek(c: Context, keyId: string): Promise<CryptoKey | undefined> {
 
   const keyData = keyStorage.get(keyId)
 
@@ -131,7 +125,7 @@ export async function getKek(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
  * @param {string} id - ID of the key, store it too.
  * @return {Promise<boolean>} A boolean indicating whether the operation was successful.
  */
-export async function storeKek(c: Context, key: CryptoKey, id: CurrentKey["id"]): Promise<boolean> {
+export async function storeKek(c: Context, key: CryptoKey, id: string): Promise<boolean> {
 
   const rotate = Date.now() + ROTATE_TIME
   
