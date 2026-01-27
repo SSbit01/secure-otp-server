@@ -66,7 +66,9 @@ export async function getDek(c, kekId, wrappedDekString) {
  */
 export async function rotateKek(c, kekId) {
 
-  if (kekId === await getCurrentKekId(c)) {
+  const currentKekId = await getCurrentKekId(c)
+
+  if (!currentKekId || kekId === currentKekId) {
     console.warn("A KEK rotation has been triggered.")
     deleteOtpCookie(c)
     await storeKek(c, await createKek(), createRandomIdString(KEK_ID_BYTES))
