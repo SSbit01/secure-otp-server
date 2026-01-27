@@ -4,7 +4,6 @@ import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
 import { createRandomIdString } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, unwrapKey } from "@/lib/crypto/symmetric/kek"
-import { deleteOtpCookie } from "@/lib/otp/cookie"
 import { regexBase64Url } from "@/lib/regex"
 
 
