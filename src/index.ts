@@ -17,7 +17,7 @@ import sendOtp from "@/custom/send"
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { createRandomIdString } from "@/lib/crypto/id"
-import { encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
+import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 
 import {
@@ -70,7 +70,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   let kekId = otpData.substring(0, KEK_ID_LENGTH)
 
-  const dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH))
+  let dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH))
 
   if (!dek) {
     return await generateOtpTokenCreationResponse(c, credential)
@@ -149,7 +149,15 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   if (currentKekId === kekId) {
     envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    let kek = currentKekId && await getKek(c, currentKekId)
+    /**
+     * @type {(CryptoKey|undefined)}
+     */
+    let kek
+    if (currentKekId) {
+      [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)])
+    } else {
+      dek = await createDek()
+    }
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId
@@ -236,7 +244,15 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
   if (currentKekId === data.kekId) {
     envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    let kek = currentKekId && await getKek(c, currentKekId)
+    /**
+     * @type {(CryptoKey|undefined)}
+     */
+    let kek
+    if (currentKekId) {
+      [data.dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)])
+    } else {
+      data.dek = await createDek()
+    }
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       data.kekId = currentKekId
@@ -338,7 +354,15 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   if (currentKekId === data.kekId) {
     envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    let kek = currentKekId && await getKek(c, currentKekId)
+    /**
+     * @type {(CryptoKey|undefined)}
+     */
+    let kek
+    if (currentKekId) {
+      [data.dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)])
+    } else {
+      data.dek = await createDek()
+    }
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       data.kekId = currentKekId
