@@ -12,19 +12,14 @@
  */
 
 import { OTP_MAX_AGE_MS } from "@/lib/computed"
+import { createRandomIdString } from "@/lib/crypto/id"
 
 import type { Context } from "hono"
 
 
-interface IdData {
-  id: string
-  /**
-   * Expiration time in milliseconds since epoch.
-   */
-  expires: number
-}
+const ID_BYTES = 18
 
-const idStorage: Array<number | undefined> = []
+const idStorage: Map<string, number> = new Map()
 
 
 /**
@@ -35,44 +30,26 @@ const idStorage: Array<number | undefined> = []
  * @async
  * @function createEncryptedOtpTokenListId
  * @param {Context} c - Hono context.
- * @return {Promise<IdData>} The new ID and the expiration date.
+ * @return {Promise<[string, number]>} The new ID and the expiration date.
  */
-export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData> {
+export async function createEncryptedOtpTokenListId(c: Context): Promise<[string, number]> {
 
   // Manually clean up expired IDs, as this implementation cannot automatically delete them.
-  
-  let newId
-  let lastValidId = -1
 
   const dateNow = Date.now()
 
-  for (let i = 0; i < idStorage.length; i++) {
-    const currentExpires = idStorage[i]
-    if (currentExpires) {
-      if (currentExpires > dateNow) {
-        lastValidId = i
-      } else if (newId === undefined) {
-        newId = i
-      } else {
-        delete idStorage[i]
-      }
-    } else {
-      newId ??= i
+  for (const [id, expires] of idStorage) {
+    if (expires <= dateNow) {
+      idStorage.delete(id)
     }
   }
 
-  idStorage.length = lastValidId + 1
-
-  newId ??= idStorage.length
-
+  const newId = createRandomIdString(ID_BYTES)
   const expires = dateNow + OTP_MAX_AGE_MS
 
-  idStorage[newId] = expires
+  idStorage.set(newId, expires)
 
-  return {
-    id: newId.toString(),
-    expires
-  }
+  return [newId, expires]
 
 }
 
@@ -89,37 +66,24 @@ export async function createEncryptedOtpTokenListId(c: Context): Promise<IdData>
  */
 export async function deleteOtpTokenId(c: Context, id: string, expires?: number): Promise<boolean> {
 
-  let lastValidId = -1
-
-  const dateNow = Date.now()
-
-  for (let i = 0; i < idStorage.length; i++) {
-    const currentExpires = idStorage[i]
-    if (currentExpires) {
-      if (currentExpires > dateNow) {
-        lastValidId = i
-      } else {
-        delete idStorage[i]
-      }
-    }
+  if (!expires) {
+    return idStorage.delete(id)
   }
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  if (expires && idStorage[id] !== expires) {
-    idStorage.length = lastValidId + 1
+  const storedExpires = idStorage.get(id)
+
+  if (!storedExpires) {
     return false
   }
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  if (id == lastValidId) {
-    idStorage.length = lastValidId
-  } else {
-    // @ts-ignore: JavaScript allows number string indexes in arrays.
-    delete idStorage[id]
-    idStorage.length = lastValidId + 1
+  if (storedExpires !== expires) {
+    if (storedExpires <= Date.now()) {
+      idStorage.delete(id)
+    }
+    return false
   }
 
-  return true
+  return idStorage.delete(id)
 
 }
 
@@ -136,43 +100,27 @@ export async function deleteOtpTokenId(c: Context, id: string, expires?: number)
  */
 export async function replaceOtpTokenId(c: Context, oldId: string, expires: number): Promise<string | undefined> {
   
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  if (idStorage[oldId] !== expires) {
+  if (idStorage.get(oldId) !== expires) {
     return
   }
 
-  let newId
-  let lastValidId = oldId
+  // Manually clean up expired IDs, as this implementation cannot automatically delete them.
 
   const dateNow = Date.now()
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  for (let i = oldId + 1; i < idStorage.length; i++) {
-    // @ts-ignore: JavaScript allows number string indexes in arrays.
-    const expires = idStorage[i]
-    if (expires) {
-      if (expires > dateNow) {
-        lastValidId = i
-      } else if (newId === undefined) {
-        newId = i
-      } else {
-        // @ts-ignore: JavaScript allows number string indexes in arrays.
-        delete idStorage[i]
-      }
-    } else {
-      newId ??= i
+  for (const [id, expires] of idStorage) {
+    if (expires <= dateNow) {
+      idStorage.delete(id)
     }
   }
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  idStorage.length = lastValidId + 1
+  idStorage.delete(oldId)
 
-  newId ??= idStorage.length
+  const newId = createRandomIdString(ID_BYTES)
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  idStorage[newId] = expires
+  idStorage.set(newId, expires)
 
-  return newId.toString()
+  return newId
 
 }
 
@@ -189,15 +137,13 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
  */
 export async function updateOtpTokenExpires(c: Context, id: string, oldExpires: number): Promise<number> {
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  if (idStorage[id] !== oldExpires) {
+  if (idStorage.get(id) !== oldExpires) {
     return 0
   }
 
   const newExpires = Date.now() + OTP_MAX_AGE_MS
 
-  // @ts-ignore: JavaScript allows number string indexes in arrays.
-  idStorage[id] = newExpires
+  idStorage.set(id, newExpires)
 
   return newExpires
 

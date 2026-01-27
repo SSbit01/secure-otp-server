@@ -28,7 +28,9 @@ interface CurrentKey {
 type KeyData = [expires: number, rotate: number, key: CryptoKey]
 
 
-const ROTATE_TIME = 7776000000  // 90 days in miliseconds.
+const ROTATE_TIME = process.env.NODE_ENV === "test"
+  ? 5
+  : 7776000000  // 90 days in miliseconds.
 
 const keyStorage = new Map<CurrentKey["id"], KeyData>()
 ///
@@ -40,14 +42,14 @@ const keyStorage = new Map<CurrentKey["id"], KeyData>()
  * @async
  * @function deleteKek
  * @param {Context} c - Hono context.
- * @param {CurrentKey["id"]} kekId - The ID of the KEK to delete.
- * @return {Promise<boolean>} A promise that resolves to `true` if the KEK was deleted, otherwise `false`.
+ * @param {CurrentKey["id"]} id - The ID of the KEK to delete.
  */
-export async function deleteKek(c: Context, kekId: CurrentKey["id"]): Promise<boolean> {
+export async function deleteKek(c: Context, id: CurrentKey["id"]) {
 
-  console.warn("DELETING KEK: " + kekId)
-  return keyStorage.delete(kekId)
+  console.warn("DELETING KEK: " + id)
 
+  keyStorage.delete(id)
+  
 }
 
 
@@ -76,7 +78,12 @@ export async function getCurrentKekId(c: Context): Promise<CurrentKey["id"] | un
     }
   }
 
-  if (!currentKeyEntry || currentKeyEntry[1][1] <= dateNow) {
+
+  if (
+    !currentKeyEntry ||
+    // Checking rotation date.
+    currentKeyEntry[1][1] <= dateNow
+  ) {
     return
   }
 
@@ -126,20 +133,9 @@ export async function getKek(c: Context, keyId: CurrentKey["id"]): Promise<Crypt
  */
 export async function storeKek(c: Context, key: CryptoKey, id: CurrentKey["id"]): Promise<boolean> {
 
-  // Manually clean up expired keys, as this implementation cannot automatically delete them.
+  const rotate = Date.now() + ROTATE_TIME
   
-  const dateNow = Date.now()
-
-  for (const [keyId, [expires]] of keyStorage) {
-    if (expires <= dateNow) {
-      keyStorage.delete(keyId)
-    }
-  }
-
-  const rotate = dateNow + ROTATE_TIME
-  const data: KeyData = [rotate + OTP_MAX_AGE_MS, rotate, key]
-
-  keyStorage.set(id, data)
+  keyStorage.set(id, [rotate + OTP_MAX_AGE_MS, rotate, key])
 
   return true
 

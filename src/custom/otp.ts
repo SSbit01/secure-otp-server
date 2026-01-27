@@ -1,5 +1,10 @@
 import process from "node:process"
 
+/**
+ * Whether the environment is a test environment.
+ * 
+ * - You can omit using different values for tests, but some tests might not run or fail.
+ */
 const isTest = process.env.NODE_ENV === "test"
 
 

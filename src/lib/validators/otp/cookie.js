@@ -78,7 +78,7 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
   }
 
   /**
-   * It should be verified after checking all OTP tokens.
+   * It should be verified after checking if all OTP tokens are valid.
    */
   if (dateNow >= currentOtpToken[EXPIRES]) {
     return c.json(ERR_OTP_EXPIRED, 400)

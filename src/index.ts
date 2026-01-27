@@ -285,6 +285,9 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     delete data.currentOtpToken[RESEND_BLOCK]
   } else {
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS
+    /**
+     * Only set resend block if the OTP token will expire in more than 4 seconds.
+     */
     if ((data.currentOtpToken[EXPIRES] - resendBlock) > 4000) {
       data.currentOtpToken[RESEND_BLOCK] = resendBlock
     }
