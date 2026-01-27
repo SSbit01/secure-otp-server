@@ -146,27 +146,22 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
   const currentKekId = await getCurrentKekId(c)
 
-  if (currentKekId) {
-    if (currentKekId === kekId) {
-      envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
-    } else {
-      let kek = await getKek(c, currentKekId)
-      if (kek) {
-        kekId = currentKekId
-      } else {
-        kekId = createRandomIdString(KEK_ID_BYTES)
-        kek = await createKek()
-        await storeKek(c, kek, kekId)
-      }
-      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
-    }
+  if (currentKekId === kekId) {
+    envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    kekId = createRandomIdString(KEK_ID_BYTES)
-    const kek = await createKek()
-    envelope = (
-      kekId +
-      new Uint8Array((await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
-    )
+    let kek = currentKekId && await getKek(c, currentKekId)
+    if (kek) {
+      // @ts-expect-error: `currentKekId` must be defined if KEK exists.
+      kekId = currentKekId
+      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
+    } else {
+      kekId = createRandomIdString(KEK_ID_BYTES)
+      kek = await createKek()
+      envelope = (
+        kekId +
+        new Uint8Array((await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+      )
+    }
   }
 
   /**
@@ -238,28 +233,22 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
 
   const currentKekId = await getCurrentKekId(c)
 
-  if (currentKekId) {
-    if (currentKekId === data.kekId) {
-      envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
-    } else {
-      let kek = await getKek(c, currentKekId)
-      if (kek) {
-        data.kekId = currentKekId
-      } else {
-        data.kekId = createRandomIdString(KEK_ID_BYTES)
-        kek = await createKek()
-        await storeKek(c, kek, data.kekId)
-      }
-      envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
-    }
+  if (currentKekId === data.kekId) {
+    envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    data.kekId = createRandomIdString(KEK_ID_BYTES)
-    const kek = await createKek()
-    await storeKek(c, kek, data.kekId)
-    envelope = (
-      data.kekId +
-      new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
-    )
+    let kek = currentKekId && await getKek(c, currentKekId)
+    if (kek) {
+      // @ts-expect-error: `currentKekId` must be defined if KEK exists.
+      data.kekId = currentKekId
+      envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+    } else {
+      data.kekId = createRandomIdString(KEK_ID_BYTES)
+      kek = await createKek()
+      envelope = (
+        data.kekId +
+        new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+      )
+    }
   }
 
   data.currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, data.id, data.expires)
@@ -346,27 +335,22 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
 
   const currentKekId = await getCurrentKekId(c)
 
-  if (currentKekId) {
-    if (currentKekId === data.kekId) {
-      envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
-    } else {
-      let kek = await getKek(c, currentKekId)
-      if (kek) {
-        data.kekId = currentKekId
-      } else {
-        data.kekId = createRandomIdString(KEK_ID_BYTES)
-        kek = await createKek()
-        await storeKek(c, kek, data.kekId)
-      }
-      envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
-    }
+  if (currentKekId === data.kekId) {
+    envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    data.kekId = createRandomIdString(KEK_ID_BYTES)
-    const kek = await createKek()
-    envelope = (
-      data.kekId +
-      new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
-    )
+    let kek = currentKekId && await getKek(c, currentKekId)
+    if (kek) {
+      // @ts-expect-error: `currentKekId` must be defined if KEK exists.
+      data.kekId = currentKekId
+      envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
+    } else {
+      data.kekId = createRandomIdString(KEK_ID_BYTES)
+      kek = await createKek()
+      envelope = (
+        data.kekId +
+        new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+      )
+    }
   }
 
   const newId = await replaceOtpTokenId(c, data.id, data.expires)
