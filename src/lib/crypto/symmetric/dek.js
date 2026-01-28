@@ -51,7 +51,7 @@ export async function createDek() {
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
- * - The operation failed (e.g., AES-GCM plaintext longer than 2^39−256 bytes).
+ * - The operation failed (e.g. AES-GCM plaintext longer than 2^39−256 bytes).
  */
 export async function encryptTextSymmetrically(
   key,

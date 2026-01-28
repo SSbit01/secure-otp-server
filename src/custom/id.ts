@@ -6,7 +6,7 @@
  * 
  * - It is the cheapest and easiest implementation and works fine if the server is always on.
  * - This implementation does not persist IDs, so all IDs will be lost when the server restarts.
- * - In-memory implementations do not work well in distributed systems (e.g., multiple server instances behind a load balancer).
+ * - In-memory implementations do not work well in distributed systems (e.g. multiple server instances behind a load balancer).
  * - In-memory implementations do not work well in serverless environments, because they are constantly closing and opening.
  * - Redis, DynamoDB or similar are the best alternatives.
  */

@@ -19,7 +19,7 @@ Designed for microservices, high security environments, and both traditional or 
 - **Passwordless Authentication**: Use OTPs as the primary login method, eliminating the need for passwords.
 - **Credential Verification**: Verify ownership of an email address or phone number during registration or profile updates.
 - **Multi-Factor Authentication (MFA)**: Add an extra layer of security to traditional login flows.
-- **Secure Actions**: Protect sensitive operations (e.g., password resets, high-value transactions) with a temporary verification code.
+- **Secure Actions**: Protect sensitive operations (e.g. password resets, high-value transactions...) with a temporary verification code.
 
 ## Features
 
@@ -34,7 +34,7 @@ in addition to being quantum-resistant.
 
 ### Customizable
 
-Easily adapt logic for OTP generation, credential validation, and OTP delivery (e.g. email, SMS).
+Easily adapt logic for OTP generation, credential validation, and OTP delivery (e.g. email, SMS...).
 
 ### State Aware
 
@@ -77,7 +77,7 @@ This server uses a hybrid design that provides even more security than a statefu
 Since the server only stores random IDs, it cannot know which credentials are currently being verified,
 providing enhanced privacy and security without the overhead of a traditional storage system.
 
-1. When an OTP is created, its metadata (e.g. credential, expiry, attempts) is compressed and appended to an encrypted list of tokens
+1. When an OTP is created, its metadata (credential, expiry, attempts...) is compressed and appended to an encrypted list of tokens
 (one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK).
 The encrypted list is sent to the client in a secure, `HttpOnly` cookie.
 2. A random ID linked to the list is generated and stored on the server.
@@ -163,7 +163,7 @@ Key logic is separated into the following modules:
 - [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays,
 and the `OTP_MAX_CREDENTIALS` cap that governs multi-credential sessions.
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
-- [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email service).
+- [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email or SMS service).
 - [`src/custom/id.ts`](/src/custom/id.ts): Storage for OTP token list IDs (defaults to in-memory).
 - [`src/custom/kms.ts`](/src/custom/kms.ts): Storage for encryption key encryptions keys (KEKs; defaults to in-memory).
 - [`src/custom/final.ts`](/src/custom/final.ts): Action to perform after successful OTP verification.

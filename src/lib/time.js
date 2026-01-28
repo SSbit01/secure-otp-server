@@ -10,7 +10,7 @@
  * 
  * @function getReducedTimePrecision
  * @param {number} [time] - The time value in milliseconds to reduce precision for. Defaults to the current time.
- * @param {NumberFunction} [roundFunction] - The rounding function to use (e.g., Math.trunc, Math.ceil, Math.round). Defaults to Math.trunc.
+ * @param {NumberFunction} [roundFunction] - The rounding function to use (e.g. `Math.trunc`, `Math.ceil`, `Math.round`). Defaults to `Math.trunc`.
  * @param {number} [precision]
  * @returns {number} - The time value with reduced precision.
  */
