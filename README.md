@@ -2,8 +2,9 @@
 
 ![Logo](/logo.png "Secure OTP Server")
 
-A template server for generating, encrypting, and verifying One-Time Passwords (OTP) sent via direct message delivery (e.g. email, SMS).
-Designed for microservices, modern authentication flows, and serverless environments.
+A template server for generating, encrypting, and verifying **One-Time Passwords** (OTP).
+Perfect for **passwordless authentication systems**, **credential verification** (email, phone number, etc.), and modern **MFA flows**.
+Designed for microservices, high security environments, and both traditional or serverless deployments.
 
 > [!CAUTION]
 >
@@ -12,6 +13,13 @@ Designed for microservices, modern authentication flows, and serverless environm
 > It is recommended to configure these externally via a reverse proxy.
 >
 > If you discover a vulnerability, please read the [Security Policy](./SECURITY.md).
+
+## Use Cases
+
+- **Passwordless Authentication**: Use OTPs as the primary login method, eliminating the need for passwords.
+- **Credential Verification**: Verify ownership of an email address or phone number during registration or profile updates.
+- **Multi-Factor Authentication (MFA)**: Add an extra layer of security to traditional login flows.
+- **Secure Actions**: Protect sensitive operations (e.g., password resets, high-value transactions) with a temporary verification code.
 
 ## Features
 
@@ -28,21 +36,29 @@ in addition to being quantum-resistant.
 
 Easily adapt logic for OTP generation, credential validation, and OTP delivery (e.g. email, SMS).
 
-### State-Aware
+### State Aware
 
-Prevents replay attacks by using single-use verification keys, while remaining lightweight.
+Prevents replay attacks by using single use verification keys, while remaining lightweight.
 
 ### Multi-Credential Sessions
 
 Store several OTP tokens per session, each bound to a different credential.
 Users can move between credentials without restarting the flow,
-and the session-encrypted cookie enforces a strict cap so tokens stay lightweight.
+and the session encrypted cookie enforces a strict cap so tokens stay lightweight.
 
 ### High Performance
 
 Built with [Hono](https://hono.dev/) for fast and efficient routing.
 
-### Web Standards-Based
+### Deployment Flexibility
+
+Supports both traditional server environments (using the included [Dockerfile](/Dockerfile) that leverages [Bun](https://bun.com/))
+and serverless platforms.
+
+It works out of the box with a built-in in-memory storage, and can be easily configured to use external stores
+(needed for distributed or serverless setups). See [Customization](#customization).
+
+### Web Standards Based
 
 Runs on modern JavaScript runtimes ([Deno](https://deno.com/), [Bun](https://bun.com/),
 [Cloudflare Workers](https://workers.cloudflare.com/)...).
@@ -54,8 +70,6 @@ adapter and configure it in [`src/index.ts`](/src/index.ts).
 
 For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or
 [AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
-
-It also includes a Dockerfile that leverages [Bun](https://bun.com/) for easy and fast deployment.
 
 ## Architecture
 
@@ -179,7 +193,7 @@ Server error responses follow this structure:
 ```
 
 - `error`: A string representing the error code. You can find all error codes in [`src/lib/error/names.js`](/src/lib/error/names.js).
-- `message`: A human-readable description of the error. Static error messages can be changed in
+- `message`: A human readable description of the error. Static error messages can be changed in
 [`src/lib/error/static.js`](src/lib/error/static.js).
 
 ## Testing
