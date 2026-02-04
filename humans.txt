@@ -1,0 +1,6 @@
+Secure OTP Server was originally created by Stefan Samson <ss42701@outlook.com> (https://ssbit01.github.io/)
+and released under the MIT license.
+
+He hopes you find it useful :)
+
+Repository: <https://github.com/SSbit01/secure-otp-server>

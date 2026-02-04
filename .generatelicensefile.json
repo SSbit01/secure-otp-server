@@ -7,5 +7,5 @@
   "no-spinner": false,
   "omitVersions": false,
   "version": false,
-  "append": ["./HEADER", "./LICENSE"]
+  "append": ["./humans.txt", "./LICENSE"]
 }
