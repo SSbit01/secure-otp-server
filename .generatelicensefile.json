@@ -1,0 +1,11 @@
+{
+  "inputs": ["./package.json"],
+  "output": "./dist/LICENSES.txt",
+  "overwrite": true,
+  "eol": "lf",
+  "ci": true,
+  "no-spinner": false,
+  "omitVersions": false,
+  "version": false,
+  "append": ["./HEADER", "./LICENSE"]
+}

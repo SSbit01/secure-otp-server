@@ -1,6 +1,6 @@
 {
   "name": "secure-otp-server",
-  "version": "4.0.3",
+  "version": "4.1.0",
   "description": "A template server for generating, encrypting, and verifying One-Time Passwords (OTP). Designed for microservices, modern authentication flows, and serverless environments.",
   "author": "Stefan Samson <ss42701@outlook.com> (https://ssbit01.github.io/)",
   "license": "MIT",
@@ -19,22 +19,25 @@
   "scripts": {
     "bun:dev": "bun run --hot ./src/index.ts",
     "bun:test": "bun test --bail",
-    "bun:build": "bun build ./src/index.ts --production --bytecode --target bun --outdir ./dist",
+    "bun:build": "concurrently 'generate-license-file' 'bun build ./src/index.ts --production --bytecode --target bun --outdir ./dist'",
     "bun:start": "bun run ./dist/index.js",
     "deno:dev": "deno serve --sloppy-imports --watch ./src/index.ts",
-    "deno:build": "deno bundle --minify ./src/index.ts --outdir ./dist",
+    "deno:build": "concurrently 'generate-license-file' 'deno bundle --minify ./src/index.ts --outdir ./dist'",
     "deno:start": "deno serve -A ./dist/index.js",
     "deno:lint": "deno lint",
     "deno:format": "deno fmt",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy --minify",
-    "cf:typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf:typegen": "wrangler types --env-interface CloudflareBindings",
+    "license": "generate-license-file"
   },
   "dependencies": {
     "hono": "^4.11.7"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.6",
-    "wrangler": "^4.60.0"
+    "@types/bun": "^1.3.8",
+    "concurrently": "^9.2.1",
+    "generate-license-file": "^4.1.1",
+    "wrangler": "^4.62.0"
   }
 }
