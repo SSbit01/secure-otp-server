@@ -331,9 +331,9 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
   }
 
   if (data.currentOtpToken[OTP] === c.req.valid("form")) {
-    const deletionSuccess = await deleteOtpTokenId(c, data.id, data.expires)
+    const otpTokenIdDeletion = await deleteOtpTokenId(c, data.id, data.expires)
     deleteOtpCookie(c)
-    return deletionSuccess
+    return otpTokenIdDeletion
       ? await finalAction(c, data.currentOtpToken[CREDENTIAL])
       : c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
