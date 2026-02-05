@@ -26,7 +26,7 @@ Designed for microservices, high security environments, and both traditional or 
 ### Secure by Design
 
 Generates cryptographically secure OTPs and encrypts session data using envelope encryption with
-[AES-KW](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/wrapKey#aes-kw) (KEK)
+[AES-256-KW](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/wrapKey#AES-256-KW) (KEK)
 and [AES-256-GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode) (DEK),
 which is extremely fast on modern CPUs because they have dedicated hardware acceleration
 ([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set)),
@@ -78,7 +78,7 @@ Since the server only stores random IDs, it cannot know which credentials are cu
 providing enhanced privacy and security without the overhead of a traditional storage system.
 
 1. When an OTP is created, its metadata (credential, expiry, attempts...) is compressed and appended to an encrypted list of tokens
-(one entry per credential) using envelope encryption with AES-KW (KEK) and AES-256-GCM (DEK).
+(one entry per credential) using envelope encryption with AES-256-KW (KEK) and AES-256-GCM (DEK).
 The encrypted list is sent to the client in a secure, `HttpOnly` cookie.
 2. A random ID linked to the list is generated and stored on the server.
 3. When the client attempts to verify an OTP token, it sends back the encrypted list.
@@ -200,8 +200,13 @@ Server error responses follow this structure:
 
 The test suite is written with Bun's built-in test runner. Use `bun run bun:test` to run the tests.
 
----
+## License
 
 This project is [MIT licensed](/LICENSE).
+
+The default NPM build scripts automatically use the [generate-license-file](https://www.npmjs.com/package/generate-license-file) CLI
+to bundle all dependency licenses with your build, ensuring effortless compliance.
+
+---
 
 Originally created by [SSbit01](https://ssbit01.github.io).
