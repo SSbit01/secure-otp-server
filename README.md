@@ -74,7 +74,7 @@ For additional deployment targets such as [Fastly Compute](https://www.fastly.co
 ## Architecture
 
 This server uses a hybrid design that provides even more security than a stateful design.
-Since the server only stores random IDs, it cannot know which credentials are currently being verified,
+The server only stores random IDs, so it cannot know which credentials are currently being verified,
 providing enhanced privacy and security without the overhead of a traditional storage system.
 
 1. When an OTP is created, its metadata (credential, expiry, attempts...) is compressed and appended to an encrypted list of tokens
