@@ -31,7 +31,6 @@
       "!.turbo/",
       "!.netlify/",
       "!/.wrangler",
-      "!wrangler.toml",
       "!pids",
       "!*.pid",
       "!*.seed",
