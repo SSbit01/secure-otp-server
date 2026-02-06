@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
     "includes": [
       "**",
@@ -52,11 +52,7 @@
       "!yarn-error.log*",
       "!pnpm-debug.log*",
       "!lerna-debug.log*",
-      "!.env",
-      "!.env.*",
-      "!.env*.local",
-      ".env.example",
-      ".env.template",
+      "!.env*",
       "!.dev.vars",
       "!*.tsbuildinfo",
       "!next-env.d.ts",
@@ -91,7 +87,13 @@
       "!*.lock",
       "!*.lockb",
       "!npm-shrinkwrap.json",
-      "!pnpm-lock.yaml"
+      "!pnpm-lock.yaml",
+      "!/LICENSE",
+      "!/LICENSES",
+      "!*LICENSE*",
+      "!*LICENSES*",
+      "!/license",
+      "!/licenses"
     ],
     "ignoreUnknown": true
   },
@@ -103,13 +105,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
-      "correctness": {
-        "noUnusedVariables": "off"
-      },
-      "suspicious": {
-        "noAsyncPromiseExecutor": "off"
-      }
+      "recommended": true
     }
   },
   "assist": {
