@@ -61,6 +61,7 @@ export function createEncodedOtpToken(
  */
 export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): OtpToken | undefined {
 
+  // deno-lint-ignore no-explicit-any
   const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR)
 
   otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES])
@@ -134,6 +135,7 @@ export function decodeOtpTokenList(encodedOtpTokenListString: string): string[] 
  */
 export function encodeOtpToken(otpToken: OtpToken) {
 
+  // deno-lint-ignore no-explicit-any
   const otpTokenCopy: any = otpToken.slice()
 
   otpTokenCopy[CREDENTIAL] = encodeCredential(otpTokenCopy[CREDENTIAL])
