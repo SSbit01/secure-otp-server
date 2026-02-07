@@ -11,21 +11,20 @@ To avoid exposing users to unnecessary risk, **do not open a public GitHub issue
 
 Instead, please contact me directly:
 
-- :email: **Email**: `ss42701@outlook.com`
-- :globe_with_meridians: **Website**: <https://ssbit01.github.io>
+- **Email:** `ss42701@outlook.com`
+- **Website:** <https://ssbit01.github.io>
 
 When reporting, please include:
 
-- A clear description of the vulnerability
-- Potential impact
-- Any suggested fixes or patches
+- A clear description of the vulnerability.
+- Potential impact.
+- Any suggested fixes or patches.
 
 You will receive an acknowledgment as soon as possible, and we will work together to verify and address the issue.
 
 ### Public Disclosure
 
-After the vulnerability has been fixed and users have had reasonable time to update, you may publicly disclose the issue if you wish.
-If you want attribution in release notes or advisories, feel free to request it.
+After the vulnerability has been fixed, you may publicly disclose the issue if you wish.
 
 ### Scope
 
@@ -37,8 +36,8 @@ although private reporting is still encouraged to avoid harming downstream users
 
 Please avoid:
 
-- Running automated scanners that may cause disruption  
-- Exploiting vulnerabilities beyond what is necessary to demonstrate the issue  
+- Running automated scanners that may cause disruption.
+- Exploiting vulnerabilities beyond what is necessary to demonstrate the issue.
 
 ---
 
