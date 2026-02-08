@@ -1,4 +1,5 @@
 import process from "node:process"
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 /**
  * Whether the environment is a test environment.
@@ -47,7 +48,7 @@ export const OTP_INVALID_BLOCK_SECONDS: number = isTest ? 3 : 20
  * - It is recommended to set it between 6 and 10.
  * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
  */
-export const OTP_LENGTH: number = 8
+export const OTP_LENGTH: number = 10
 
 
 /**
@@ -55,7 +56,7 @@ export const OTP_LENGTH: number = 8
  * 
  * - If it is too low, tests may fail.
  */
-export const OTP_MAX_AGE: number = 300  // 5 minutes
+export const OTP_MAX_AGE: number = 180  // 3 minutes
 
 
 /**
@@ -96,6 +97,10 @@ export const OTP_REGEX: RegExp = /[a-z0-9]+/
  * - The OTP length with this implementation can be up to 11 characters.
  */
 export function createOtp() {
-  return Math.random().toString(36).substring(2, END_COMPUTED)
+  return (
+    parseInt(crypto.getRandomValues(new Uint8Array(RANDOM_BYTE_LENGTH)).toHex(), 16)
+      .toString(36)
+      .substring(0, OTP_LENGTH)
+  )
 }
-const END_COMPUTED = OTP_LENGTH + 2
+const RANDOM_BYTE_LENGTH = Math.ceil(Math.log2(36) * OTP_LENGTH / 8)
