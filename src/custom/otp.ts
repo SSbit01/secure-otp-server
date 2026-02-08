@@ -93,8 +93,6 @@ export const OTP_REGEX: RegExp = /[a-z0-9]+/
 
 /**
  * This implenetation creates an OTP with lowercase letters and numbers.
- * 
- * - The OTP length with this implementation can be up to 11 characters.
  */
 export function createOtp() {
   return (
