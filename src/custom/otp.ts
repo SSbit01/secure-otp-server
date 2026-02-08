@@ -1,5 +1,4 @@
 import process from "node:process"
-import { BASE64URL_OPTIONS } from "@/lib/base64"
 
 /**
  * Whether the environment is a test environment.
