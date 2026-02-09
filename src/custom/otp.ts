@@ -95,9 +95,8 @@ export const OTP_REGEX: RegExp = /[a-z0-9]+/
  */
 export function createOtp() {
   return (
-    parseInt(crypto.getRandomValues(new Uint8Array(RANDOM_BYTE_LENGTH)).toHex(), 16)
+    crypto.getRandomValues(new BigUint64Array(1))[0]
       .toString(36)
       .substring(0, OTP_LENGTH)
   )
 }
-const RANDOM_BYTE_LENGTH = Math.ceil(Math.log2(36) * OTP_LENGTH / 8)
