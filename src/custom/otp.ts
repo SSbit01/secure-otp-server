@@ -9,7 +9,8 @@ const isTest = process.env.NODE_ENV === "test"
 
 
 /**
- * By default, only one resending is allowed per session. You can enable unlimited resendings by setting this variable to `false`.
+ * By default, only one resending is allowed per session.
+ * You can enable unlimited resendings by setting this variable to `false`.
  * 
  * - It is recommended to set it to `true`.
  */
@@ -17,7 +18,8 @@ export const OTP_ALLOW_ONLY_ONE_RESENDING: boolean = true
 
 
 /**
- * When the user enters the code incorrectly many times and reaches this number of attempts, a timeout of seconds defined in `OTP_INVALID_BLOCK_SECONDS` can be set.
+ * When the user enters the code incorrectly many times and reaches this number of attempts,
+ * a timeout of seconds defined in `OTP_INVALID_BLOCK_SECONDS` can be set.
  * 
  * - It needs to be lower than `OTP_MAX_ATTEMPTS`.
  * - Disable OTP blocking by setting it to `0`.
@@ -34,7 +36,8 @@ export const OTP_COOKIE_PREFIX: string = "__Host-Http-"
 
 
 /**
- * When the user enters the code incorrectly many times and reaches the number of attempts defined in `OTP_ATTEMPTS_BLOCK`, a timeout of a few seconds can be set.
+ * When the user enters the code incorrectly many times and reaches the number of attempts defined in `OTP_ATTEMPTS_BLOCK`,
+ * a timeout of a few seconds can be set.
  * 
  * - It is recommended to set it to 20 seconds.
  */
