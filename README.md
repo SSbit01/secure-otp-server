@@ -65,11 +65,13 @@ Runs on modern JavaScript runtimes ([Deno](https://deno.com/), [Bun](https://bun
 
 You can run it on [Node.js](https://nodejs.org/) (>=25), though [Deno](https://deno.com/) and especially [Bun](https://bun.com/)
 are more recommended.
-To use [Node.js](https://nodejs.org/), install the [`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage)
+To use [Node.js](https://nodejs.org/), install the
+[`@hono/node-server`](https://github.com/honojs/node-server?tab=readme-ov-file#usage)
 adapter and configure it in [`src/index.ts`](/src/index.ts).
 
 For additional deployment targets such as [Fastly Compute](https://www.fastly.com/products/edge-compute) or
-[AWS Lambda](https://aws.amazon.com/lambda), refer to the [Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
+[AWS Lambda](https://aws.amazon.com/lambda), refer to the
+[Hono documentation](https://hono.dev/docs/getting-started/basic#next-step).
 
 ## Architecture
 
@@ -87,8 +89,9 @@ The server selects the current credential's token, and after each verification a
 multiple credentials without restarting the flow while keeping the session footprint small.
 
 This process ensures that each encrypted token can only be used for verification once, effectively preventing replay attacks.
-By default, the KMS stores key encryption keys (KEKs) in memory, but it can be customized in [`src/custom/kms.ts`](/src/custom/kms.ts)
-to use a persistent store like Redis or KV storage for serverless environments or distributed systems.
+By default, the KMS stores key encryption keys (KEKs) in memory, but it can be customized in
+[`src/custom/kms.ts`](/src/custom/kms.ts) to use a persistent store like Redis or KV storage for serverless environments
+or distributed systems.
 
 ## Getting Started
 
@@ -204,8 +207,8 @@ The test suite is written with Bun's built-in test runner. Use `bun run bun:test
 
 This project is [MIT licensed](/LICENSE).
 
-The default NPM build scripts automatically use the [generate-license-file](https://www.npmjs.com/package/generate-license-file) CLI
-to bundle all dependency licenses with your build, ensuring effortless compliance.
+The default NPM build scripts automatically use the [generate-license-file](https://www.npmjs.com/package/generate-license-file)
+CLI to bundle all dependency licenses with your build, ensuring effortless compliance.
 
 ---
 
