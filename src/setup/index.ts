@@ -68,7 +68,10 @@ app.onError((error, c) => {
     return response
   }
   
-  return c.json(error.message ? { ...ERR_GENERIC, message: error.message } : ERR_GENERIC, error.status || 500)
+  return c.json(
+    error.message ? { ...ERR_GENERIC, message: error.message } : ERR_GENERIC,
+    error.status || 500
+  )
 
 })
 
