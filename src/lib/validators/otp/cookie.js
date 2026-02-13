@@ -3,6 +3,7 @@ import { validator } from "hono/validator"
 import { deleteOtpTokenId } from "@/custom/id"
 import { OTP_MAX_CREDENTIALS } from "@/custom/otp"
 
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
 import { ERR_OTP_EXPIRED, ERR_OTP_INVALID_COOKIE } from "@/lib/error/static"
 import { getDek, rotateKek } from "@/lib/kms"
@@ -30,7 +31,11 @@ const otpCookieValidator = validator("cookie", async (cookies, c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400)
   }
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH))
+  const encodedOtpTokenList = await getOtpTokenList(
+    dek,
+    otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH),
+    Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
+  )
 
   if (!encodedOtpTokenList) {
     deleteOtpCookie(c)

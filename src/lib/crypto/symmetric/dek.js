@@ -48,6 +48,7 @@ export async function createDek() {
  * @function encryptTextSymmetrically
  * @param {CryptoKey} key - Symmetric key generated with `createDek`.
  * @param {string} text - String value to be encrypted.
+ * @param {BufferSource} [additionalData] - Additional data for authentication.
  * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
@@ -55,13 +56,14 @@ export async function createDek() {
  */
 export async function encryptTextSymmetrically(
   key,
-  text
+  text,
+  additionalData
 ) {
 
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
 
   const encryptedText = new Uint8Array(await crypto.subtle.encrypt(
-    { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv },
+    { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv, additionalData },
     key,
     textEncoder.encode(text)
   ))
@@ -79,20 +81,25 @@ export async function encryptTextSymmetrically(
 /**
  * @async
  * @function decryptTextSymmetrically
- * @param {CryptoKey} key 
- * @param {string} ciphertext 
+ * @param {CryptoKey} key
+ * @param {string} ciphertext
+ * @param {BufferSource} [additionalData] - Additional data for authentication.
  * @returns {Promise<string>}
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
  * - The operation failed.
  */
-export async function decryptTextSymmetrically(key, ciphertext) {
+export async function decryptTextSymmetrically(key, ciphertext, additionalData) {
 
   const data = Uint8Array.fromBase64(ciphertext, BASE64URL_OPTIONS)
 
   return textDecoder.decode(
     await crypto.subtle.decrypt(
-      { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv: data.subarray(0, IV_BYTES) },
+      {
+        name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,
+        iv: data.subarray(0, IV_BYTES),
+        additionalData
+      },
       key,
       data.subarray(IV_BYTES)
     )

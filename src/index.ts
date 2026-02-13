@@ -15,7 +15,14 @@ import {
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+
+import {
+  KEK_ID_LENGTH,
+  ENVELOPE_ENCRYPTION_WRAP_LENGTH,
+  OTP_INVALID_BLOCK_MS,
+  OTP_RESEND_BLOCK_MS
+} from "@/lib/computed"
+
 import { createRandomIdString } from "@/lib/crypto/id"
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
@@ -48,6 +55,7 @@ import {
 } from "@/lib/otp/encode/token"
 
 import generateOtpTokenCreationResponse from "./lib/otp/response/create"
+import { textEncoder } from "@/lib/text"
 import { getReducedTimePrecision } from "@/lib/time"
 import otpCookieValidator from "@/lib/validators/otp/cookie"
 import otpValueValidator from "@/lib/validators/otp"
@@ -76,7 +84,11 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     return await generateOtpTokenCreationResponse(c, credential)
   }
 
-  const encodedOtpTokenList = await getOtpTokenList(dek, otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH))
+  const encodedOtpTokenList = await getOtpTokenList(
+    dek,
+    otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH),
+    textEncoder.encode(kekId)
+  )
 
   if (!encodedOtpTokenList) {
     return await generateOtpTokenCreationResponse(c, credential)
@@ -208,7 +220,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       envelope +
       await encryptTextSymmetrically(
         dek,
-        encodeOtpTokenList(newEncodedOtpTokenList)
+        encodeOtpTokenList(newEncodedOtpTokenList),
+        Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
       )
     ),
     new Date(getReducedTimePrecision(expires))
@@ -306,7 +319,8 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
       envelope +
       await encryptTextSymmetrically(
         data.dek,
-        encodeOtpTokenList(data.encodedOtpTokenList)
+        encodeOtpTokenList(data.encodedOtpTokenList),
+        Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
       )
     ),
     currentOtpTokenData.expires
@@ -410,7 +424,8 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       envelope +
       await encryptTextSymmetrically(
         data.dek,
-        encodeOtpTokenList(data.encodedOtpTokenList)
+        encodeOtpTokenList(data.encodedOtpTokenList),
+        Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
       )
     ),
     new Date(getReducedTimePrecision(data.expires))

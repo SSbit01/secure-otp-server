@@ -66,12 +66,15 @@ export function getOtpTokenData(otpToken) {
  * @function getOtpTokenList
  * @param {CryptoKey} key
  * @param {string} ciphertext
+ * @param {BufferSource} additionalData
  * @returns {Promise<string[]|undefined>}
  */
-export async function getOtpTokenList(key, ciphertext) {
+export async function getOtpTokenList(key, ciphertext, additionalData) {
 
   try {
-    return decodeOtpTokenList(await decryptTextSymmetrically(key, ciphertext))
+    return decodeOtpTokenList(
+      await decryptTextSymmetrically(key, ciphertext, additionalData)
+    )
   } catch {
     // It simply returns `undefined`.
   }

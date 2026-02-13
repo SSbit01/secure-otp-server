@@ -46,7 +46,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     kek = await getKek(c, kekId)
   }
 
-  if (!kek) {
+  if (!kek || !kekId) {
     kek = await createKek()
     kekId = createRandomIdString(KEK_ID_BYTES)
     await storeKek(c, kek, kekId)
@@ -66,7 +66,8 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     wrappedDekString +
     await encryptTextSymmetrically(
       dek,
-      encodeOtpTokenList([createEncodedOtpToken(credential, expires, otp, resendBlock), id])
+      encodeOtpTokenList([createEncodedOtpToken(credential, expires, otp, resendBlock), id]),
+      Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
     ),
     lessPreciseExpiresDate
   )
