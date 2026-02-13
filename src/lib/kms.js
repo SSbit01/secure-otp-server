@@ -2,7 +2,7 @@ import { deleteKek, getCurrentKekId, getKek, storeKek } from "@/custom/kms"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { KEK_ID_LENGTH } from "@/lib/computed"
-import { createRandomIdString } from "@/lib/crypto/id"
+import { createRandomId } from "@/lib/crypto/id"
 import { WRAPPED_DEK_BYTES, createKek, unwrapKey } from "@/lib/crypto/symmetric/kek"
 import { regexBase64Url } from "@/lib/regex"
 
@@ -69,7 +69,7 @@ export async function rotateKek(c, kekId) {
 
   if (!currentKekId || kekId === currentKekId) {
     console.warn("A KEK rotation has been triggered.")
-    await storeKek(c, await createKek(), createRandomIdString(KEK_ID_BYTES))
+    await storeKek(c, await createKek(), createRandomId(KEK_ID_BYTES).toBase64(BASE64URL_OPTIONS))
     console.log("KEK rotation completed.")
   }
 

@@ -23,7 +23,7 @@ import {
   OTP_RESEND_BLOCK_MS
 } from "@/lib/computed"
 
-import { createRandomIdString } from "@/lib/crypto/id"
+import { createRandomId } from "@/lib/crypto/id"
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 
@@ -151,6 +151,8 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
    * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
    */
 
+  let additionalData: Uint8Array<ArrayBuffer>
+
   /**
    * Kek ID + Wrapped DEK.
    */
@@ -159,12 +161,10 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
   const currentKekId = await getCurrentKekId(c)
 
   if (currentKekId === kekId) {
+    additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
     envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    /**
-     * @type {(CryptoKey|undefined)}
-     */
-    let kek
+    let kek: CryptoKey | undefined
     if (currentKekId) {
       [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)])
     } else {
@@ -173,13 +173,17 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId
+      additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
       envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS)
     } else {
-      kekId = createRandomIdString(KEK_ID_BYTES)
+      additionalData = createRandomId(KEK_ID_BYTES)
+      kekId = additionalData.toBase64(BASE64URL_OPTIONS)
       kek = await createKek()
       envelope = (
         kekId +
-        new Uint8Array((await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+        new Uint8Array(
+          (await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]
+        ).toBase64(BASE64URL_OPTIONS)
       )
     }
   }
@@ -221,7 +225,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       await encryptTextSymmetrically(
         dek,
         encodeOtpTokenList(newEncodedOtpTokenList),
-        Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
+        additionalData
       )
     ),
     new Date(getReducedTimePrecision(expires))
@@ -245,22 +249,20 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
    * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
    */
 
+  let additionalData: Uint8Array<ArrayBuffer>
+
   /**
    * Kek ID + Wrapped DEK.
-   * 
-   * @type {string}
    */
-  let envelope
+  let envelope: string
 
   const currentKekId = await getCurrentKekId(c)
 
   if (currentKekId === data.kekId) {
+    additionalData = Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
     envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    /**
-     * @type {(CryptoKey|undefined)}
-     */
-    let kek
+    let kek: CryptoKey | undefined
     if (currentKekId) {
       [data.dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)])
     } else {
@@ -269,13 +271,17 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       data.kekId = currentKekId
+      additionalData = Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
       envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
     } else {
-      data.kekId = createRandomIdString(KEK_ID_BYTES)
+      additionalData = createRandomId(KEK_ID_BYTES)
+      data.kekId = additionalData.toBase64(BASE64URL_OPTIONS)
       kek = await createKek()
       envelope = (
         data.kekId +
-        new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+        new Uint8Array(
+          (await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]
+        ).toBase64(BASE64URL_OPTIONS)
       )
     }
   }
@@ -320,7 +326,7 @@ app.post("/api/otp/resend", otpCookieValidator, async (c) => {
       await encryptTextSymmetrically(
         data.dek,
         encodeOtpTokenList(data.encodedOtpTokenList),
-        Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
+        additionalData
       )
     ),
     currentOtpTokenData.expires
@@ -357,22 +363,20 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
    * And `updateOtpTokenExpires` must be executed as far in the end as possible to retrieve the newest `expires` time.
    */
 
+  let additionalData: Uint8Array<ArrayBuffer>
+
   /**
    * Kek ID + Wrapped DEK.
-   * 
-   * @type {string}
    */
-  let envelope
+  let envelope: string
 
   const currentKekId = await getCurrentKekId(c)
 
   if (currentKekId === data.kekId) {
+    additionalData = Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
     envelope = data.otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH)
   } else {
-    /**
-     * @type {(CryptoKey|undefined)}
-     */
-    let kek
+    let kek: CryptoKey | undefined
     if (currentKekId) {
       [data.dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)])
     } else {
@@ -381,13 +385,17 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       data.kekId = currentKekId
+      additionalData = Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
       envelope = data.kekId + new Uint8Array(await wrapKey(data.dek, kek)).toBase64(BASE64URL_OPTIONS)
     } else {
-      data.kekId = createRandomIdString(KEK_ID_BYTES)
+      additionalData = createRandomId(KEK_ID_BYTES)
+      data.kekId = additionalData.toBase64(BASE64URL_OPTIONS)
       kek = await createKek()
       envelope = (
         data.kekId +
-        new Uint8Array((await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]).toBase64(BASE64URL_OPTIONS)
+        new Uint8Array(
+          (await Promise.all([wrapKey(data.dek, kek), storeKek(c, kek, data.kekId)]))[0]
+        ).toBase64(BASE64URL_OPTIONS)
       )
     }
   }
@@ -425,7 +433,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       await encryptTextSymmetrically(
         data.dek,
         encodeOtpTokenList(data.encodedOtpTokenList),
-        Uint8Array.fromBase64(data.kekId, BASE64URL_OPTIONS)
+        additionalData
       )
     ),
     new Date(getReducedTimePrecision(data.expires))

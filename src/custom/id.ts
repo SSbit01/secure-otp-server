@@ -11,8 +11,9 @@
  * - Redis, DynamoDB or similar are the best alternatives.
  */
 
+import { BASE64URL_OPTIONS } from "@/lib/base64"
 import { OTP_MAX_AGE_MS } from "@/lib/computed"
-import { createRandomIdString } from "@/lib/crypto/id"
+import { createRandomId } from "@/lib/crypto/id"
 
 import type { Context } from "hono"
 
@@ -50,7 +51,7 @@ export async function createOtpTokenListId(c: Context): Promise<[string, number]
     }
   }
 
-  const newId = createRandomIdString(ID_BYTES)
+  const newId = createRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS)
 
   /**
    * The cleanup loop might have taken some milliseconds.
@@ -127,7 +128,7 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
 
   idStorage.delete(oldId)
 
-  const newId = createRandomIdString(ID_BYTES)
+  const newId = createRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS)
 
   idStorage.set(newId, expires)
 

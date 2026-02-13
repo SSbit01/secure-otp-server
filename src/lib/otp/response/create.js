@@ -4,7 +4,7 @@ import { createOtp } from "@/custom/otp"
 import sendOtp from "@/custom/send"
 
 import { BASE64URL_OPTIONS } from "@/lib/base64"
-import { createRandomIdString } from "@/lib/crypto/id"
+import { createRandomId } from "@/lib/crypto/id"
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek"
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static"
@@ -46,9 +46,18 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     kek = await getKek(c, kekId)
   }
 
-  if (!kek || !kekId) {
+  /**
+   * @type {Uint8Array<ArrayBuffer>}
+   */
+  let additionalData
+
+  if (kek) {
+    // @ts-expect-error: kekId is not undefined.
+    additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
+  } else {
     kek = await createKek()
-    kekId = createRandomIdString(KEK_ID_BYTES)
+    additionalData = createRandomId(KEK_ID_BYTES)
+    kekId = additionalData.toBase64(BASE64URL_OPTIONS)
     await storeKek(c, kek, kekId)
   }
 
@@ -67,7 +76,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     await encryptTextSymmetrically(
       dek,
       encodeOtpTokenList([createEncodedOtpToken(credential, expires, otp, resendBlock), id]),
-      Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS)
+      additionalData
     ),
     lessPreciseExpiresDate
   )
