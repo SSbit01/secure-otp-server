@@ -39,7 +39,14 @@ import {
 } from "@/lib/error/static"
 
 import { KEK_ID_BYTES, getDek, rotateKek } from "@/lib/kms"
-import { blockOtpToken, getOtpTokenList, getOtpTokenData } from "@/lib/otp"
+
+import {
+  OTP_TOKEN_SEPARATOR,
+  blockOtpToken,
+  getOtpTokenList,
+  getOtpTokenData
+} from "@/lib/otp"
+
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie"
 
 import {
@@ -49,7 +56,6 @@ import {
   ATTEMPTS,
   RESEND_BLOCK,
   OTP_BLOCK,
-  OTP_TOKEN_SEPARATOR,
   createEncodedOtpToken,
   decodeOtpToken,
   encodeOtpToken,

@@ -10,8 +10,9 @@ import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek"
 import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static"
 import { KEK_ID_BYTES } from "@/lib/kms"
 import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
+import { OTP_TOKEN_SEPARATOR } from "@/lib/otp"
 import { setOtpCookie } from "@/lib/otp/cookie"
-import { OTP_TOKEN_SEPARATOR, createEncodedOtpToken } from "@/lib/otp/encode/token"
+import { createEncodedOtpToken } from "@/lib/otp/encode/token"
 import { getReducedTimePrecision } from "@/lib/time"
 
 

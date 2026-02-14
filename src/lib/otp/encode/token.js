@@ -1,3 +1,10 @@
+/**
+ * IMPORTANT!
+ * 
+ * ORDER IS SET MANUALLY IN `createEncodedOtpToken` AND `decodeOtpToken` FOR BETTER PERFORMANCE
+ * (no need to create additional objects and arrays).
+ */
+
 import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/custom/otp"
 
 import { compressNumber, decompressNumber } from "@/lib/compression/number"
@@ -23,8 +30,6 @@ export const OTP = 2
 export const ATTEMPTS = 3
 export const RESEND_BLOCK = 4
 export const OTP_BLOCK = 5
-
-export const OTP_TOKEN_SEPARATOR = ","
 
 const OTP_SEPARATOR = "|"
 
@@ -120,51 +125,39 @@ export function decodeOtpToken(encodedOtpToken, dateNow = Date.now()) {
 
 
 /**
- * @async
- * @function decodeOtpTokenList
- * @param {string} encodedOtpTokenListString
- * @returns {string[]}
- */
-export function decodeOtpTokenList(encodedOtpTokenListString) {
-  return encodedOtpTokenListString.split(OTP_TOKEN_SEPARATOR)
-}
-
-
-/**
  * @function encodeOtpToken
  * @param {OtpToken} otpToken
  * @returns {string}
  */
 export function encodeOtpToken(otpToken) {
 
-  /**
-   * @type {any}
-   */
-  const otpTokenCopy = otpToken.slice()
+  let result = (
+    encodeCredential(otpToken[CREDENTIAL]) + OTP_SEPARATOR +
+    compressNumber(otpToken[EXPIRES])
+  )
 
-  otpTokenCopy[CREDENTIAL] = encodeCredential(otpTokenCopy[CREDENTIAL])
-
-  otpTokenCopy[EXPIRES] = compressNumber(otpTokenCopy[EXPIRES])
-
-  if (otpTokenCopy[OTP]) {
-    otpTokenCopy[RESEND_BLOCK] &&= compressNumber(otpTokenCopy[RESEND_BLOCK])
-    otpTokenCopy[OTP_BLOCK] &&= compressNumber(otpTokenCopy[OTP_BLOCK])
-  } else {
-    otpTokenCopy.length = OTP
+  if (otpToken[OTP]) {
+    result += (
+      OTP_SEPARATOR +
+      otpToken[OTP] + OTP_SEPARATOR +
+      otpToken[ATTEMPTS]
+    )
   }
 
-  /**
-   * Remove empty elements from the end of the array.
-   */
-
-  let i = otpTokenCopy.length - 1
-
-  while (!otpTokenCopy[i]) {
-    i--
+  if (otpToken[RESEND_BLOCK]) {
+    result += (
+      OTP_SEPARATOR +
+      compressNumber(otpToken[RESEND_BLOCK])
+    )
   }
 
-  otpTokenCopy.length = i + 1
+  if (otpToken[OTP_BLOCK]) {
+    result += (
+      OTP_SEPARATOR +
+      compressNumber(otpToken[OTP_BLOCK])
+    )
+  }
 
-  return otpTokenCopy.join(OTP_SEPARATOR)
+  return result
 
 }
