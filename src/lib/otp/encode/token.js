@@ -32,6 +32,7 @@ export const RESEND_BLOCK = 4
 export const OTP_BLOCK = 5
 
 const OTP_SEPARATOR = "|"
+const OTP_DOUBLE_SEPARATOR = OTP_SEPARATOR + OTP_SEPARATOR
 
 
 /**
@@ -142,20 +143,23 @@ export function encodeOtpToken(otpToken) {
       otpToken[OTP] + OTP_SEPARATOR +
       otpToken[ATTEMPTS]
     )
-  }
-
-  if (otpToken[RESEND_BLOCK]) {
-    result += (
-      OTP_SEPARATOR +
-      compressNumber(otpToken[RESEND_BLOCK])
-    )
-  }
-
-  if (otpToken[OTP_BLOCK]) {
-    result += (
-      OTP_SEPARATOR +
-      compressNumber(otpToken[OTP_BLOCK])
-    )
+    if (otpToken[RESEND_BLOCK]) {
+      result += (
+        OTP_SEPARATOR +
+        compressNumber(otpToken[RESEND_BLOCK])
+      )
+      if (otpToken[OTP_BLOCK]) {
+        result += (
+          OTP_SEPARATOR +
+          compressNumber(otpToken[OTP_BLOCK])
+        )
+      }
+    } else if (otpToken[OTP_BLOCK]) {
+      result += (
+        OTP_DOUBLE_SEPARATOR +
+        compressNumber(otpToken[OTP_BLOCK])
+      )
+    }
   }
 
   return result
