@@ -11,7 +11,7 @@ import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static"
 import { KEK_ID_BYTES } from "@/lib/kms"
 import { OTP_RESEND_BLOCK_MS } from "@/lib/computed"
 import { setOtpCookie } from "@/lib/otp/cookie"
-import { createEncodedOtpToken, encodeOtpTokenList } from "@/lib/otp/encode/token"
+import { OTP_TOKEN_SEPARATOR, createEncodedOtpToken } from "@/lib/otp/encode/token"
 import { getReducedTimePrecision } from "@/lib/time"
 
 
@@ -75,7 +75,7 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
     wrappedDekString +
     await encryptTextSymmetrically(
       dek,
-      encodeOtpTokenList([createEncodedOtpToken(credential, expires, otp, resendBlock), id]),
+      createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
       additionalData
     ),
     lessPreciseExpiresDate
