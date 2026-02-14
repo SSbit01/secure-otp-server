@@ -22,7 +22,6 @@ import { getReducedTimePrecision } from "@/lib/time"
 export const OTP_TOKEN_SEPARATOR = ","
 
 
-
 /**
  * @function blockOtpToken
  * @param {OtpToken} otpToken
@@ -78,7 +77,7 @@ export async function getOtpTokenList(key, ciphertext, additionalData) {
   try {
     return (
       await decryptTextSymmetrically(key, ciphertext, additionalData)
-    )?.split(OTP_TOKEN_SEPARATOR)
+    ).split(OTP_TOKEN_SEPARATOR)
   } catch {
     // It simply returns `undefined`.
   }
