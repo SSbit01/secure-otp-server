@@ -71,12 +71,14 @@ export default async function generateOtpTokenCreationResponse(c, credential) {
 
   setOtpCookie(
     c,
-    kekId +
-    wrappedDekString +
-    await encryptTextSymmetrically(
-      dek,
-      createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
-      additionalData
+    (
+      kekId +
+      wrappedDekString +
+      await encryptTextSymmetrically(
+        dek,
+        createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
+        additionalData
+      )
     ),
     lessPreciseExpiresDate
   )
