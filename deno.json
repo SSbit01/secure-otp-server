@@ -42,7 +42,6 @@
     "/tmp/",
     "/.output/",
     "/coverage/",
-    "/coverage/**",
     "*.tgz",
     "/node_modules/",
     "/jspm_packages/",
