@@ -80,9 +80,9 @@ export const OTP_MAX_ATTEMPTS: number = 3
 /**
  * When sending an OTP, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
  * 
- * - It is recommended to set it to 20 seconds.
+ * - It is recommended to set it to 30 seconds.
  */
-export const OTP_RESEND_BLOCK_SECONDS: number = isTest ? 3 : 20
+export const OTP_RESEND_BLOCK_SECONDS: number = isTest ? 3 : 30
 
 
 /**
