@@ -81,4 +81,8 @@ app.notFound(c => c.body(null, 404))
 
 
 
+app.all("/health", c => c.text("OK", 200))
+
+
+
 export default app

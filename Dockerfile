@@ -29,5 +29,8 @@ COPY --from=builder /app/dist ./dist
 # Expose the port your Hono server runs on (default 3000?)
 EXPOSE 3000
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
 # Start the server with Bun
 CMD ["bun", "./dist/index.js"]
