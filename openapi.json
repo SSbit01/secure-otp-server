@@ -304,7 +304,10 @@
         "value": { "error": "OTP:RESENT_NOT_ALLOWED", "message": "Resend not allowed." }
       },
       "ErrOtpTooManyAttempts": {
-        "value": { "error": "OTP:TOO_MANY_ATTEMPTS", "message": "Too many attempts. For security reasons, the OTP has been blocked. Please wait for it to expire and then try again." }
+        "value": {
+          "error": "OTP:TOO_MANY_ATTEMPTS",
+          "message": "Too many attempts. For security reasons, the OTP has been blocked. Please wait for it to expire and then try again."
+        }
       },
       "ErrOtpTooManyRequests": {
         "value": { "error": "OTP:TOO_MANY_REQUESTS", "message": "Too many requests, slow down :)" }

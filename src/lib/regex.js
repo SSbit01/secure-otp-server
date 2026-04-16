@@ -1,1 +1,1 @@
-export const regexBase64Url = /^[\w-]+$/
+export const regexBase64Url = /^[\w-]+$/;
