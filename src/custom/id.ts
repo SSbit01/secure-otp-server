@@ -37,18 +37,18 @@ const idStorage = new Map<string, number>();
  * @param {Context} c - Hono context.
  * @return {Promise<[string, number]>} The new ID and the expiration date.
  */
-export async function createOtpTokenListId( c: Context ): Promise<[ string, number ]> {
+export async function createOtpTokenListId(c: Context): Promise<[string, number]> {
   // Manually clean up expired IDs, as this implementation cannot automatically delete them.
 
   const dateNow = Date.now();
 
-  for ( const [ id, expires ] of idStorage ) {
-    if ( expires <= dateNow ) {
-      idStorage.delete( id );
+  for (const [id, expires] of idStorage) {
+    if (expires <= dateNow) {
+      idStorage.delete(id);
     }
   }
 
-  const newId = createRandomId( ID_BYTES ).toBase64( BASE64URL_OPTIONS );
+  const newId = createRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
 
   /**
    * The cleanup loop might have taken some milliseconds.
@@ -56,9 +56,9 @@ export async function createOtpTokenListId( c: Context ): Promise<[ string, numb
    */
   const expires = Date.now() + OTP_MAX_AGE_MS;
 
-  idStorage.set( newId, expires );
+  idStorage.set(newId, expires);
 
-  return [ newId, expires ];
+  return [newId, expires];
 }
 
 /**
@@ -71,25 +71,25 @@ export async function createOtpTokenListId( c: Context ): Promise<[ string, numb
  * @param {number} [expires] - Expiration time in milliseconds since epoch used to verify the ID; if not provided, the ID must be deleted without verification.
  * @returns {Promise<boolean>} If delete was successful.
  */
-export async function deleteOtpTokenId( c: Context, id: string, expires?: number ): Promise<boolean> {
-  if ( !expires ) {
-    return idStorage.delete( id );
+export async function deleteOtpTokenId(c: Context, id: string, expires?: number): Promise<boolean> {
+  if (!expires) {
+    return idStorage.delete(id);
   }
 
-  const storedExpires = idStorage.get( id );
+  const storedExpires = idStorage.get(id);
 
-  if ( !storedExpires ) {
+  if (!storedExpires) {
     return false;
   }
 
-  if ( storedExpires !== expires ) {
-    if ( storedExpires <= Date.now() ) {
-      idStorage.delete( id );
+  if (storedExpires !== expires) {
+    if (storedExpires <= Date.now()) {
+      idStorage.delete(id);
     }
     return false;
   }
 
-  return idStorage.delete( id );
+  return idStorage.delete(id);
 }
 
 /**
@@ -102,8 +102,8 @@ export async function deleteOtpTokenId( c: Context, id: string, expires?: number
  * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
  * @returns {Promise<string|undefined>} New Id.
  */
-export async function replaceOtpTokenId( c: Context, oldId: string, expires: number ): Promise<string | undefined> {
-  if ( idStorage.get( oldId ) !== expires ) {
+export async function replaceOtpTokenId(c: Context, oldId: string, expires: number): Promise<string | undefined> {
+  if (idStorage.get(oldId) !== expires) {
     return;
   }
 
@@ -111,17 +111,17 @@ export async function replaceOtpTokenId( c: Context, oldId: string, expires: num
 
   const dateNow = Date.now();
 
-  for ( const [ id, expires ] of idStorage ) {
-    if ( expires <= dateNow ) {
-      idStorage.delete( id );
+  for (const [id, expires] of idStorage) {
+    if (expires <= dateNow) {
+      idStorage.delete(id);
     }
   }
 
-  idStorage.delete( oldId );
+  idStorage.delete(oldId);
 
-  const newId = createRandomId( ID_BYTES ).toBase64( BASE64URL_OPTIONS );
+  const newId = createRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
 
-  idStorage.set( newId, expires );
+  idStorage.set(newId, expires);
 
   return newId;
 }
@@ -136,14 +136,14 @@ export async function replaceOtpTokenId( c: Context, oldId: string, expires: num
  * @param {number} oldExpires - Expiration time in milliseconds since epoch. It may be used to verify the ID. It is not checked because the server already filters expired IDs.
  * @returns {Promise<number>} New expiration time.
  */
-export async function updateOtpTokenExpires( c: Context, id: string, oldExpires: number ): Promise<number> {
-  if ( idStorage.get( id ) !== oldExpires ) {
+export async function updateOtpTokenExpires(c: Context, id: string, oldExpires: number): Promise<number> {
+  if (idStorage.get(id) !== oldExpires) {
     return 0;
   }
 
   const newExpires = Date.now() + OTP_MAX_AGE_MS;
 
-  idStorage.set( id, newExpires );
+  idStorage.set(id, newExpires);
 
   return newExpires;
 }

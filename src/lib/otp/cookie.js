@@ -14,8 +14,8 @@ let cookieOtp = "";
  * @function deleteOtpCookie
  * @param {Context} c
  */
-export function deleteOtpCookie( c ) {
-  deleteCookie( c, getOtpCookieName( c ) );
+export function deleteOtpCookie(c) {
+  deleteCookie(c, getOtpCookieName(c));
 }
 
 /**
@@ -23,9 +23,9 @@ export function deleteOtpCookie( c ) {
  * @param {Context} c
  * @returns {string}
  */
-export function getOtpCookieName( c ) {
-  if ( !cookieOtp ) {
-    cookieOtp = isProduction( c ) ? ( OTP_COOKIE_PREFIX + COOKIE_OTP ) : COOKIE_OTP;
+export function getOtpCookieName(c) {
+  if (!cookieOtp) {
+    cookieOtp = isProduction(c) ? (OTP_COOKIE_PREFIX + COOKIE_OTP) : COOKIE_OTP;
   }
 
   return cookieOtp;
@@ -37,16 +37,16 @@ export function getOtpCookieName( c ) {
  * @param {string} otpData
  * @param {Date} expires
  */
-export function setOtpCookie( c, otpData, expires ) {
+export function setOtpCookie(c, otpData, expires) {
   setCookie(
     c,
-    getOtpCookieName( c ),
+    getOtpCookieName(c),
     otpData,
     {
       expires,
       httpOnly: true,
       path: "/",
-      secure: isProduction( c ),
+      secure: isProduction(c),
       sameSite: "strict",
       partitioned: false
     }

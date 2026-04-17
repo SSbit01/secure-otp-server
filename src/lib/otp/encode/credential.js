@@ -3,8 +3,8 @@
  * @param {string} credential
  * @returns {string}
  */
-export function encodeCredential( credential ) {
-  return encodeURI( credential );
+export function encodeCredential(credential) {
+  return encodeURI(credential);
 }
 
 /**
@@ -12,6 +12,6 @@ export function encodeCredential( credential ) {
  * @param {string} encodedCredential
  * @returns {string}
  */
-export function decodeCredential( encodedCredential ) {
-  return decodeURI( encodedCredential ).trim();
+export function decodeCredential(encodedCredential) {
+  return decodeURI(encodedCredential).trim();
 }

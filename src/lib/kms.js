@@ -22,14 +22,14 @@ export const KEK_ID_BYTES = 12;
  * @param {string} wrappedDekString
  * @returns {Promise<CryptoKey|undefined>}
  */
-export async function getDek( c, kekId, wrappedDekString ) {
-  if ( kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test( kekId ) ) {
+export async function getDek(c, kekId, wrappedDekString) {
+  if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
     return;
   }
 
-  const kek = await getKek( c, kekId );
+  const kek = await getKek(c, kekId);
 
-  if ( !kek ) {
+  if (!kek) {
     return;
   }
 
@@ -39,16 +39,16 @@ export async function getDek( c, kekId, wrappedDekString ) {
   let wrappedDek;
 
   try {
-    wrappedDek = Uint8Array.fromBase64( wrappedDekString, BASE64URL_OPTIONS );
+    wrappedDek = Uint8Array.fromBase64(wrappedDekString, BASE64URL_OPTIONS);
   } catch {
     return;
   }
 
-  if ( wrappedDek.length !== WRAPPED_DEK_BYTES ) {
+  if (wrappedDek.length !== WRAPPED_DEK_BYTES) {
     return;
   }
 
-  return await unwrapKey( wrappedDek, kek );
+  return await unwrapKey(wrappedDek, kek);
 }
 
 /**
@@ -56,14 +56,14 @@ export async function getDek( c, kekId, wrappedDekString ) {
  * @param {Context} c
  * @param {string} kekId
  */
-export async function rotateKek( c, kekId ) {
-  const currentKekId = await getCurrentKekId( c );
+export async function rotateKek(c, kekId) {
+  const currentKekId = await getCurrentKekId(c);
 
-  if ( !currentKekId || kekId === currentKekId ) {
-    console.warn( "A KEK rotation has been triggered." );
-    await storeKek( c, await createKek(), createRandomId( KEK_ID_BYTES ).toBase64( BASE64URL_OPTIONS ) );
-    console.log( "KEK rotation completed." );
+  if (!currentKekId || kekId === currentKekId) {
+    console.warn("A KEK rotation has been triggered.");
+    await storeKek(c, await createKek(), createRandomId(KEK_ID_BYTES).toBase64(BASE64URL_OPTIONS));
+    console.log("KEK rotation completed.");
   }
 
-  await deleteKek( c, kekId );
+  await deleteKek(c, kekId);
 }

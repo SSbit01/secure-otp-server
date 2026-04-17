@@ -20,7 +20,7 @@ export const OTP_TOKEN_SEPARATOR = ",";
  * @function blockOtpToken
  * @param {OtpToken} otpToken
  */
-export function blockOtpToken( otpToken ) {
+export function blockOtpToken(otpToken) {
   delete otpToken[OTP];
   delete otpToken[ATTEMPTS];
   delete otpToken[RESEND_BLOCK];
@@ -32,22 +32,22 @@ export function blockOtpToken( otpToken ) {
  * @param {OtpToken} otpToken
  * @returns {OtpTokenData}
  */
-export function getOtpTokenData( otpToken ) {
+export function getOtpTokenData(otpToken) {
   /**
    * @type {OtpTokenData}
    */
   const result = {
-    expires: new Date( getReducedTimePrecision( otpToken[EXPIRES] ) )
+    expires: new Date(getReducedTimePrecision(otpToken[EXPIRES]))
   };
 
-  if ( !otpToken[OTP] ) {
+  if (!otpToken[OTP]) {
     result.blocked = true;
   } else {
-    if ( otpToken[RESEND_BLOCK] ) {
-      result.resendBlock = new Date( getReducedTimePrecision( otpToken[RESEND_BLOCK], Math.ceil ) );
+    if (otpToken[RESEND_BLOCK]) {
+      result.resendBlock = new Date(getReducedTimePrecision(otpToken[RESEND_BLOCK], Math.ceil));
     }
-    if ( otpToken[OTP_BLOCK] ) {
-      result.otpBlock = new Date( getReducedTimePrecision( otpToken[OTP_BLOCK], Math.ceil ) );
+    if (otpToken[OTP_BLOCK]) {
+      result.otpBlock = new Date(getReducedTimePrecision(otpToken[OTP_BLOCK], Math.ceil));
     }
   }
 
@@ -61,11 +61,11 @@ export function getOtpTokenData( otpToken ) {
  * @param {BufferSource} additionalData
  * @returns {Promise<string[]|undefined>}
  */
-export async function getOtpTokenList( key, ciphertext, additionalData ) {
+export async function getOtpTokenList(key, ciphertext, additionalData) {
   try {
     return (
-      await decryptTextSymmetrically( key, ciphertext, additionalData )
-    ).split( OTP_TOKEN_SEPARATOR );
+      await decryptTextSymmetrically(key, ciphertext, additionalData)
+    ).split(OTP_TOKEN_SEPARATOR);
   } catch {
     // It simply returns `undefined`.
   }

@@ -11,7 +11,7 @@ import type { Context } from "hono";
  * @param {string} credential - Client credential/ID directly taken from the token (that's why it can be only a string).
  * @returns {Promise<Response>} [Hono Response using the Hono context](https://hono.dev/docs/getting-started/basic#return-json).
  */
-export default async function finalAction( c: Context, credential: string ) {
+export default async function finalAction(c: Context, credential: string) {
   /**
    * For passwordless authentication:
    * You might want to generate a JWT or session cookie here and return it to the client.
@@ -20,8 +20,8 @@ export default async function finalAction( c: Context, credential: string ) {
    * You might want to mark the credential (e.g. email, phone number...) as "verified" in your database.
    */
 
-  return c.json( {
+  return c.json({
     credential,
     message: "successfully verified"
-  } );
+  });
 }

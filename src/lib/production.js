@@ -15,9 +15,9 @@ let production;
  * @param {Context} c
  * @returns {boolean}
  */
-export default function isProduction( c ) {
-  if ( production === undefined ) {
-    const envVars = env( c );
+export default function isProduction(c) {
+  if (production === undefined) {
+    const envVars = env(c);
     production = envVars.NODE_ENV?.toLowerCase() === PRODUCTION ||
       envVars.ENVIRONMENT?.toLowerCase() === PRODUCTION ||
       envVars.VERCEL_ENV?.toLowerCase() === PRODUCTION;

@@ -3,15 +3,15 @@ import { KEY_ENCRYPTION_PARAMS, KEY_ENCRYPTION_USAGES } from "@/lib/crypto/symme
 /**
  * @type {AesKeyGenParams}
  */
-const KEY_WRAP_PARAMS = Object.freeze( {
+const KEY_WRAP_PARAMS = Object.freeze({
   name: "AES-KW",
   length: 256
-} );
+});
 
 /**
  * @type {readonly KeyUsage[]}
  */
-const KEY_WRAP_USAGES = Object.freeze( [ "wrapKey", "unwrapKey" ] );
+const KEY_WRAP_USAGES = Object.freeze(["wrapKey", "unwrapKey"]);
 
 /**
  * AES-KW adds 8 extra bytes of authenticated integrity value (AIV).
@@ -42,7 +42,7 @@ export async function createKek() {
  * @throws {NotSupported} Raised when trying to use an algorithm that is either unknown or isn't suitable for encryption or wrapping.
  * @throws {TypeError} Raised when trying to use an invalid format.
  */
-export async function wrapKey( key, kek ) {
+export async function wrapKey(key, kek) {
   return await crypto.subtle.wrapKey(
     "raw",
     key,
@@ -62,7 +62,7 @@ export async function wrapKey( key, kek ) {
  * @throws {SyntaxError} Raised when `keyUsages` is empty but the unwrapped key is of type `secret` or `private`.
  * @throws {TypeError} Raised when trying to use an invalid format.
  */
-export async function unwrapKey( wrappedKey, kek ) {
+export async function unwrapKey(wrappedKey, kek) {
   return await crypto.subtle.unwrapKey(
     "raw",
     wrappedKey,

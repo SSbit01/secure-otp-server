@@ -3,8 +3,8 @@
  * @param {number} num
  * @returns {string}
  */
-export function compressNumber( num ) {
-  return num.toString( 36 );
+export function compressNumber(num) {
+  return num.toString(36);
 }
 
 /**
@@ -12,6 +12,6 @@ export function compressNumber( num ) {
  * @param {string} compressedNumber
  * @returns {number}
  */
-export function decompressNumber( compressedNumber ) {
-  return parseInt( compressedNumber, 36 );
+export function decompressNumber(compressedNumber) {
+  return parseInt(compressedNumber, 36);
 }

@@ -25,22 +25,22 @@ import { getReducedTimePrecision } from "@/lib/time";
  * @param {string} credential
  * @return {Promise<Response|undefined>}
  */
-export default async function generateOtpTokenCreationResponse( c, credential ) {
+export default async function generateOtpTokenCreationResponse(c, credential) {
   const otp = createOtp();
 
-  if ( !await sendOtp( c, credential, otp ) ) {
-    return c.json( ERR_CREDENTIAL_INVALID, 400 );
+  if (!await sendOtp(c, credential, otp)) {
+    return c.json(ERR_CREDENTIAL_INVALID, 400);
   }
 
-  let kekId = await getCurrentKekId( c );
+  let kekId = await getCurrentKekId(c);
 
   /**
    * @type {(CryptoKey|undefined)}
    */
   let kek;
 
-  if ( kekId ) {
-    kek = await getKek( c, kekId );
+  if (kekId) {
+    kek = await getKek(c, kekId);
   }
 
   /**
@@ -48,22 +48,22 @@ export default async function generateOtpTokenCreationResponse( c, credential ) 
    */
   let additionalData;
 
-  if ( kek ) {
+  if (kek) {
     // @ts-expect-error: kekId is not undefined.
-    additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
+    additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
   } else {
     kek = await createKek();
-    additionalData = createRandomId( KEK_ID_BYTES );
-    kekId = additionalData.toBase64( BASE64URL_OPTIONS );
-    await storeKek( c, kek, kekId );
+    additionalData = createRandomId(KEK_ID_BYTES);
+    kekId = additionalData.toBase64(BASE64URL_OPTIONS);
+    await storeKek(c, kek, kekId);
   }
 
   const dek = await createDek();
-  const wrappedDekString = new Uint8Array( await wrapKey( dek, kek ) ).toBase64( BASE64URL_OPTIONS );
+  const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
 
-  const [ id, expires ] = await createOtpTokenListId( c );
+  const [id, expires] = await createOtpTokenListId(c);
 
-  const lessPreciseExpiresDate = new Date( getReducedTimePrecision( expires ) );
+  const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires));
   const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
 
   setOtpCookie(
@@ -72,14 +72,14 @@ export default async function generateOtpTokenCreationResponse( c, credential ) 
       wrappedDekString +
       await encryptTextSymmetrically(
         dek,
-        createEncodedOtpToken( credential, expires, otp, resendBlock ) + OTP_TOKEN_SEPARATOR + id,
+        createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
         additionalData
       ),
     lessPreciseExpiresDate
   );
 
-  return c.json( {
+  return c.json({
     expires: lessPreciseExpiresDate,
-    resendBlock: new Date( getReducedTimePrecision( resendBlock, Math.ceil ) )
-  } );
+    resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
+  });
 }

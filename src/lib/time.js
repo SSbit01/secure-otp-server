@@ -13,14 +13,14 @@
  * @param {number} [precision]
  * @returns {number} - The time value with reduced precision.
  */
-export function getReducedTimePrecision( time = Date.now(), roundFunction = Math.trunc, precision = 1000 ) {
-  return roundFunction( time / precision ) * precision;
+export function getReducedTimePrecision(time = Date.now(), roundFunction = Math.trunc, precision = 1000) {
+  return roundFunction(time / precision) * precision;
 }
 
 /**
  * @function secondsToMs
  * @param {number} value
  */
-export function secondsToMs( value ) {
+export function secondsToMs(value) {
   return value * 1000;
 }

@@ -7,6 +7,6 @@
  * @param {number} length - The length of the ID to generate (18 by default; higher entropy than UUIDv4 [122 vs 144 bits]).
  * @returns {Uint8Array<ArrayBuffer>} A random ID.
  */
-export function createRandomId( length = 18 ) {
-  return crypto.getRandomValues( new Uint8Array( length ) );
+export function createRandomId(length = 18) {
+  return crypto.getRandomValues(new Uint8Array(length));
 }

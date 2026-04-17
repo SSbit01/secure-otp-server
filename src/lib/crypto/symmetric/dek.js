@@ -7,17 +7,17 @@ const SYMMETRIC_ENCRYPTION_ALGORITHM_NAME = "AES-GCM";
 /**
  * @type {AesKeyGenParams}
  */
-export const KEY_ENCRYPTION_PARAMS = Object.freeze( {
+export const KEY_ENCRYPTION_PARAMS = Object.freeze({
   name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,
   length: 256
-} );
+});
 
 /**
  * @type {KeyUsage[]}
  */
-export const KEY_ENCRYPTION_USAGES = [ "encrypt", "decrypt" ];
+export const KEY_ENCRYPTION_USAGES = ["encrypt", "decrypt"];
 
-Object.freeze( KEY_ENCRYPTION_USAGES );
+Object.freeze(KEY_ENCRYPTION_USAGES);
 
 /**
  * Before encrypting and decrypting values, a symmetric `CryptoKey` must be created.
@@ -52,22 +52,22 @@ export async function encryptTextSymmetrically(
   text,
   additionalData
 ) {
-  const iv = crypto.getRandomValues( new Uint8Array( IV_BYTES ) );
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
 
   const encryptedText = new Uint8Array(
     await crypto.subtle.encrypt(
       { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv, additionalData },
       key,
-      textEncoder.encode( text )
+      textEncoder.encode(text)
     )
   );
 
-  const result = new Uint8Array( IV_BYTES + encryptedText.length );
+  const result = new Uint8Array(IV_BYTES + encryptedText.length);
 
-  result.set( iv );
-  result.set( encryptedText, IV_BYTES );
+  result.set(iv);
+  result.set(encryptedText, IV_BYTES);
 
-  return result.toBase64( BASE64URL_OPTIONS );
+  return result.toBase64(BASE64URL_OPTIONS);
 }
 
 /**
@@ -81,18 +81,18 @@ export async function encryptTextSymmetrically(
  * - The provided key is not valid.
  * - The operation failed.
  */
-export async function decryptTextSymmetrically( key, ciphertext, additionalData ) {
-  const data = Uint8Array.fromBase64( ciphertext, BASE64URL_OPTIONS );
+export async function decryptTextSymmetrically(key, ciphertext, additionalData) {
+  const data = Uint8Array.fromBase64(ciphertext, BASE64URL_OPTIONS);
 
   return textDecoder.decode(
     await crypto.subtle.decrypt(
       {
         name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,
-        iv: data.subarray( 0, IV_BYTES ),
+        iv: data.subarray(0, IV_BYTES),
         additionalData
       },
       key,
-      data.subarray( IV_BYTES )
+      data.subarray(IV_BYTES)
     )
   );
 }

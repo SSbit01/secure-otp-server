@@ -46,47 +46,47 @@ import app from "@/setup";
 
 import type { OtpTokenData } from "@/lib/otp";
 
-app.post( "/api/otp/create", credentialValidator, async ( c ) => {
-  const credential = c.req.valid( "json" );
+app.post("/api/otp/create", credentialValidator, async (c) => {
+  const credential = c.req.valid("json");
 
-  const otpData = getCookie( c, getOtpCookieName( c ) )?.trim();
+  const otpData = getCookie(c, getOtpCookieName(c))?.trim();
 
-  if ( !otpData ) {
-    return await generateOtpTokenCreationResponse( c, credential );
+  if (!otpData) {
+    return await generateOtpTokenCreationResponse(c, credential);
   }
 
-  let kekId = otpData.substring( 0, KEK_ID_LENGTH );
+  let kekId = otpData.substring(0, KEK_ID_LENGTH);
 
-  let dek = await getDek( c, kekId, otpData.substring( KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH ) );
+  let dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH));
 
-  if ( !dek ) {
-    return await generateOtpTokenCreationResponse( c, credential );
+  if (!dek) {
+    return await generateOtpTokenCreationResponse(c, credential);
   }
 
-  let additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
+  let additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
 
   const encodedOtpTokenList = await getOtpTokenList(
     dek,
-    otpData.substring( ENVELOPE_ENCRYPTION_WRAP_LENGTH ),
+    otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH),
     additionalData
   );
 
-  if ( !encodedOtpTokenList ) {
-    return await generateOtpTokenCreationResponse( c, credential );
+  if (!encodedOtpTokenList) {
+    return await generateOtpTokenCreationResponse(c, credential);
   }
 
   const id = encodedOtpTokenList.pop();
 
-  if ( !id ) {
-    deleteOtpCookie( c );
-    await rotateKek( c, kekId );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!id) {
+    deleteOtpCookie(c);
+    await rotateKek(c, kekId);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if ( encodedOtpTokenList.length > OTP_MAX_CREDENTIALS ) {
-    deleteOtpCookie( c );
-    await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+    deleteOtpCookie(c);
+    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   const newEncodedOtpTokenList: string[] = [];
@@ -97,33 +97,35 @@ app.post( "/api/otp/create", credentialValidator, async ( c ) => {
 
   const dateNow = Date.now();
 
-  for ( const encodedOtpToken of encodedOtpTokenList ) {
-    const otpToken = decodeOtpToken( encodedOtpToken );
-    if ( !otpToken ) {
-      deleteOtpCookie( c );
-      await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-      return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  for (const encodedOtpToken of encodedOtpTokenList) {
+    const otpToken = decodeOtpToken(encodedOtpToken);
+    if (!otpToken) {
+      deleteOtpCookie(c);
+      await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+      return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
-    if ( dateNow < otpToken[EXPIRES] ) {
-      if ( expires < otpToken[EXPIRES] ) {
+
+    if (dateNow < otpToken[EXPIRES]) {
+      if (expires < otpToken[EXPIRES]) {
         expires = otpToken[EXPIRES];
       }
-      if ( !currentEncodedOtpToken && credential === otpToken[CREDENTIAL] ) {
+
+      if (!currentEncodedOtpToken && credential === otpToken[CREDENTIAL]) {
         currentEncodedOtpToken = encodedOtpToken;
-        currentOtpTokenData = getOtpTokenData( otpToken );
+        currentOtpTokenData = getOtpTokenData(otpToken);
       } else {
-        newEncodedOtpTokenList.push( encodedOtpToken );
+        newEncodedOtpTokenList.push(encodedOtpToken);
       }
     }
   }
 
-  if ( newEncodedOtpTokenList.length >= OTP_MAX_CREDENTIALS ) {
-    return c.json( ERR_OTP_TOO_MANY_CREDENTIALS, 400 );
+  if (newEncodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
+    return c.json(ERR_OTP_TOO_MANY_CREDENTIALS, 400);
   }
 
-  if ( !expires ) {
+  if (!expires) {
     // All OTP tokens have expired, create a new list.
-    return await generateOtpTokenCreationResponse( c, credential );
+    return await generateOtpTokenCreationResponse(c, credential);
   }
 
   /**
@@ -136,126 +138,126 @@ app.post( "/api/otp/create", credentialValidator, async ( c ) => {
    */
   let envelope: string;
 
-  const currentKekId = await getCurrentKekId( c );
+  const currentKekId = await getCurrentKekId(c);
 
-  if ( currentKekId === kekId ) {
-    envelope = otpData.substring( 0, ENVELOPE_ENCRYPTION_WRAP_LENGTH );
+  if (currentKekId === kekId) {
+    envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH);
   } else {
     let kek: CryptoKey | undefined;
-    if ( currentKekId ) {
-      [ dek, kek ] = await Promise.all( [ createDek(), getKek( c, currentKekId ) ] );
+    if (currentKekId) {
+      [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)]);
     } else {
       dek = await createDek();
     }
-    if ( kek ) {
+    if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId;
-      additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
-      envelope = kekId + new Uint8Array( await wrapKey( dek, kek ) ).toBase64( BASE64URL_OPTIONS );
+      additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
+      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
     } else {
-      additionalData = createRandomId( KEK_ID_BYTES );
-      kekId = additionalData.toBase64( BASE64URL_OPTIONS );
+      additionalData = createRandomId(KEK_ID_BYTES);
+      kekId = additionalData.toBase64(BASE64URL_OPTIONS);
       kek = await createKek();
       envelope = kekId +
         new Uint8Array(
-          ( await Promise.all( [ wrapKey( dek, kek ), storeKek( c, kek, kekId ) ] ) )[0]
-        ).toBase64( BASE64URL_OPTIONS );
+          (await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]
+        ).toBase64(BASE64URL_OPTIONS);
     }
   }
 
   /**
    * It should be verified after checking all OTP tokens.
    */
-  if ( currentEncodedOtpToken ) {
-    newEncodedOtpTokenList.push( currentEncodedOtpToken );
+  if (currentEncodedOtpToken) {
+    newEncodedOtpTokenList.push(currentEncodedOtpToken);
   } else {
     /**
      * `updateOtpTokenExpires` is used to verify too.
      * Verify OTP Token List ID before sending the OTP.
      */
-    expires = await updateOtpTokenExpires( c, id, expires );
-    if ( !expires ) {
-      deleteOtpCookie( c );
-      return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+    expires = await updateOtpTokenExpires(c, id, expires);
+    if (!expires) {
+      deleteOtpCookie(c);
+      return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
     const otp = createOtp();
-    if ( !await sendOtp( c, credential, otp ) ) {
-      return c.json( ERR_CREDENTIAL_INVALID, 400 );
+    if (!await sendOtp(c, credential, otp)) {
+      return c.json(ERR_CREDENTIAL_INVALID, 400);
     }
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
-    currentEncodedOtpToken = createEncodedOtpToken( credential, expires, otp, resendBlock );
-    newEncodedOtpTokenList.push( currentEncodedOtpToken );
+    currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock);
+    newEncodedOtpTokenList.push(currentEncodedOtpToken);
     currentOtpTokenData = {
-      expires: new Date( getReducedTimePrecision( expires ) ),
-      resendBlock: new Date( getReducedTimePrecision( resendBlock, Math.ceil ) )
+      expires: new Date(getReducedTimePrecision(expires)),
+      resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
     };
   }
 
-  newEncodedOtpTokenList.push( id );
+  newEncodedOtpTokenList.push(id);
 
   setOtpCookie(
     c,
     envelope +
       await encryptTextSymmetrically(
         dek,
-        newEncodedOtpTokenList.join( OTP_TOKEN_SEPARATOR ),
+        newEncodedOtpTokenList.join(OTP_TOKEN_SEPARATOR),
         additionalData
       ),
-    new Date( getReducedTimePrecision( expires ) )
+    new Date(getReducedTimePrecision(expires))
   );
 
-  return c.json( currentOtpTokenData );
-} );
+  return c.json(currentOtpTokenData);
+});
 
-app.post( "/api/otp/resend", async ( c ) => {
-  const otpData = getCookie( c, getOtpCookieName( c ) )?.trim();
+app.post("/api/otp/resend", async (c) => {
+  const otpData = getCookie(c, getOtpCookieName(c))?.trim();
 
-  if ( !otpData ) {
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!otpData) {
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  let kekId = otpData.substring( 0, KEK_ID_LENGTH );
+  let kekId = otpData.substring(0, KEK_ID_LENGTH);
 
-  let dek = await getDek( c, kekId, otpData.substring( KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH ) );
+  let dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH));
 
-  if ( !dek ) {
-    deleteOtpCookie( c );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!dek) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  let additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
+  let additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
 
   const encodedOtpTokenList = await getOtpTokenList(
     dek,
-    otpData.substring( ENVELOPE_ENCRYPTION_WRAP_LENGTH ),
+    otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH),
     additionalData
   );
 
-  if ( !encodedOtpTokenList ) {
-    deleteOtpCookie( c );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!encodedOtpTokenList) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   const id = encodedOtpTokenList.pop();
 
-  if ( !id ) {
-    deleteOtpCookie( c );
-    await rotateKek( c, kekId );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!id) {
+    deleteOtpCookie(c);
+    await rotateKek(c, kekId);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if ( encodedOtpTokenList.length > OTP_MAX_CREDENTIALS ) {
-    deleteOtpCookie( c );
-    await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+    deleteOtpCookie(c);
+    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  const currentOtpToken = decodeOtpToken( encodedOtpTokenList.pop() || "" );
+  const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "");
 
-  if ( !currentOtpToken ) {
-    deleteOtpCookie( c );
-    await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!currentOtpToken) {
+    deleteOtpCookie(c);
+    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   /**
@@ -267,30 +269,30 @@ app.post( "/api/otp/resend", async ( c ) => {
 
   const dateNow = Date.now();
 
-  for ( const encodedOtpToken of encodedOtpTokenList ) {
-    const otpToken = decodeOtpToken( encodedOtpToken );
-    if ( !otpToken ) {
-      deleteOtpCookie( c );
-      await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-      return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  for (const encodedOtpToken of encodedOtpTokenList) {
+    const otpToken = decodeOtpToken(encodedOtpToken);
+    if (!otpToken) {
+      deleteOtpCookie(c);
+      await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+      return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
-    if ( dateNow < otpToken[EXPIRES] ) {
-      if ( expires < otpToken[EXPIRES] ) {
+    if (dateNow < otpToken[EXPIRES]) {
+      if (expires < otpToken[EXPIRES]) {
         expires = otpToken[EXPIRES];
       }
-      newEncodedOtpTokenList.push( otpToken );
+      newEncodedOtpTokenList.push(otpToken);
     }
   }
 
   /**
    * It should be verified after checking if all OTP tokens are valid.
    */
-  if ( dateNow >= currentOtpToken[EXPIRES] ) {
-    return c.json( ERR_OTP_EXPIRED, 400 );
+  if (dateNow >= currentOtpToken[EXPIRES]) {
+    return c.json(ERR_OTP_EXPIRED, 400);
   }
 
-  if ( currentOtpToken[RESEND_BLOCK] && Date.now() < currentOtpToken[RESEND_BLOCK] ) {
-    return c.json( ERR_OTP_RESENT_NOT_ALLOWED, 400 );
+  if (currentOtpToken[RESEND_BLOCK] && Date.now() < currentOtpToken[RESEND_BLOCK]) {
+    return c.json(ERR_OTP_RESENT_NOT_ALLOWED, 400);
   }
 
   /**
@@ -303,129 +305,129 @@ app.post( "/api/otp/resend", async ( c ) => {
    */
   let envelope: string;
 
-  const currentKekId = await getCurrentKekId( c );
+  const currentKekId = await getCurrentKekId(c);
 
-  if ( currentKekId === kekId ) {
-    envelope = otpData.substring( 0, ENVELOPE_ENCRYPTION_WRAP_LENGTH );
+  if (currentKekId === kekId) {
+    envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH);
   } else {
     let kek: CryptoKey | undefined;
-    if ( currentKekId ) {
-      [ dek, kek ] = await Promise.all( [ createDek(), getKek( c, currentKekId ) ] );
+    if (currentKekId) {
+      [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)]);
     } else {
       dek = await createDek();
     }
-    if ( kek ) {
+    if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId;
-      additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
-      envelope = kekId + new Uint8Array( await wrapKey( dek, kek ) ).toBase64( BASE64URL_OPTIONS );
+      additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
+      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
     } else {
-      additionalData = createRandomId( KEK_ID_BYTES );
-      kekId = additionalData.toBase64( BASE64URL_OPTIONS );
+      additionalData = createRandomId(KEK_ID_BYTES);
+      kekId = additionalData.toBase64(BASE64URL_OPTIONS);
       kek = await createKek();
       envelope = kekId +
         new Uint8Array(
-          ( await Promise.all( [ wrapKey( dek, kek ), storeKek( c, kek, kekId ) ] ) )[0]
-        ).toBase64( BASE64URL_OPTIONS );
+          (await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]
+        ).toBase64(BASE64URL_OPTIONS);
     }
   }
 
-  currentOtpToken[EXPIRES] = await updateOtpTokenExpires( c, id, expires );
+  currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, id, expires);
 
-  if ( !currentOtpToken[EXPIRES] ) {
-    deleteOtpCookie( c );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!currentOtpToken[EXPIRES]) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   currentOtpToken[OTP] = createOtp();
 
-  if ( !await sendOtp( c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP] ) ) {
+  if (!await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])) {
     /**
      * Block the OTP token.
      */
-    blockOtpToken( currentOtpToken );
-  } else if ( OTP_ALLOW_ONLY_ONE_RESENDING ) {
+    blockOtpToken(currentOtpToken);
+  } else if (OTP_ALLOW_ONLY_ONE_RESENDING) {
     delete currentOtpToken[RESEND_BLOCK];
   } else {
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
     /**
      * Only set resend block if the OTP token will expire in more than 4 seconds.
      */
-    if ( ( currentOtpToken[EXPIRES] - resendBlock ) > 4000 ) {
+    if ((currentOtpToken[EXPIRES] - resendBlock) > 4000) {
       currentOtpToken[RESEND_BLOCK] = resendBlock;
     }
   }
 
   encodedOtpTokenList.push(
-    encodeOtpToken( currentOtpToken ),
+    encodeOtpToken(currentOtpToken),
     id
   );
 
-  const currentOtpTokenData = getOtpTokenData( currentOtpToken );
+  const currentOtpTokenData = getOtpTokenData(currentOtpToken);
 
   setOtpCookie(
     c,
     envelope +
       await encryptTextSymmetrically(
         dek,
-        encodedOtpTokenList.join( OTP_TOKEN_SEPARATOR ),
+        encodedOtpTokenList.join(OTP_TOKEN_SEPARATOR),
         additionalData
       ),
     currentOtpTokenData.expires
   );
 
-  return currentOtpTokenData.blocked ? c.json( ERR_CREDENTIAL_INVALID, 400 ) : c.json( currentOtpTokenData );
-} );
+  return currentOtpTokenData.blocked ? c.json(ERR_CREDENTIAL_INVALID, 400) : c.json(currentOtpTokenData);
+});
 
-app.post( "/api/otp/verify", otpValueValidator, otpCookieValidator, async ( c ) => {
-  const otpData = getCookie( c, getOtpCookieName( c ) )?.trim();
+app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => {
+  const otpData = getCookie(c, getOtpCookieName(c))?.trim();
 
-  if ( !otpData ) {
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!otpData) {
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  let kekId = otpData.substring( 0, KEK_ID_LENGTH );
+  let kekId = otpData.substring(0, KEK_ID_LENGTH);
 
-  let dek = await getDek( c, kekId, otpData.substring( KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH ) );
+  let dek = await getDek(c, kekId, otpData.substring(KEK_ID_LENGTH, ENVELOPE_ENCRYPTION_WRAP_LENGTH));
 
-  if ( !dek ) {
-    deleteOtpCookie( c );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!dek) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  let additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
+  let additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
 
   const encodedOtpTokenList = await getOtpTokenList(
     dek,
-    otpData.substring( ENVELOPE_ENCRYPTION_WRAP_LENGTH ),
+    otpData.substring(ENVELOPE_ENCRYPTION_WRAP_LENGTH),
     additionalData
   );
 
-  if ( !encodedOtpTokenList ) {
-    deleteOtpCookie( c );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!encodedOtpTokenList) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   const id = encodedOtpTokenList.pop();
 
-  if ( !id ) {
-    deleteOtpCookie( c );
-    await rotateKek( c, kekId );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!id) {
+    deleteOtpCookie(c);
+    await rotateKek(c, kekId);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if ( encodedOtpTokenList.length > OTP_MAX_CREDENTIALS ) {
-    deleteOtpCookie( c );
-    await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+    deleteOtpCookie(c);
+    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  const currentOtpToken = decodeOtpToken( encodedOtpTokenList.pop() || "" );
+  const currentOtpToken = decodeOtpToken(encodedOtpTokenList.pop() || "");
 
-  if ( !currentOtpToken ) {
-    deleteOtpCookie( c );
-    await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!currentOtpToken) {
+    deleteOtpCookie(c);
+    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   /**
@@ -437,44 +439,44 @@ app.post( "/api/otp/verify", otpValueValidator, otpCookieValidator, async ( c ) 
 
   const dateNow = Date.now();
 
-  for ( const encodedOtpToken of encodedOtpTokenList ) {
-    const otpToken = decodeOtpToken( encodedOtpToken );
-    if ( !otpToken ) {
-      deleteOtpCookie( c );
-      await Promise.allSettled( [ deleteOtpTokenId( c, id ), rotateKek( c, kekId ) ] );
-      return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  for (const encodedOtpToken of encodedOtpTokenList) {
+    const otpToken = decodeOtpToken(encodedOtpToken);
+    if (!otpToken) {
+      deleteOtpCookie(c);
+      await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
+      return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
-    if ( dateNow < otpToken[EXPIRES] ) {
-      if ( expires < otpToken[EXPIRES] ) {
+    if (dateNow < otpToken[EXPIRES]) {
+      if (expires < otpToken[EXPIRES]) {
         expires = otpToken[EXPIRES];
       }
-      newEncodedOtpTokenList.push( encodeOtpToken( otpToken ) );
+      newEncodedOtpTokenList.push(encodeOtpToken(otpToken));
     }
   }
 
   /**
    * It should be verified after checking if all OTP tokens are valid.
    */
-  if ( dateNow >= currentOtpToken[EXPIRES] ) {
-    return c.json( ERR_OTP_EXPIRED, 400 );
+  if (dateNow >= currentOtpToken[EXPIRES]) {
+    return c.json(ERR_OTP_EXPIRED, 400);
   }
 
   if (
     !currentOtpToken[ATTEMPTS] ||
-    ( currentOtpToken[OTP_BLOCK] && currentOtpToken[OTP_BLOCK] > dateNow )
+    (currentOtpToken[OTP_BLOCK] && currentOtpToken[OTP_BLOCK] > dateNow)
   ) {
-    return c.json( ERR_OTP_VERIFICATION_NOT_ALLOWED, 403 );
+    return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 403);
   }
 
   delete currentOtpToken[OTP_BLOCK];
 
-  if ( currentOtpToken[OTP] === c.req.valid( "form" ) ) {
+  if (currentOtpToken[OTP] === c.req.valid("form")) {
     /**
      * VERIFIED
      */
-    const otpTokenIdDeletion = await deleteOtpTokenId( c, id, expires );
-    deleteOtpCookie( c );
-    return otpTokenIdDeletion ? await finalAction( c, currentOtpToken[CREDENTIAL] ) : c.json( ERR_OTP_INVALID_COOKIE, 400 );
+    const otpTokenIdDeletion = await deleteOtpTokenId(c, id, expires);
+    deleteOtpCookie(c);
+    return otpTokenIdDeletion ? await finalAction(c, currentOtpToken[CREDENTIAL]) : c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   /**
@@ -487,56 +489,56 @@ app.post( "/api/otp/verify", otpValueValidator, otpCookieValidator, async ( c ) 
    */
   let envelope: string;
 
-  const currentKekId = await getCurrentKekId( c );
+  const currentKekId = await getCurrentKekId(c);
 
-  if ( currentKekId === kekId ) {
-    envelope = otpData.substring( 0, ENVELOPE_ENCRYPTION_WRAP_LENGTH );
+  if (currentKekId === kekId) {
+    envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH);
   } else {
     let kek: CryptoKey | undefined;
-    if ( currentKekId ) {
-      [ dek, kek ] = await Promise.all( [ createDek(), getKek( c, currentKekId ) ] );
+    if (currentKekId) {
+      [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)]);
     } else {
       dek = await createDek();
     }
-    if ( kek ) {
+    if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId;
-      additionalData = Uint8Array.fromBase64( kekId, BASE64URL_OPTIONS );
-      envelope = kekId + new Uint8Array( await wrapKey( dek, kek ) ).toBase64( BASE64URL_OPTIONS );
+      additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
+      envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
     } else {
-      additionalData = createRandomId( KEK_ID_BYTES );
-      kekId = additionalData.toBase64( BASE64URL_OPTIONS );
+      additionalData = createRandomId(KEK_ID_BYTES);
+      kekId = additionalData.toBase64(BASE64URL_OPTIONS);
       kek = await createKek();
       envelope = kekId +
         new Uint8Array(
-          ( await Promise.all( [ wrapKey( dek, kek ), storeKek( c, kek, kekId ) ] ) )[0]
-        ).toBase64( BASE64URL_OPTIONS );
+          (await Promise.all([wrapKey(dek, kek), storeKek(c, kek, kekId)]))[0]
+        ).toBase64(BASE64URL_OPTIONS);
     }
   }
 
-  const newId = await replaceOtpTokenId( c, id, expires );
+  const newId = await replaceOtpTokenId(c, id, expires);
 
-  if ( !newId ) {
-    deleteOtpCookie( c );
-    return c.json( ERR_OTP_INVALID_COOKIE, 400 );
+  if (!newId) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
   currentOtpToken[ATTEMPTS]--;
 
-  if ( !currentOtpToken[ATTEMPTS] ) {
-    blockOtpToken( currentOtpToken );
-  } else if ( OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK ) {
+  if (!currentOtpToken[ATTEMPTS]) {
+    blockOtpToken(currentOtpToken);
+  } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK) {
     currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS;
     /**
      * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
      */
-    if ( ( currentOtpToken[EXPIRES] - currentOtpToken[OTP_BLOCK] ) <= 1000 ) {
-      blockOtpToken( currentOtpToken );
+    if ((currentOtpToken[EXPIRES] - currentOtpToken[OTP_BLOCK]) <= 1000) {
+      blockOtpToken(currentOtpToken);
     }
   }
 
   encodedOtpTokenList.push(
-    encodeOtpToken( currentOtpToken ),
+    encodeOtpToken(currentOtpToken),
     newId
   );
 
@@ -545,26 +547,26 @@ app.post( "/api/otp/verify", otpValueValidator, otpCookieValidator, async ( c ) 
     envelope +
       await encryptTextSymmetrically(
         dek,
-        encodedOtpTokenList.join( OTP_TOKEN_SEPARATOR ),
+        encodedOtpTokenList.join(OTP_TOKEN_SEPARATOR),
         additionalData
       ),
-    new Date( getReducedTimePrecision( expires ) )
+    new Date(getReducedTimePrecision(expires))
   );
 
-  const currentOtpTokenData = getOtpTokenData( currentOtpToken );
+  const currentOtpTokenData = getOtpTokenData(currentOtpToken);
 
-  if ( currentOtpTokenData.blocked ) {
-    return c.json( ERR_OTP_TOO_MANY_ATTEMPTS, 403 );
+  if (currentOtpTokenData.blocked) {
+    return c.json(ERR_OTP_TOO_MANY_ATTEMPTS, 403);
   }
 
-  if ( currentOtpTokenData.otpBlock ) {
-    return c.json( {
+  if (currentOtpTokenData.otpBlock) {
+    return c.json({
       ...ERR_OTP_INCORRECT,
       otpBlock: currentOtpTokenData.otpBlock
-    }, 403 );
+    }, 403);
   }
 
-  return c.json( ERR_OTP_INCORRECT, 403 );
-} );
+  return c.json(ERR_OTP_INCORRECT, 403);
+});
 
 export default app;

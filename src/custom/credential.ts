@@ -8,7 +8,7 @@ import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static";
  * - The validation target must return a credential string (not shared with the client).
  * - Read more about [Hono validators](https://hono.dev/docs/guides/validation#validation).
  */
-const credentialValidator = validator( "json", ( body, c ) => {
+const credentialValidator = validator("json", (body, c) => {
   /**
    * Is the body invalid or empty?
    * A JSON can be an object/array or a value (string, number, boolean, null).
@@ -16,12 +16,12 @@ const credentialValidator = validator( "json", ( body, c ) => {
   if (
     !body ||
     body === true ||
-    ( typeof body !== "number" && !( body?.length || Object.keys( body ).length ) )
+    (typeof body !== "number" && !(body?.length || Object.keys(body).length))
   ) {
-    return c.json( ERR_CREDENTIAL_INVALID, 400 );
+    return c.json(ERR_CREDENTIAL_INVALID, 400);
   }
 
-  return JSON.stringify( body );
-} );
+  return JSON.stringify(body);
+});
 
 export default credentialValidator;
