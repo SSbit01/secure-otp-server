@@ -1,6 +1,8 @@
 # ---- Build Stage ----
 FROM oven/bun:1-alpine AS builder
 
+ENV NODE_ENV="production"
+
 # Set working directory
 WORKDIR /app
 
@@ -19,6 +21,8 @@ RUN bun run bun:build
 
 # ---- Runtime Stage ----
 FROM oven/bun:1-alpine
+
+ENV NODE_ENV="production"
 
 # Set working directory
 WORKDIR /app
