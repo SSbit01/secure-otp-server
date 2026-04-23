@@ -1,13 +1,13 @@
 import { getCookie } from "hono/cookie";
 import credentialValidator from "@/custom/credential";
 import finalAction from "@/custom/final";
-import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires } from "@/custom/id";
+import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "@/custom/id";
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms";
-import { createOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "@/custom/otp";
+import { generateOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "@/custom/otp";
 import sendOtp from "@/custom/send";
 import { BASE64URL_OPTIONS } from "@/lib/base64";
 import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed";
-import { createRandomId } from "@/lib/crypto/id";
+import { generateRandomId } from "@/lib/crypto/id";
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek";
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek";
 
@@ -155,7 +155,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
       envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
     } else {
-      additionalData = createRandomId(KEK_ID_BYTES);
+      additionalData = generateRandomId(KEK_ID_BYTES);
       kekId = additionalData.toBase64(BASE64URL_OPTIONS);
       kek = await createKek();
       envelope = kekId +
@@ -172,21 +172,36 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     newEncodedOtpTokenList.push(currentEncodedOtpToken);
   } else {
     /**
-     * `updateOtpTokenExpires` is used to verify too.
      * Verify OTP Token List ID before sending the OTP.
      */
-    expires = await updateOtpTokenExpires(c, id, expires);
-    if (!expires) {
+    if (!await verifyOtpTokenId(c, id, expires)) {
       deleteOtpCookie(c);
       return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
-    const otp = createOtp();
+    
+    const otp = generateOtp();
+
     if (!await sendOtp(c, credential, otp)) {
       return c.json(ERR_CREDENTIAL_INVALID, 400);
     }
+
+    /**
+     * `updateOtpTokenExpires` is used to verify too.
+     * It is set after `sendOtp()` because it takes some time.
+     */
+    expires = await updateOtpTokenExpires(c, id, expires);
+
+    if (!expires) {
+      deleteOtpCookie(c);
+      return c.json(ERR_OTP_INVALID_COOKIE, 429);
+    }
+
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
+
     currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock);
+
     newEncodedOtpTokenList.push(currentEncodedOtpToken);
+    
     currentOtpTokenData = {
       expires: new Date(getReducedTimePrecision(expires)),
       resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
@@ -322,7 +337,7 @@ app.post("/api/otp/resend", async (c) => {
       additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
       envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
     } else {
-      additionalData = createRandomId(KEK_ID_BYTES);
+      additionalData = generateRandomId(KEK_ID_BYTES);
       kekId = additionalData.toBase64(BASE64URL_OPTIONS);
       kek = await createKek();
       envelope = kekId +
@@ -339,7 +354,7 @@ app.post("/api/otp/resend", async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  currentOtpToken[OTP] = createOtp();
+  currentOtpToken[OTP] = generateOtp();
 
   if (!await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])) {
     /**
@@ -506,7 +521,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
       additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
       envelope = kekId + new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
     } else {
-      additionalData = createRandomId(KEK_ID_BYTES);
+      additionalData = generateRandomId(KEK_ID_BYTES);
       kekId = additionalData.toBase64(BASE64URL_OPTIONS);
       kek = await createKek();
       envelope = kekId +

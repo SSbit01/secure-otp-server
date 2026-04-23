@@ -1,7 +1,7 @@
 import type { Context } from "hono";
-import type { createOtp } from "@/custom/otp";
+import type { generateOtp } from "@/custom/otp";
 
-type Otp = ReturnType<typeof createOtp>;
+type Otp = ReturnType<typeof generateOtp>;
 
 /**
  * Implement here the sending of the OTP code to the credential/ID.

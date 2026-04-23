@@ -85,7 +85,7 @@ export const OTP_REGEX: RegExp = /[a-z0-9]+/;
 /**
  * This implenetation creates an OTP with lowercase letters and numbers.
  */
-export function createOtp() {
+export function generateOtp() {
   return (
     crypto.getRandomValues(new BigUint64Array(1))[0]
       .toString(36)

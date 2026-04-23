@@ -19,7 +19,7 @@ import {
   OTP_TOO_MANY_ATTEMPTS
 } from "@/lib/error/names";
 
-import { createOtp, OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "@/custom/otp";
+import { generateOtp, OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "@/custom/otp";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed";
 import app from "@/index";
 
@@ -227,7 +227,7 @@ describe("OTP Sending", () => {
   it("Send an OTP without sending the cookie", async () => {
     const res = await app.request("/api/otp/verify", {
       method: "POST",
-      body: `otp=${createOtp()}`,
+      body: `otp=${generateOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
       }
@@ -247,7 +247,7 @@ describe("OTP Sending", () => {
 
     const res = await app.request("/api/otp/verify", {
       method: "POST",
-      body: `otp=${createOtp()}`,
+      body: `otp=${generateOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         "cookie": cookieArray.join("; ")
@@ -294,7 +294,7 @@ describe("OTP Sending", () => {
   it("Verify with invalid body", async () => {
     const res = await app.request("/api/otp/verify", {
       method: "POST",
-      body: `ot=${createOtp()}`,
+      body: `ot=${generateOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         cookie
@@ -311,7 +311,7 @@ describe("OTP Sending", () => {
   async function sendInvalidOtp() {
     const res = await app.request("/api/otp/verify", {
       method: "POST",
-      body: `otp=${createOtp()}`,
+      body: `otp=${generateOtp()}`,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         cookie
@@ -344,7 +344,7 @@ describe("OTP Sending", () => {
 
       const res = await app.request("/api/otp/verify", {
         method: "POST",
-        body: `otp=${createOtp()}`,
+        body: `otp=${generateOtp()}`,
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           cookie

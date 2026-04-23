@@ -32,7 +32,7 @@ const OTP_SEPARATOR = "|";
 const OTP_DOUBLE_SEPARATOR = OTP_SEPARATOR + OTP_SEPARATOR;
 
 /**
- * @function createOtpToken
+ * @function generateOtpToken
  * @param {OtpToken[CREDENTIAL]} credential
  * @param {OtpToken[EXPIRES]} expires
  * @param {NonNullable<OtpToken[OTP]>} otp

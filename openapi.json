@@ -65,7 +65,7 @@
     },
     "/api/otp/create": {
       "post": {
-        "operationId": "createOtp",
+        "operationId": "generateOtp",
         "summary": "Create or reuse an OTP token",
         "description": "Validates the credential payload, issues a new OTP if necessary, and sets a fresh session cookie.",
         "requestBody": {

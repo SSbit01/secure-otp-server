@@ -13,7 +13,7 @@
 
 import { BASE64URL_OPTIONS } from "@/lib/base64";
 import { OTP_MAX_AGE_MS } from "@/lib/computed";
-import { createRandomId } from "@/lib/crypto/id";
+import { generateRandomId } from "@/lib/crypto/id";
 
 import type { Context } from "hono";
 
@@ -33,11 +33,11 @@ const idStorage = new Map<string, number>();
  * If the key could not be saved due to a technical error, an error should be thrown.
  *
  * @async
- * @function createOtpTokenListId
+ * @function generateOtpTokenListId
  * @param {Context} c - Hono context.
  * @return {Promise<[string, number]>} The new ID and the expiration date.
  */
-export async function createOtpTokenListId(c: Context): Promise<[string, number]> {
+export async function generateOtpTokenListId(c: Context): Promise<[string, number]> {
   // Manually clean up expired IDs, as this implementation cannot automatically delete them.
 
   const dateNow = Date.now();
@@ -48,7 +48,7 @@ export async function createOtpTokenListId(c: Context): Promise<[string, number]
     }
   }
 
-  const newId = createRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+  const newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
 
   /**
    * The cleanup loop might have taken some milliseconds.
@@ -86,6 +86,7 @@ export async function deleteOtpTokenId(c: Context, id: string, expires?: number)
     if (storedExpires <= Date.now()) {
       idStorage.delete(id);
     }
+
     return false;
   }
 
@@ -99,7 +100,7 @@ export async function deleteOtpTokenId(c: Context, id: string, expires?: number)
  * @function replaceOtpTokenId
  * @param {Context} c - Hono context.
  * @param {string} oldId - The ID to delete.
- * @param {number} expires - Expiration time in milliseconds since epoch. It may be used to verify the ID.
+ * @param {number} expires - Expiration time in milliseconds since epoch. It is used to verify the ID.
  * @returns {Promise<string|undefined>} New Id.
  */
 export async function replaceOtpTokenId(c: Context, oldId: string, expires: number): Promise<string | undefined> {
@@ -119,7 +120,7 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
 
   idStorage.delete(oldId);
 
-  const newId = createRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+  const newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
 
   idStorage.set(newId, expires);
 
@@ -133,7 +134,7 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
  * @function updateOtpTokenExpires
  * @param {Context} c - Hono context.
  * @param {string} id - The ID.
- * @param {number} oldExpires - Expiration time in milliseconds since epoch. It may be used to verify the ID. It is not checked because the server already filters expired IDs.
+ * @param {number} oldExpires - Expiration time in milliseconds since epoch. It is used to verify the ID.
  * @returns {Promise<number>} New expiration time.
  */
 export async function updateOtpTokenExpires(c: Context, id: string, oldExpires: number): Promise<number> {
@@ -146,4 +147,16 @@ export async function updateOtpTokenExpires(c: Context, id: string, oldExpires: 
   idStorage.set(id, newExpires);
 
   return newExpires;
+}
+
+/**
+ * @async
+ * @function verifyOtpTokenId
+ * @param {Context} c - Hono context.
+ * @param {string} id - The ID.
+ * @param {number} expires - Expiration time in milliseconds since epoch. It is used to verify the ID.
+ * @returns {Promise<boolean>}
+ */
+export async function verifyOtpTokenId(c: Context, id: string, expires: number): Promise<boolean> {
+  return idStorage.get(id) === expires;
 }
