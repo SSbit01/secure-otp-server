@@ -47,7 +47,7 @@ import app from "@/setup";
 import type { OtpTokenData } from "@/lib/otp";
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
-  const credential = c.req.valid("json");
+  const credential = c.req.valid("form");
 
   const otpData = getCookie(c, getOtpCookieName(c))?.trim();
 
@@ -178,7 +178,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
       deleteOtpCookie(c);
       return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
-    
+
     const otp = generateOtp();
 
     if (!await sendOtp(c, credential, otp)) {
@@ -201,7 +201,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
     currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock);
 
     newEncodedOtpTokenList.push(currentEncodedOtpToken);
-    
+
     currentOtpTokenData = {
       expires: new Date(getReducedTimePrecision(expires)),
       resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
@@ -347,9 +347,7 @@ app.post("/api/otp/resend", async (c) => {
     }
   }
 
-  currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, id, expires);
-
-  if (!currentOtpToken[EXPIRES]) {
+  if (!(await verifyOtpTokenId(c, id, expires))) {
     deleteOtpCookie(c);
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
@@ -373,10 +371,14 @@ app.post("/api/otp/resend", async (c) => {
     }
   }
 
-  encodedOtpTokenList.push(
-    encodeOtpToken(currentOtpToken),
-    id
-  );
+  currentOtpToken[EXPIRES] = await updateOtpTokenExpires(c, id, expires);
+
+  if (!currentOtpToken[EXPIRES]) {
+    deleteOtpCookie(c);
+    return c.json(ERR_OTP_INVALID_COOKIE, 400);
+  }
+
+  encodedOtpTokenList.push(encodeOtpToken(currentOtpToken), id);
 
   const currentOtpTokenData = getOtpTokenData(currentOtpToken);
 
@@ -489,9 +491,22 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     /**
      * VERIFIED
      */
-    const otpTokenIdDeletion = await deleteOtpTokenId(c, id, expires);
+    if (!(await verifyOtpTokenId(c, id, expires))) {
+      deleteOtpCookie(c);
+      return c.json(ERR_OTP_INVALID_COOKIE, 400);
+    }
+
+    const honoRes = await finalAction(c, currentOtpToken[CREDENTIAL]);
+
     deleteOtpCookie(c);
-    return otpTokenIdDeletion ? await finalAction(c, currentOtpToken[CREDENTIAL]) : c.json(ERR_OTP_INVALID_COOKIE, 400);
+
+    try {
+      await deleteOtpTokenId(c, id, expires);
+    } catch (error) {
+      console.error(error);
+    }
+
+    return honoRes;
   }
 
   /**
@@ -530,6 +545,10 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
         ).toBase64(BASE64URL_OPTIONS);
     }
   }
+
+  /**
+   * `id` is set after envelope in case the first one fails.
+   */
 
   const newId = await replaceOtpTokenId(c, id, expires);
 

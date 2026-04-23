@@ -141,7 +141,7 @@ For a complete specification, see the [`openapi.json`](/openapi.json) file.
 Generates a new OTP, encrypts the session data, and sends it to the user.
 This endpoint sets one `HttpOnly` cookie that must be included in subsequent requests.
 
-- **Body**: `application/json`. The schema is defined in [`src/custom/credential.ts`](/src/custom/credential.ts).
+- **Body**: `application/x-www-form-urlencoded` or `multipart/form-data`. The schema is defined in [`src/custom/credential.ts`](/src/custom/credential.ts).
 - **Logic**: The OTP sending logic is defined in [`src/custom/send.ts`](/src/custom/send.ts).
 - **Multi-credential flow**: Sending this request again with a different credential adds another OTP token
   (until `OTP_MAX_CREDENTIALS` is reached).

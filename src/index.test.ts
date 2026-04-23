@@ -40,11 +40,15 @@ function getCookieFromResponse(res: Response) {
 }
 
 async function fetchOtpcookie() {
+  const body = new URLSearchParams();
+
+  body.append("otp", Math.random().toString(36));
+
   const res = await app.request("/api/otp/create", {
     method: "POST",
-    body: `"${Math.random().toString(36)}"`,
+    body,
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/x-www-form-urlencoded"
     }
   });
 
@@ -77,19 +81,23 @@ describe("OTP Generation", () => {
     const res = await app.request("/api/otp/create", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/x-www-form-urlencoded"
       }
     });
 
     const data = await res.json();
 
-    expect(data.error).toBe(GENERIC);
+    expect(data.error).toBe(CREDENTIAL_INVALID);
   });
 
   it("Generate OTP with an invalid `Content-Type`", async () => {
+    const body = new URLSearchParams();
+
+    body.append("email", "email@example.com");
+
     const res = await app.request("/api/otp/create", {
       method: "POST",
-      body: '["test"]',
+      body,
       headers: {
         "Content-Type": "text/plain"
       }
@@ -103,7 +111,7 @@ describe("OTP Generation", () => {
   it("Generate OTP with an invalid credential type", async () => {
     const res = await app.request("/api/otp/create", {
       method: "POST",
-      body: "test",
+      body: JSON.stringify({ credential: "test" }),
       headers: {
         "Content-Type": "application/json"
       }
@@ -111,15 +119,15 @@ describe("OTP Generation", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(GENERIC);
+    expect(data.error).toBe(CREDENTIAL_INVALID);
   });
 
   it("Generate OTP with an invalid credential", async () => {
     const res = await app.request("/api/otp/create", {
       method: "POST",
-      body: "false",
+      body: new URLSearchParams(),
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/x-www-form-urlencoded"
       }
     });
 
