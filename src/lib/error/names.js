@@ -1,6 +1,7 @@
 export const BODY_TOO_LARGE = "BODY:TOO_LARGE";
 export const CREDENTIAL_INVALID = "CREDENTIAL:INVALID";
 export const GENERIC = "GENERIC";
+export const OTP_CONFLICT = "OTP:CONFLICT";
 export const OTP_EXPIRED = "OTP:EXPIRED";
 export const OTP_INCORRECT = "OTP:INCORRECT";
 export const OTP_INVALID_COOKIE = "OTP:INVALID_COOKIE";

@@ -2,6 +2,7 @@ import {
   BODY_TOO_LARGE,
   CREDENTIAL_INVALID,
   GENERIC,
+  OTP_CONFLICT,
   OTP_EXPIRED,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
@@ -13,61 +14,66 @@ import {
   SERVER
 } from "@/lib/error/names";
 
-export const ERR_GENERIC = {
+export const ERR_GENERIC = Object.freeze({
   error: GENERIC
-};
+});
 
-export const ERR_BODY_TOO_LARGE = {
+export const ERR_BODY_TOO_LARGE = Object.freeze({
   error: BODY_TOO_LARGE,
   message: "The body of your request is too large."
-};
+});
 
-export const ERR_CREDENTIAL_INVALID = {
+export const ERR_CREDENTIAL_INVALID = Object.freeze({
   error: CREDENTIAL_INVALID,
   message: "Invalid credential."
-};
+});
 
-export const ERR_OTP_EXPIRED = {
+export const ERR_OTP_CONFLICT = Object.freeze({
+  error: OTP_CONFLICT,
+  message: "The OTP token presented some conflicts with the server state, please try to authenticate again."
+});
+
+export const ERR_OTP_EXPIRED = Object.freeze({
   error: OTP_EXPIRED,
   message: "The current OTP is expired. Please request a new code."
-};
+});
 
-export const ERR_OTP_INCORRECT = {
+export const ERR_OTP_INCORRECT = Object.freeze({
   error: OTP_INCORRECT,
   message: "Incorrect OTP value."
-};
+});
 
-export const ERR_OTP_INVALID_COOKIE = {
+export const ERR_OTP_INVALID_COOKIE = Object.freeze({
   error: OTP_INVALID_COOKIE,
   message: "The OTP cookie is invalid."
-};
+});
 
-export const ERR_OTP_INVALID_FORMAT = {
+export const ERR_OTP_INVALID_FORMAT = Object.freeze({
   error: OTP_INVALID_FORMAT,
   message: "Invalid OTP format."
-};
+});
 
-export const ERR_OTP_RESENT_NOT_ALLOWED = {
+export const ERR_OTP_RESENT_NOT_ALLOWED = Object.freeze({
   error: OTP_RESENT_NOT_ALLOWED,
   message: "Resend not allowed."
-};
+});
 
-export const ERR_OTP_TOO_MANY_ATTEMPTS = {
+export const ERR_OTP_TOO_MANY_ATTEMPTS = Object.freeze({
   error: OTP_TOO_MANY_ATTEMPTS,
   message: "Too many attempts. For security reasons, the OTP has been blocked. Please wait for it to expire and then try again."
-};
+});
 
-export const ERR_OTP_TOO_MANY_CREDENTIALS = {
+export const ERR_OTP_TOO_MANY_CREDENTIALS = Object.freeze({
   error: OTP_TOO_MANY_CREDENTIALS,
   message: "Too many credentials."
-};
+});
 
-export const ERR_OTP_VERIFICATION_NOT_ALLOWED = {
+export const ERR_OTP_VERIFICATION_NOT_ALLOWED = Object.freeze({
   error: OTP_VERIFICATION_NOT_ALLOWED,
   message: "Verification not allowed."
-};
+});
 
-export const ERR_SERVER = {
+export const ERR_SERVER = Object.freeze({
   error: SERVER,
   message: "The server has some issues, it's not your fault."
-};
+});

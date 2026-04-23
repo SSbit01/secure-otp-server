@@ -13,6 +13,7 @@ import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek";
 
 import {
   ERR_CREDENTIAL_INVALID,
+  ERR_OTP_CONFLICT,
   ERR_OTP_EXPIRED,
   ERR_OTP_INCORRECT,
   ERR_OTP_INVALID_COOKIE,
@@ -193,7 +194,7 @@ app.post("/api/otp/create", credentialValidator, async (c) => {
 
     if (!expires) {
       deleteOtpCookie(c);
-      return c.json(ERR_OTP_INVALID_COOKIE, 429);
+      return c.json(ERR_OTP_CONFLICT, 429);
     }
 
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
@@ -375,7 +376,7 @@ app.post("/api/otp/resend", async (c) => {
 
   if (!currentOtpToken[EXPIRES]) {
     deleteOtpCookie(c);
-    return c.json(ERR_OTP_INVALID_COOKIE, 400);
+    return c.json(ERR_OTP_CONFLICT, 400);
   }
 
   encodedOtpTokenList.push(encodeOtpToken(currentOtpToken), id);
