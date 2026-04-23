@@ -3,7 +3,7 @@ import { OTP_COOKIE_PREFIX } from "@/custom/otp";
 import isProduction from "@/lib/production";
 
 /**
- * @import { Context } from "hono"
+ * @import {Context} from "hono"
  */
 
 const COOKIE_OTP = "o";
