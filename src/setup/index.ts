@@ -29,7 +29,7 @@ app.use(cors({
 }));
 
 app.use(bodyLimit({
-  maxSize: 102400, // 100 KiB
+  maxSize: 4096, // 4 KiB
 
   onError(c) {
     return c.json(ERR_BODY_TOO_LARGE, 413);

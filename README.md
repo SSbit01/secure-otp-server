@@ -180,7 +180,7 @@ You can configure the server's middleware and CORS behavior in [`src/setup/index
 Default settings include:
 
 - All other requests return a 404 error with an empty response body.
-- Request body size is capped at 100 KiB.
+- Request body size is capped at 4 KiB.
 
 These defaults are fully customizable within the same file.
 
