@@ -361,7 +361,7 @@ app.post("/api/otp/resend", async (c) => {
      */
     blockOtpToken(currentOtpToken);
   } else if (OTP_ALLOW_ONLY_ONE_RESENDING) {
-    delete currentOtpToken[RESEND_BLOCK];
+    currentOtpToken[RESEND_BLOCK] = undefined;
   } else {
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
     /**
@@ -486,7 +486,7 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     return c.json(ERR_OTP_VERIFICATION_NOT_ALLOWED, 403);
   }
 
-  delete currentOtpToken[OTP_BLOCK];
+  currentOtpToken[OTP_BLOCK] = undefined;
 
   if (currentOtpToken[OTP] === c.req.valid("form")) {
     /**

@@ -21,10 +21,13 @@ export const OTP_TOKEN_SEPARATOR = ",";
  * @param {OtpToken} otpToken
  */
 export function blockOtpToken(otpToken) {
-  delete otpToken[OTP];
-  delete otpToken[ATTEMPTS];
-  delete otpToken[RESEND_BLOCK];
-  delete otpToken[OTP_BLOCK];
+  /**
+   * Do not use `delete` because it can break engine optimizations.
+   */
+  otpToken[OTP] = undefined;
+  otpToken[ATTEMPTS] = undefined;
+  otpToken[RESEND_BLOCK] = undefined;
+  otpToken[OTP_BLOCK] = undefined;
 }
 
 /**
