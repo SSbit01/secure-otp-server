@@ -49,17 +49,13 @@ setInterval(() => {
  * @return {Promise<[string, number]>} The new ID and the expiration date.
  */
 export async function generateOtpTokenListId(c: Context): Promise<[string, number]> {
-  // Manually clean up expired IDs, as this implementation cannot automatically delete them.
+  let newId: string;
+  let storedExpires: number | undefined;
 
-  const dateNow = Date.now();
-
-  for (const [id, expires] of idStorage) {
-    if (expires <= dateNow) {
-      idStorage.delete(id);
-    }
-  }
-
-  const newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+  do {
+    newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+    storedExpires = idStorage.get(newId);
+  } while (storedExpires !== undefined && storedExpires > Date.now());
 
   /**
    * The cleanup loop might have taken some milliseconds.

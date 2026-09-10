@@ -37,8 +37,9 @@
     "hono": "^4.13.7"
   },
   "devDependencies": {
-    "@types/bun": "1.2.20",
+    "@types/node": "22.6.1",
     "generate-license-file": "^4.2.5",
+    "typescript": "^6.0.3",
     "wrangler": "^4.130.0"
   }
 }

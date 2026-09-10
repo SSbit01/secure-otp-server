@@ -117,5 +117,6 @@
     "*.lockb",
     "npm-shrinkwrap.json",
     "pnpm-lock.yaml"
-  ]
+  ],
+  "allowScripts": ["npm:esbuild@0.28.1", "npm:workerd@1.20260908.1"]
 }

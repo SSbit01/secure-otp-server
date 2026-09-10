@@ -1,24 +1,26 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "lib": [
-      "esnext",
-      "dom"
-    ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
-    "rootDir": "./src",
-    "outDir": "./dist",
     "allowJs": true,
     "checkJs": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "lib": [
+      "DOM",
+      "ES2024",
+      "ESNext.TypedArrays"
+    ],
     "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "rootDir": "./src",
+    "strict": true,
+    "skipLibCheck": true,
+    "target": "es2024",
+    "types": ["node"]
   },
   "include": ["src/**/*"]
 }

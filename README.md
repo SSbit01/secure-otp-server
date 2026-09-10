@@ -100,7 +100,7 @@ Clone the repository and install dependencies using your preferred package manag
 bun install
 
 # Using Deno
-deno task install
+deno install
 ```
 
 ### 2. Configuration
