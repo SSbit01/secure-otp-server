@@ -14,7 +14,6 @@
 import { BASE64URL_OPTIONS } from "@/lib/base64";
 import { OTP_MAX_AGE_MS } from "@/lib/computed";
 import { generateRandomId } from "@/lib/crypto/id";
-
 import type { Context } from "hono";
 
 /**
@@ -26,6 +25,18 @@ import type { Context } from "hono";
 const ID_BYTES = 18;
 
 const idStorage = new Map<string, number>();
+
+/// CUSTOM
+setInterval(() => {
+  const dateNow = Date.now();
+
+  for (const [id, expires] of idStorage) {
+    if (expires <= dateNow) {
+      idStorage.delete(id);
+    }
+  }
+}, 60000);
+///
 
 /**
  * Stores an encryption key with the given ID and expiration time.
@@ -62,6 +73,21 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
 }
 
 /**
+ * Deletes all OTP Token IDs.
+ * This function should be called if the current KEK is compromised.
+ *
+ * @async
+ * @function deleteAllOtpTokenIds
+ * @param {Context} c - Hono context.
+ * @returns {Promise<boolean>} Whether deletions were successful or not.
+ */
+export async function deleteAllOtpTokenIds(c: Context): Promise<boolean> {
+  idStorage.clear();
+
+  return true;
+}
+
+/**
  * Deletes an encryption key by its ID.
  *
  * @async
@@ -69,7 +95,7 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
  * @param {Context} c - Hono context.
  * @param {string} id - The ID to delete.
  * @param {number} [expires] - Expiration time in milliseconds since epoch used to verify the ID; if not provided, the ID must be deleted without verification.
- * @returns {Promise<boolean>} If delete was successful.
+ * @returns {Promise<boolean>} Whether deletion was successful or not.
  */
 export async function deleteOtpTokenId(c: Context, id: string, expires?: number): Promise<boolean> {
   if (!expires) {

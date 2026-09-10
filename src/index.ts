@@ -10,7 +10,6 @@ import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH, OTP_INVALID_BLOCK_MS, O
 import { generateRandomId } from "@/lib/crypto/id";
 import { createDek, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek";
 import { createKek, wrapKey } from "@/lib/crypto/symmetric/kek";
-
 import {
   ERR_CREDENTIAL_INVALID,
   ERR_OTP_CONFLICT,
@@ -22,11 +21,9 @@ import {
   ERR_OTP_TOO_MANY_CREDENTIALS,
   ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "@/lib/error/static";
-
 import { getDek, KEK_ID_BYTES, rotateKek } from "@/lib/kms";
 import { blockOtpToken, getOtpTokenData, getOtpTokenList, OTP_TOKEN_SEPARATOR } from "@/lib/otp";
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie";
-
 import {
   ATTEMPTS,
   createEncodedOtpToken,
@@ -38,13 +35,11 @@ import {
   OTP_BLOCK,
   RESEND_BLOCK
 } from "@/lib/otp/encode/token";
-
 import generateOtpTokenCreationResponse from "@/lib/otp/response/create";
 import { getReducedTimePrecision } from "@/lib/time";
 import otpCookieValidator from "@/lib/validators/otp";
 import otpValueValidator from "@/lib/validators/otp";
 import app from "@/setup";
-
 import type { OtpTokenData } from "@/lib/otp";
 
 app.post("/api/otp/create", credentialValidator, async (c) => {
