@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
 import { createDek, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek";
 
 function randomString() {
@@ -8,12 +9,12 @@ function randomString() {
 describe("DEK", () => {
   test("Generate a random symmetric CryptoKey", async () => {
     const key = await createDek();
-    expect(key).toBeDefined();
+    assert.ok(key instanceof globalThis.CryptoKey);
   });
 
   test("Encrypt a random value", async () => {
     const key = await createDek();
-    expect(await encryptTextSymmetrically(key, randomString())).toBeString();
+    assert.strictEqual(typeof await encryptTextSymmetrically(key, randomString()), "string");
   });
 
   test("Decrypt a random value", async () => {
@@ -21,7 +22,7 @@ describe("DEK", () => {
     const randomValue = randomString();
     const ciphertext = await encryptTextSymmetrically(symCryptoKey, randomValue);
     const decrypted = await decryptTextSymmetrically(symCryptoKey, ciphertext);
-    expect(randomValue).toBe(decrypted);
+    assert.strictEqual(randomValue, decrypted);
   });
 
   test("Check if encrypting and decrypting with different CryptoKey objects returns an error", async () => {
@@ -29,6 +30,6 @@ describe("DEK", () => {
     const symCryptoKey2 = await createDek();
     const randomValue = randomString();
     const ciphertext = await encryptTextSymmetrically(symCryptoKey, randomValue);
-    await expect(decryptTextSymmetrically(symCryptoKey2, ciphertext)).rejects.toThrow();
+    await assert.rejects(decryptTextSymmetrically(symCryptoKey2, ciphertext));
   });
 });

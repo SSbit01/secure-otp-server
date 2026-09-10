@@ -18,9 +18,13 @@ let production;
 export default function isProduction(c) {
   if (production === undefined) {
     const envVars = env(c);
-    production = envVars.NODE_ENV?.toLowerCase() === PRODUCTION ||
+
+    production = (
+      envVars.NODE_ENV?.toLowerCase() === PRODUCTION ||
       envVars.ENVIRONMENT?.toLowerCase() === PRODUCTION ||
-      envVars.VERCEL_ENV?.toLowerCase() === PRODUCTION;
+      envVars.DENO_ENV?.toLowerCase() === PRODUCTION ||
+      envVars.VERCEL_ENV?.toLowerCase() === PRODUCTION
+    );
   }
 
   return production;

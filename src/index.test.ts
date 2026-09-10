@@ -6,24 +6,19 @@
  * ...
  */
 
-import { sleep } from "bun";
-import { describe, expect, it } from "bun:test";
-
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
   CREDENTIAL_INVALID,
-  GENERIC,
   OTP_INCORRECT,
   OTP_INVALID_COOKIE,
   OTP_INVALID_FORMAT,
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS
 } from "@/lib/error/names";
-
 import { generateOtp, OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "@/custom/otp";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed";
 import app from "@/index";
-
-const MAX_WAITING_MS = 4000;
 
 const ATTEMPTS_WITHOUT_BLOCK = OTP_MAX_ATTEMPTS - OTP_ATTEMPTS_BLOCK;
 
@@ -57,9 +52,10 @@ async function fetchOtpcookie() {
   const date = new Date();
 
   if (OTP_RESEND_BLOCK_MS) {
-    expect(new Date(data.resendBlock) > date).toBeTrue();
+    assert.ok(new Date(data.resendBlock) > date);
   }
-  expect(new Date(data.expires) > date).toBeTrue();
+
+  assert.ok(new Date(data.expires) > date);
 
   return getCookieFromResponse(res);
 }
@@ -74,7 +70,7 @@ describe("OTP Generation", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(CREDENTIAL_INVALID);
+    assert.strictEqual(data.error, CREDENTIAL_INVALID);
   });
 
   it("Generate OTP without body", async () => {
@@ -87,7 +83,7 @@ describe("OTP Generation", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(CREDENTIAL_INVALID);
+    assert.strictEqual(data.error, CREDENTIAL_INVALID);
   });
 
   it("Generate OTP with an invalid `Content-Type`", async () => {
@@ -105,7 +101,7 @@ describe("OTP Generation", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(CREDENTIAL_INVALID);
+    assert.strictEqual(data.error, CREDENTIAL_INVALID);
   });
 
   it("Generate OTP with an invalid credential type", async () => {
@@ -119,7 +115,7 @@ describe("OTP Generation", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(CREDENTIAL_INVALID);
+    assert.strictEqual(data.error, CREDENTIAL_INVALID);
   });
 
   it("Generate OTP with an invalid credential", async () => {
@@ -133,7 +129,7 @@ describe("OTP Generation", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(CREDENTIAL_INVALID);
+    assert.strictEqual(data.error, CREDENTIAL_INVALID);
   });
 
   it("Generate OTP", async () => {
@@ -155,7 +151,7 @@ describe("OTP Resending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_COOKIE);
+    assert.strictEqual(data.error, OTP_INVALID_COOKIE);
   });
 
   it("Resend OTP with invalid cookie", async () => {
@@ -174,7 +170,7 @@ describe("OTP Resending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_COOKIE);
+    assert.strictEqual(data.error, OTP_INVALID_COOKIE);
   });
 
   it("Resend OTP without waiting", async () => {
@@ -187,27 +183,30 @@ describe("OTP Resending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_RESENT_NOT_ALLOWED);
+    assert.strictEqual(data.error, OTP_RESENT_NOT_ALLOWED);
   });
 
-  if (OTP_RESEND_BLOCK_MS <= MAX_WAITING_MS) {
-    it("Resend OTP", async () => {
-      await sleep(OTP_RESEND_BLOCK_MS);
-
-      const res = await app.request("/api/otp/resend", {
-        method: "POST",
-        headers: {
-          cookie
-        }
-      });
-
-      const data = await res.json();
-
-      expect(data.expires).toBeString();
+  it("Resend OTP", async (t) => {
+    t.mock.timers.enable({
+      apis: ["Date", "setTimeout", "setInterval"],
+      now: Date.now()
     });
-  } else {
-    console.warn(`OTP_RESEND_BLOCK_MS is greater than ${MAX_WAITING_MS}ms, skipping 'Resend valid OTP' test`);
-  }
+
+    t.mock.timers.tick(OTP_RESEND_BLOCK_MS);
+
+    const res = await app.request("/api/otp/resend", {
+      method: "POST",
+      headers: {
+        cookie
+      }
+    });
+
+    const data = await res.json();
+
+    assert.strictEqual(typeof data.expires, "string");
+
+    t.mock.timers.reset();
+  });
 });
 
 describe("OTP Sending", () => {
@@ -229,7 +228,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_FORMAT);
+    assert.strictEqual(data.error, OTP_INVALID_FORMAT);
   });
 
   it("Send an OTP without sending the cookie", async () => {
@@ -243,7 +242,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_COOKIE);
+    assert.strictEqual(data.error, OTP_INVALID_COOKIE);
   });
 
   it("Send an OTP with an invalid cookie", async () => {
@@ -264,7 +263,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_COOKIE);
+    assert.strictEqual(data.error, OTP_INVALID_COOKIE);
   });
 
   it("Verify with an invalid `Content-Type`", async () => {
@@ -278,7 +277,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_FORMAT);
+    assert.strictEqual(data.error, OTP_INVALID_FORMAT);
 
     return data;
   });
@@ -294,7 +293,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_FORMAT);
+    assert.strictEqual(data.error, OTP_INVALID_FORMAT);
 
     return data;
   });
@@ -311,7 +310,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INVALID_FORMAT);
+    assert.strictEqual(data.error, OTP_INVALID_FORMAT);
 
     return data;
   });
@@ -330,7 +329,7 @@ describe("OTP Sending", () => {
 
     const data = await res.json();
 
-    expect(data.error).toBe(OTP_INCORRECT);
+    assert.strictEqual(data.error, OTP_INCORRECT);
 
     return data;
   }
@@ -342,32 +341,31 @@ describe("OTP Sending", () => {
   it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK}`, async () => {
     const data = await sendInvalidOtp();
     if (OTP_INVALID_BLOCK_MS) {
-      expect(new Date(data.otpBlock) > new Date()).toBeTrue();
+      assert.ok(new Date(data.otpBlock) > new Date());
     }
   });
 
-  if (OTP_INVALID_BLOCK_MS <= MAX_WAITING_MS) {
-    it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async () => {
-      await sleep(OTP_INVALID_BLOCK_MS);
-
-      const res = await app.request("/api/otp/verify", {
-        method: "POST",
-        body: `otp=${generateOtp()}`,
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          cookie
-        }
-      });
-
-      const data = await res.json();
-
-      expect(data.error).toBe(OTP_TOO_MANY_ATTEMPTS);
+  it(`(1) Send an invalid OTP - attempt: ${ATTEMPTS_WITHOUT_BLOCK + 1}`, async (t) => {
+    t.mock.timers.enable({
+      apis: ["Date", "setTimeout", "setInterval"],
+      now: Date.now()
     });
-  } else {
-    console.warn(
-      `'OTP_INVALID_BLOCK_MS' is greater than ${MAX_WAITING_MS}ms, skipping 'Send an invalid OTP - attempt: ${
-        ATTEMPTS_WITHOUT_BLOCK + 1
-      }' test`
-    );
-  }
+
+    t.mock.timers.tick(OTP_INVALID_BLOCK_MS);
+
+    const res = await app.request("/api/otp/verify", {
+      method: "POST",
+      body: `otp=${generateOtp()}`,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        cookie
+      }
+    });
+
+    const data = await res.json();
+
+    assert.strictEqual(data.error, OTP_TOO_MANY_ATTEMPTS);
+
+    t.mock.timers.reset();
+  });
 });

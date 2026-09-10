@@ -1,12 +1,3 @@
-import process from "node:process";
-
-/**
- * Whether the environment is a test environment.
- *
- * - You can omit using different values for tests, but some tests might not run or fail.
- */
-const isTest = process.env.NODE_ENV === "test";
-
 /**
  * By default, only one resending is allowed per session.
  * You can enable unlimited resendings by setting this variable to `false`.
@@ -37,7 +28,7 @@ export const OTP_COOKIE_PREFIX: string = "__Host-Http-";
  *
  * - It is recommended to set it to 20 seconds.
  */
-export const OTP_INVALID_BLOCK_SECONDS: number = isTest ? 3 : 20;
+export const OTP_INVALID_BLOCK_SECONDS: number = 20;
 
 /**
  * You can customize the length of OTPs.
@@ -73,7 +64,7 @@ export const OTP_MAX_ATTEMPTS: number = 3;
  *
  * - It is recommended to set it to 30 seconds.
  */
-export const OTP_RESEND_BLOCK_SECONDS: number = isTest ? 3 : 30;
+export const OTP_RESEND_BLOCK_SECONDS: number = 30;
 
 /**
  * You can customize the OTP format using regular expressions.

@@ -18,13 +18,14 @@
   "main": "./src/index.ts",
   "scripts": {
     "bun:dev": "bun run --hot ./src/index.ts",
-    "bun:test": "bun test --bail",
+    "bun:test": "bun test",
     "bun:build": "bun build ./src/index.ts --production --bytecode --target bun --outdir ./dist",
     "bun:start": "bun run ./dist/index.js",
     "deno:dev": "deno serve --sloppy-imports --watch ./src/index.ts",
+    "deno:test": "deno test --allow-env --sloppy-imports",
     "deno:build": "deno bundle --minify ./src/index.ts --outdir ./dist",
     "deno:start": "deno serve -A ./dist/index.js",
-    "deno:lint:write": "deno lint",
+    "deno:lint": "deno lint",
     "deno:format": "deno fmt --check",
     "deno:format:write": "deno fmt",
     "cf:dev": "wrangler dev",
@@ -36,7 +37,7 @@
     "hono": "^4.13.7"
   },
   "devDependencies": {
-    "@types/bun": "1.2.0",
+    "@types/bun": "1.2.20",
     "generate-license-file": "^4.2.5",
     "wrangler": "^4.130.0"
   }
