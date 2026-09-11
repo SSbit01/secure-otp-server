@@ -77,21 +77,6 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
 }
 
 /**
- * Deletes all OTP Token IDs.
- * This function should be called if the current KEK is compromised.
- *
- * @async
- * @function deleteAllOtpTokenIds
- * @param {Context} c - Hono context.
- * @returns {Promise<boolean>} Whether deletions were successful or not.
- */
-export async function deleteAllOtpTokenIds(c: Context): Promise<boolean> {
-  idStorage.clear();
-
-  return true;
-}
-
-/**
  * Deletes an encryption key by its ID.
  *
  * @async

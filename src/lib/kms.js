@@ -6,7 +6,7 @@ import { createKek, unwrapKey, WRAPPED_DEK_BYTES } from "@/lib/crypto/symmetric/
 import { regexBase64Url } from "@/lib/regex";
 
 /**
- * @import { Context } from "hono"
+ * @import {Context} from "hono"
  */
 
 /**
