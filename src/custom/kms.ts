@@ -13,14 +13,13 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
-import process from "node:process";
 import { OTP_MAX_AGE_MS } from "@/lib/computed";
 import type { Context } from "hono";
 
 /// CUSTOM
 type KeyData = [expires: number, rotate: number, key: CryptoKey];
 
-const ROTATE_TIME = process.env.NODE_ENV === "test" ? 5 : 7776000000; // 90 days in miliseconds.
+const ROTATE_TIME = 7776000000; // 90 days in miliseconds.
 
 const keyStorage = new Map<string, KeyData>();
 ///
