@@ -16,6 +16,7 @@ import { OTP_MAX_AGE_MS } from "@/lib/computed";
 import { generateRandomId } from "@/lib/crypto/id";
 import type { Context } from "hono";
 
+/// CUSTOM
 /**
  * Number of bytes used for generating IDs.
  *
@@ -24,9 +25,10 @@ import type { Context } from "hono";
  */
 const ID_BYTES = 18;
 
+const MAX_ATTEMPTS = 3;
+
 const idStorage = new Map<string, number>();
 
-/// CUSTOM
 setInterval(() => {
   const dateNow = Date.now();
 
@@ -51,11 +53,17 @@ setInterval(() => {
 export async function generateOtpTokenListId(c: Context): Promise<[string, number]> {
   let newId: string;
   let storedExpires: number | undefined;
+  let i = 0;
 
   do {
     newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
     storedExpires = idStorage.get(newId);
-  } while (storedExpires !== undefined && storedExpires > Date.now());
+    i++;
+  } while (storedExpires !== undefined && i < MAX_ATTEMPTS && storedExpires < Date.now());
+
+  if (i >= MAX_ATTEMPTS) {
+    throw new Error("Failed to generate a new ID after several attempts.");
+  }
 
   /**
    * The cleanup loop might have taken some milliseconds.
