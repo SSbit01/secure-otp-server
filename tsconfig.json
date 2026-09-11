@@ -10,7 +10,7 @@
       "ESNext.TypedArrays"
     ],
     "noEmit": true,
-    "module": "esnext",
+    "module": "ES2022",
     "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
@@ -19,7 +19,7 @@
     "rootDir": "./src",
     "strict": true,
     "skipLibCheck": true,
-    "target": "es2024",
+    "target": "esnext",
     "types": ["node"]
   },
   "include": ["src/**/*"]
