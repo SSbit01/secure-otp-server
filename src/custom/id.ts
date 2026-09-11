@@ -62,7 +62,7 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
   } while (storedExpires !== undefined && i < MAX_ATTEMPTS && storedExpires < Date.now());
 
   if (i >= MAX_ATTEMPTS) {
-    throw new Error("Failed to generate a new ID after several attempts.");
+    throw new Error("Failed to generate a new ID after several attempts in `generateOtpTokenListId`");
   }
 
   /**
@@ -138,19 +138,21 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
     return;
   }
 
-  // Manually clean up expired IDs, as this implementation cannot automatically delete them.
-
-  const dateNow = Date.now();
-
-  for (const [id, expires] of idStorage) {
-    if (expires <= dateNow) {
-      idStorage.delete(id);
-    }
-  }
-
   idStorage.delete(oldId);
 
-  const newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+  let newId: string;
+  let storedExpires: number | undefined;
+  let i = 0;
+
+  do {
+    newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+    storedExpires = idStorage.get(newId);
+    i++;
+  } while (storedExpires !== undefined && i < MAX_ATTEMPTS && storedExpires < Date.now());
+
+  if (i >= MAX_ATTEMPTS) {
+    throw new Error("Failed to generate a new ID after several attempts in `replaceOtpTokenId`");
+  }
 
   idStorage.set(newId, expires);
 
