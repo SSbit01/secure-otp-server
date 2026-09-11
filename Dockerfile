@@ -10,13 +10,13 @@ WORKDIR /app
 COPY package.json bun.lockb* ./
 
 # Install deps
-RUN bun install --omit=dev --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy all project files
 COPY . .
 
 # Run your build script (creates /dist)
-RUN bun run bun:build
+RUN bun run bun:build && bun run license
 
 
 # ---- Runtime Stage ----

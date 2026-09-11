@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "assist": {
     "actions": {
       "recommended": true,
@@ -216,7 +216,7 @@
       "jsxEverywhere": false
     }
   },
-  "form": {
+  "json": {
     "assist": {
       "enabled": true
     },
