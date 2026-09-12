@@ -123,8 +123,6 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
     return;
   }
 
-  idStorage.delete(oldId);
-
   let newId: string;
   let storedExpires: number | undefined;
   let i = 0;
@@ -138,6 +136,8 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
   if (i >= MAX_ATTEMPTS) {
     throw new Error("Failed to generate a new ID after several attempts in `replaceOtpTokenId`");
   }
+
+  idStorage.delete(oldId);
 
   idStorage.set(newId, expires);
 
