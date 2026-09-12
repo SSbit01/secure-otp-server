@@ -57,10 +57,6 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
     throw new Error("Failed to generate a new ID after several attempts in `generateOtpTokenListId`");
   }
 
-  /**
-   * The cleanup loop might have taken some milliseconds.
-   * That is the reason `Date.now()` is used instead of the passed date.
-   */
   const expires = Date.now() + OTP_MAX_AGE_MS;
 
   idStorage.set(newId, expires);
