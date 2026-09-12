@@ -17,14 +17,6 @@ import { generateRandomId } from "@/lib/crypto/id";
 import type { Context } from "hono";
 
 /// CUSTOM
-/**
- * Number of bytes used for generating IDs.
- *
- * It is recommended to use a value that is large enough to ensure a low probability of collisions.
- * 18 bytes is a large number, it has a collision probability of 1 in 2^144, much smaller than UUIDv4 (1 in 2^122).
- */
-const ID_BYTES = 18;
-
 const MAX_STORE_ATTEMPTS = 3;
 
 const idStorage = new Map<string, number>();
@@ -56,7 +48,7 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
   let i = 0;
 
   do {
-    newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+    newId = generateRandomId().toBase64(BASE64URL_OPTIONS);
     storedExpires = idStorage.get(newId);
     i++;
   } while (storedExpires !== undefined && i < MAX_STORE_ATTEMPTS && storedExpires < Date.now());
@@ -128,7 +120,7 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
   let i = 0;
 
   do {
-    newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
+    newId = generateRandomId().toBase64(BASE64URL_OPTIONS);
     storedExpires = idStorage.get(newId);
     i++;
   } while (storedExpires !== undefined && i < MAX_STORE_ATTEMPTS && storedExpires < Date.now());
