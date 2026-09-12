@@ -25,7 +25,7 @@ import type { Context } from "hono";
  */
 const ID_BYTES = 18;
 
-const MAX_ATTEMPTS = 3;
+const MAX_STORE_ATTEMPTS = 3;
 
 const idStorage = new Map<string, number>();
 
@@ -59,9 +59,9 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
     newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
     storedExpires = idStorage.get(newId);
     i++;
-  } while (storedExpires !== undefined && i < MAX_ATTEMPTS && storedExpires < Date.now());
+  } while (storedExpires !== undefined && i < MAX_STORE_ATTEMPTS && storedExpires < Date.now());
 
-  if (i >= MAX_ATTEMPTS) {
+  if (i >= MAX_STORE_ATTEMPTS) {
     throw new Error("Failed to generate a new ID after several attempts in `generateOtpTokenListId`");
   }
 
@@ -131,9 +131,9 @@ export async function replaceOtpTokenId(c: Context, oldId: string, expires: numb
     newId = generateRandomId(ID_BYTES).toBase64(BASE64URL_OPTIONS);
     storedExpires = idStorage.get(newId);
     i++;
-  } while (storedExpires !== undefined && i < MAX_ATTEMPTS && storedExpires < Date.now());
+  } while (storedExpires !== undefined && i < MAX_STORE_ATTEMPTS && storedExpires < Date.now());
 
-  if (i >= MAX_ATTEMPTS) {
+  if (i >= MAX_STORE_ATTEMPTS) {
     throw new Error("Failed to generate a new ID after several attempts in `replaceOtpTokenId`");
   }
 
