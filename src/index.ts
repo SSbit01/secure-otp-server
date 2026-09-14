@@ -497,6 +497,10 @@ app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => 
     deleteOtpCookie(c);
 
     try {
+      /**
+       * In rare cases, an expired token's ID may get reused by another token.
+       * To prevent this, always pass the `expires` parameter.
+       */
       await deleteOtpTokenId(c, id, expires);
     } catch (error) {
       console.error(error);
