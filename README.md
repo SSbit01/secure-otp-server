@@ -130,8 +130,6 @@ deno task deno:dev
 
 ## API Reference
 
-For a complete specification, see the [`openapi.json`](/openapi.json) file.
-
 ### `POST /api/otp/create`
 
 Generates a new OTP, encrypts the session data, and sends it to the user.
@@ -154,6 +152,10 @@ Verifies an OTP code.
 
 - **Body**: `application/x-www-form-urlencoded` with an `otp` parameter (e.g. `otp=12345678`).
 - **Logic**: After successful verification, a final action is triggered, defined in [`src/custom/final.ts`](/src/custom/final.ts).
+
+### `* /health`
+
+Health check endpoint, available for any HTTP method. Returns `200 OK` with the plain-text body `OK`.
 
 ## Customization
 
