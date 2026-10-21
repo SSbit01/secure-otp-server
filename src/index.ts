@@ -37,7 +37,6 @@ import {
 } from "@/lib/otp/encode/token";
 import generateOtpTokenCreationResponse from "@/lib/otp/response/create";
 import { getReducedTimePrecision } from "@/lib/time";
-import otpCookieValidator from "@/lib/validators/otp";
 import otpValueValidator from "@/lib/validators/otp";
 import app from "@/setup";
 import type { OtpTokenData } from "@/lib/otp";
@@ -392,7 +391,7 @@ app.post("/api/otp/resend", async (c) => {
   return currentOtpTokenData.blocked ? c.json(ERR_CREDENTIAL_INVALID, 400) : c.json(currentOtpTokenData);
 });
 
-app.post("/api/otp/verify", otpValueValidator, otpCookieValidator, async (c) => {
+app.post("/api/otp/verify", otpValueValidator, async (c) => {
   const otpData = getCookie(c, getOtpCookieName(c))?.trim();
 
   if (!otpData) {
