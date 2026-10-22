@@ -21,6 +21,8 @@
     "bun:test": "bun test",
     "bun:build": "bun build ./src/index.ts --production --bytecode --target bun --outdir ./dist",
     "bun:start": "bun run ./dist/index.js",
+    "bun:format": "bun fmt --check",
+    "bun:format:write": "bun fmt",
     "deno:dev": "deno serve --sloppy-imports --watch ./src/index.ts",
     "deno:test": "deno test --allow-env --sloppy-imports",
     "deno:build": "deno bundle --minify ./src/index.ts --outdir ./dist",

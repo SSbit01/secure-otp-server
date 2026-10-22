@@ -1,0 +1,11 @@
+[fmt]
+jsdoc = true
+printWidth = 140
+semi = true
+singleQuote = false
+sortImports = true
+sortPackageJson = true
+sortTailwindcss = true
+tabWidth = 2
+trailingComma = "none"
+useTabs = false
