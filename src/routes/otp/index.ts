@@ -7,7 +7,7 @@ import { getCurrentKekId, getKek, storeKek } from "@/custom/kms";
 import { generateOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "@/custom/config";
 import sendOtp from "@/custom/send";
 import { BASE64URL_OPTIONS } from "@/lib/base64";
-import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed";
+import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/calculations";
 import { createDek, createKek, encryptTextSymmetrically, generateRandomId, wrapKey } from "@/lib/crypto";
 import {
   ERR_CREDENTIAL_INVALID,

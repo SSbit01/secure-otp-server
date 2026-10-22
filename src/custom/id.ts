@@ -12,7 +12,7 @@
  */
 
 import { BASE64URL_OPTIONS } from "@/lib/base64";
-import { OTP_MAX_AGE_MS } from "@/lib/computed";
+import { OTP_MAX_AGE_MS } from "@/lib/calculations";
 import { generateRandomId } from "@/lib/crypto";
 import type { Context } from "hono";
 

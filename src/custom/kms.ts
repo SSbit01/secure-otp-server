@@ -13,7 +13,7 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
-import { OTP_MAX_AGE_MS } from "@/lib/computed";
+import { OTP_MAX_AGE_MS } from "@/lib/calculations";
 import type { Context } from "hono";
 
 /// CUSTOM
