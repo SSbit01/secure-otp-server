@@ -38,8 +38,8 @@ import {
 } from "@/lib/otp/encode/token";
 import generateOtpTokenCreationResponse from "@/lib/otp/response/create";
 import { getReducedTimePrecision } from "@/lib/time";
-import otpValueValidator from "@/lib/validators/otp";
 import type { OtpTokenData } from "@/lib/otp";
+import { otpValueValidator } from "@/routes/otp/schema";
 
 const otpApp = new Hono();
 

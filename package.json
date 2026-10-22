@@ -10,7 +10,7 @@
     "url": "https://github.com/SSbit01/secure-otp-server/issues"
   },
   "engines": {
-    "bun": ">=1.1.22",
+    "bun": ">=1.4.4",
     "deno": ">=2.5",
     "node": ">=25.0.0"
   },
@@ -34,12 +34,12 @@
     "license": "generate-license-file"
   },
   "dependencies": {
-    "hono": "^4.13.7"
+    "hono": "^4.13.13"
   },
   "devDependencies": {
     "@types/node": "22.6.1",
     "generate-license-file": "^4.2.5",
     "typescript": "^6.0.3",
-    "wrangler": "^4.130.0"
+    "wrangler": "^4.151.3"
   }
 }
