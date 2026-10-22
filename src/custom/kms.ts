@@ -27,10 +27,8 @@ const keyStorage = new Map<string, KeyData>();
 /**
  * Deletes KEK.
  *
- * @async
- * @function deleteKek
- * @param {Context} c - Hono context.
- * @param {string} id - The ID of the KEK to delete.
+ * @param c - Hono context.
+ * @param id - The ID of the KEK to delete.
  */
 export async function deleteKek(c: Context, id: string) {
   console.warn("DELETING KEK: " + id);
@@ -41,10 +39,8 @@ export async function deleteKek(c: Context, id: string) {
 /**
  * Retrieves current KEK ID.
  *
- * @async
- * @function getCurrentKekId
- * @param {Context} c - Hono context.
- * @return {Promise<string|undefined>} A promise that resolves to the key ID if found, otherwise `undefined`.
+ * @param c - Hono context.
+ * @return A promise that resolves to the key ID if found, otherwise `undefined`.
  */
 export async function getCurrentKekId(c: Context): Promise<string | undefined> {
   // Manually clean up expired keys, as this implementation cannot automatically delete them.
@@ -76,11 +72,9 @@ export async function getCurrentKekId(c: Context): Promise<string | undefined> {
 /**
  * Retrieves an encryption key by its ID.
  *
- * @async
- * @function getKek
- * @param {Context} c - Hono context.
- * @param {string} keyId - The ID of the encryption key to retrieve.
- * @return {Promise<CryptoKey|undefined>} A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
+ * @param c - Hono context.
+ * @param keyId - The ID of the encryption key to retrieve.
+ * @return A promise that resolves to the `CryptoKey` if found, otherwise `undefined`.
  */
 export async function getKek(c: Context, keyId: string): Promise<CryptoKey | undefined> {
   const keyData = keyStorage.get(keyId);
@@ -102,11 +96,9 @@ export async function getKek(c: Context, keyId: string): Promise<CryptoKey | und
  *
  * If the key could not be saved due to a technical error, an error should be thrown.
  *
- * @async
- * @function storeKek
- * @param {Context} c - Hono context.
- * @param {CryptoKey} key - The encryption key to store.
- * @param {string} id - ID of the key, store it too.
+ * @param c - Hono context.
+ * @param key - The encryption key to store.
+ * @param id - ID of the key, store it too.
  * @return {Promise<boolean>} A boolean indicating whether the operation was successful.
  */
 export async function storeKek(c: Context, key: CryptoKey, id: string): Promise<boolean> {

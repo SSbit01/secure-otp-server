@@ -5,11 +5,9 @@ import type { Context } from "hono";
  *
  * Customize this function as you like.
  *
- * @async
- * @function
- * @param {Context} c - Hono context.
- * @param {string} credential - Client credential/ID previously passed in `credential.ts`.
- * @returns {Promise<Response>} [Hono Response using the Hono context](https://hono.dev/docs/getting-started/basic#return-json).
+ * @param c - Hono context.
+ * @param credential - Client credential/ID previously passed in `credential.ts`.
+ * @returns [Hono Response using the Hono context](https://hono.dev/docs/getting-started/basic#return-json).
  */
 export default async function finalAction(c: Context, credential: string) {
   /**
