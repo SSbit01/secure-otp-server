@@ -1,12 +1,14 @@
 import { env } from "hono/adapter";
 
 /**
- * @import { Context } from "hono"
+ * @import {Context} from "hono"
  */
 
 const PRODUCTION = "production";
 
-/** @type {boolean} */
+/**
+ * @type {boolean}
+ */
 let production;
 
 /**
