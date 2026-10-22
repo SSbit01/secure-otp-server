@@ -4,25 +4,11 @@ import { KEK_ID_LENGTH } from "@/lib/computed";
 import { generateRandomId } from "@/lib/crypto/id";
 import { createKek, unwrapKey, WRAPPED_DEK_BYTES } from "@/lib/crypto/symmetric/kek";
 import { regexBase64Url } from "@/lib/regex";
+import type { Context } from "hono";
 
-/**
- * @import {Context} from "hono"
- */
+export const KEK_ID_BYTES: number = 12;
 
-/**
- * @type {number}
- */
-export const KEK_ID_BYTES = 12;
-
-/**
- * @async
- * @function getDek
- * @param {Context} c
- * @param {string} kekId
- * @param {string} wrappedDekString
- * @returns {Promise<CryptoKey|undefined>}
- */
-export async function getDek(c, kekId, wrappedDekString) {
+export async function getDek(c: Context, kekId: string, wrappedDekString: string): Promise<CryptoKey | undefined> {
   if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
     return;
   }
@@ -33,10 +19,7 @@ export async function getDek(c, kekId, wrappedDekString) {
     return;
   }
 
-  /**
-   * @type {Uint8Array<ArrayBuffer>}
-   */
-  let wrappedDek;
+  let wrappedDek: Uint8Array<ArrayBuffer>;
 
   try {
     wrappedDek = Uint8Array.fromBase64(wrappedDekString, BASE64URL_OPTIONS);
@@ -51,12 +34,7 @@ export async function getDek(c, kekId, wrappedDekString) {
   return await unwrapKey(wrappedDek, kek);
 }
 
-/**
- * @function rotateKek
- * @param {Context} c
- * @param {string} kekId
- */
-export async function rotateKek(c, kekId) {
+export async function rotateKek(c: Context, kekId: string) {
   const currentKekId = await getCurrentKekId(c);
 
   if (!currentKekId || kekId === currentKekId) {

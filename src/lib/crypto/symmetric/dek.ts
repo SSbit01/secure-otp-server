@@ -4,29 +4,19 @@ import { textDecoder, textEncoder } from "@/lib/text";
 const IV_BYTES = 12;
 const SYMMETRIC_ENCRYPTION_ALGORITHM_NAME = "AES-GCM";
 
-/**
- * @type {AesKeyGenParams}
- */
-export const KEY_ENCRYPTION_PARAMS = Object.freeze({
+export const KEY_ENCRYPTION_PARAMS: AesKeyGenParams = Object.freeze({
   name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,
   length: 256
 });
 
-/**
- * @type {KeyUsage[]}
- */
-export const KEY_ENCRYPTION_USAGES = ["encrypt", "decrypt"];
+export const KEY_ENCRYPTION_USAGES: KeyUsage[] = ["encrypt", "decrypt"];
 
 Object.freeze(KEY_ENCRYPTION_USAGES);
 
 /**
  * Before encrypting and decrypting values, a symmetric `CryptoKey` must be created.
- *
- * @async
- * @function createDek
- * @returns {Promise<CryptoKey>} A `CryptoKey` containing a SHA-256 hash used to encrypt and decrypt strings.
  */
-export async function createDek() {
+export async function createDek(): Promise<CryptoKey> {
   return await crypto.subtle.generateKey(
     KEY_ENCRYPTION_PARAMS,
     true,
@@ -37,21 +27,15 @@ export async function createDek() {
 /**
  * Encrypts a value with a `CryptoKey` previously generated with `createDek`.
  *
- * @async
- * @function encryptTextSymmetrically
- * @param {CryptoKey} key - Symmetric key generated with `createDek`.
- * @param {string} text - String value to be encrypted.
- * @param {BufferSource} [additionalData] - Additional data for authentication.
- * @returns {Promise<string>} The value encrypted and encoded as a Base64 string.
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
  * - The operation failed (e.g. AES-GCM plaintext longer than 2^39−256 bytes).
  */
 export async function encryptTextSymmetrically(
-  key,
-  text,
-  additionalData
-) {
+  key: CryptoKey,
+  text: string,
+  additionalData?: BufferSource
+): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
 
   const encryptedText = new Uint8Array(
@@ -71,17 +55,11 @@ export async function encryptTextSymmetrically(
 }
 
 /**
- * @async
- * @function decryptTextSymmetrically
- * @param {CryptoKey} key
- * @param {string} ciphertext
- * @param {BufferSource} [additionalData] - Additional data for authentication.
- * @returns {Promise<string>}
  * @throws {DOMException} Raised when:
  * - The provided key is not valid.
  * - The operation failed.
  */
-export async function decryptTextSymmetrically(key, ciphertext, additionalData) {
+export async function decryptTextSymmetrically(key: CryptoKey, ciphertext: string, additionalData?: BufferSource): Promise<string> {
   const data = Uint8Array.fromBase64(ciphertext, BASE64URL_OPTIONS);
 
   return textDecoder.decode(

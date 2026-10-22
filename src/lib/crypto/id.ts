@@ -3,10 +3,8 @@
  *
  * - Unlike UUIDv7 or ULID, this ID is not time-based, mitigating risks of timing attacks and timestamp leakage.
  *
- * @function generateRandomId
- * @param {number} length - The length of the ID to generate (18 by default; higher entropy than UUIDv4 [122 vs 144 bits]).
- * @returns {Uint8Array<ArrayBuffer>} A random ID.
+ * @param length - The length of the ID to generate (18 by default; higher entropy than UUIDv4 [122 vs 144 bits]).
  */
-export function generateRandomId(length = 18) {
+export function generateRandomId(length = 18): Uint8Array<ArrayBuffer> {
   return crypto.getRandomValues(new Uint8Array(length));
 }

@@ -1,29 +1,17 @@
 import { deleteCookie, setCookie } from "hono/cookie";
 import { OTP_COOKIE_PREFIX } from "@/custom/config";
 import isProduction from "@/lib/production";
-
-/**
- * @import {Context} from "hono"
- */
+import type { Context } from "hono";
 
 const COOKIE_OTP = "o";
 
 let cookieOtp = "";
 
-/**
- * @function deleteOtpCookie
- * @param {Context} c
- */
-export function deleteOtpCookie(c) {
+export function deleteOtpCookie(c: Context) {
   deleteCookie(c, getOtpCookieName(c));
 }
 
-/**
- * @function getOtpCookieName
- * @param {Context} c
- * @returns {string}
- */
-export function getOtpCookieName(c) {
+export function getOtpCookieName(c: Context): string {
   if (!cookieOtp) {
     cookieOtp = isProduction(c) ? (OTP_COOKIE_PREFIX + COOKIE_OTP) : COOKIE_OTP;
   }
@@ -31,13 +19,7 @@ export function getOtpCookieName(c) {
   return cookieOtp;
 }
 
-/**
- * @function setOtpCookie
- * @param {Context} c
- * @param {string} otpData
- * @param {Date} expires
- */
-export function setOtpCookie(c, otpData, expires) {
+export function setOtpCookie(c: Context, otpData: string, expires: Date) {
   setCookie(
     c,
     getOtpCookieName(c),

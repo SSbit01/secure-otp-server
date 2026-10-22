@@ -1,26 +1,18 @@
 import { decryptTextSymmetrically } from "@/lib/crypto/symmetric/dek";
 import { ATTEMPTS, EXPIRES, OTP, OTP_BLOCK, RESEND_BLOCK } from "@/lib/otp/encode/token";
 import { getReducedTimePrecision } from "@/lib/time";
+import type { OtpToken } from "@/lib/otp/encode/token";
 
-/**
- * @import { OtpToken } from "@/lib/otp/encode/token"
- */
-
-/**
- * @typedef {Object} OtpTokenData
- * @property {Date} expires
- * @property {boolean} [blocked]
- * @property {Date} [resendBlock]
- * @property {Date} [otpBlock]
- */
+export interface OtpTokenData {
+  expires: Date;
+  blocked?: boolean;
+  resendBlock?: Date;
+  otpBlock?: Date;
+}
 
 export const OTP_TOKEN_SEPARATOR = ",";
 
-/**
- * @function blockOtpToken
- * @param {OtpToken} otpToken
- */
-export function blockOtpToken(otpToken) {
+export function blockOtpToken(otpToken: OtpToken) {
   /**
    * Do not use `delete` because it can break engine optimizations.
    */
@@ -30,16 +22,11 @@ export function blockOtpToken(otpToken) {
   otpToken[OTP_BLOCK] = undefined;
 }
 
-/**
- * @function getOtpTokenData
- * @param {OtpToken} otpToken
- * @returns {OtpTokenData}
- */
-export function getOtpTokenData(otpToken) {
+export function getOtpTokenData(otpToken: OtpToken) {
   /**
    * @type {OtpTokenData}
    */
-  const result = {
+  const result: OtpTokenData = {
     expires: new Date(getReducedTimePrecision(otpToken[EXPIRES]))
   };
 
@@ -57,14 +44,11 @@ export function getOtpTokenData(otpToken) {
   return result;
 }
 
-/**
- * @function getOtpTokenList
- * @param {CryptoKey} key
- * @param {string} ciphertext
- * @param {BufferSource} additionalData
- * @returns {Promise<string[]|undefined>}
- */
-export async function getOtpTokenList(key, ciphertext, additionalData) {
+export async function getOtpTokenList(
+  key: CryptoKey,
+  ciphertext: string,
+  additionalData: BufferSource
+): Promise<string[] | undefined> {
   try {
     return (
       await decryptTextSymmetrically(key, ciphertext, additionalData)

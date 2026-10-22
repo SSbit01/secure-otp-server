@@ -13,10 +13,7 @@ import { OTP_TOKEN_SEPARATOR } from "@/lib/otp";
 import { setOtpCookie } from "@/lib/otp/cookie";
 import { createEncodedOtpToken } from "@/lib/otp/encode/token";
 import { getReducedTimePrecision } from "@/lib/time";
-
-/**
- * @import {Context} from "hono"
- */
+import type { Context } from "hono";
 
 /**
  * @async
@@ -25,7 +22,7 @@ import { getReducedTimePrecision } from "@/lib/time";
  * @param {string} credential
  * @return {Promise<Response|undefined>}
  */
-export default async function generateOtpTokenCreationResponse(c, credential) {
+export default async function generateOtpTokenCreationResponse(c: Context, credential: string): Promise<Response> {
   const otp = generateOtp();
 
   if (!await sendOtp(c, credential, otp)) {

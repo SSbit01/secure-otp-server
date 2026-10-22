@@ -1,30 +1,15 @@
 import { KEY_ENCRYPTION_PARAMS, KEY_ENCRYPTION_USAGES } from "@/lib/crypto/symmetric/dek";
 
-/**
- * @type {AesKeyGenParams}
- */
-const KEY_WRAP_PARAMS = Object.freeze({
+const KEY_WRAP_PARAMS: AesKeyGenParams = Object.freeze({
   name: "AES-KW",
   length: 256
 });
 
-/**
- * @type {readonly KeyUsage[]}
- */
-const KEY_WRAP_USAGES = Object.freeze(["wrapKey", "unwrapKey"]);
+const KEY_WRAP_USAGES: readonly KeyUsage[] = Object.freeze(["wrapKey", "unwrapKey"]);
 
-/**
- * AES-KW adds 8 extra bytes of authenticated integrity value (AIV).
- * That's why we need to add 8 to 32 (AES-256) = 40.
- */
 export const WRAPPED_DEK_BYTES = 40;
 
-/**
- * @async
- * @function createKek
- * @returns {Promise<CryptoKey>}
- */
-export async function createKek() {
+export async function createKek(): Promise<CryptoKey> {
   return await crypto.subtle.generateKey(
     KEY_WRAP_PARAMS,
     true,
@@ -33,16 +18,11 @@ export async function createKek() {
 }
 
 /**
- * @async
- * @function wrapKey
- * @param {CryptoKey} key
- * @param {CryptoKey} kek
- * @returns {Promise<ArrayBuffer>}
  * @throws {InvalidAccessError} Raised when the wrapping key is not a key for the requested wrap algorithm.
  * @throws {NotSupported} Raised when trying to use an algorithm that is either unknown or isn't suitable for encryption or wrapping.
  * @throws {TypeError} Raised when trying to use an invalid format.
  */
-export async function wrapKey(key, kek) {
+export async function wrapKey(key: CryptoKey, kek: CryptoKey): Promise<ArrayBuffer> {
   return await crypto.subtle.wrapKey(
     "raw",
     key,
@@ -52,17 +32,12 @@ export async function wrapKey(key, kek) {
 }
 
 /**
- * @async
- * @function unwrapKey
- * @param {BufferSource} wrappedKey
- * @param {CryptoKey} kek
- * @returns {Promise<CryptoKey>}
  * @throws {InvalidAccessError} Raised when the wrapping key is not a key for the requested wrap algorithm.
  * @throws {NotSupported} Raised when trying to use an algorithm that is either unknown or isn't suitable for encryption or wrapping.
  * @throws {SyntaxError} Raised when `keyUsages` is empty but the unwrapped key is of type `secret` or `private`.
  * @throws {TypeError} Raised when trying to use an invalid format.
  */
-export async function unwrapKey(wrappedKey, kek) {
+export async function unwrapKey(wrappedKey: BufferSource, kek: CryptoKey): Promise<CryptoKey> {
   return await crypto.subtle.unwrapKey(
     "raw",
     wrappedKey,
