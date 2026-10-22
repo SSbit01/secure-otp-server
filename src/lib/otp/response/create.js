@@ -1,6 +1,6 @@
 import { generateOtpTokenListId } from "@/custom/id";
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms";
-import { generateOtp } from "@/custom/otp";
+import { generateOtp } from "@/custom/config";
 import sendOtp from "@/custom/send";
 import { BASE64URL_OPTIONS } from "@/lib/base64";
 import { generateRandomId } from "@/lib/crypto/id";

@@ -1,7 +1,7 @@
 import { validator } from "hono/validator";
 
 import { ERR_OTP_INVALID_FORMAT } from "@/lib/error/static";
-import { OTP_LENGTH, OTP_REGEX } from "@/custom/otp";
+import { OTP_LENGTH, OTP_REGEX } from "@/custom/config";
 
 const otpValueValidator = validator("form", async ({ otp }, c) => {
   if (typeof otp !== "string") {

@@ -1,4 +1,4 @@
-import { OTP_INVALID_BLOCK_SECONDS, OTP_MAX_AGE, OTP_RESEND_BLOCK_SECONDS } from "@/custom/otp";
+import { OTP_INVALID_BLOCK_SECONDS, OTP_MAX_AGE, OTP_RESEND_BLOCK_SECONDS } from "@/custom/config";
 import { bytesToBase64Length } from "@/lib/base64";
 import { WRAPPED_DEK_BYTES } from "@/lib/crypto/symmetric/kek";
 import { KEK_ID_BYTES } from "@/lib/kms";

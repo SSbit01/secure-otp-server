@@ -1,5 +1,5 @@
 import { deleteCookie, setCookie } from "hono/cookie";
-import { OTP_COOKIE_PREFIX } from "@/custom/otp";
+import { OTP_COOKIE_PREFIX } from "@/custom/config";
 import isProduction from "@/lib/production";
 
 /**

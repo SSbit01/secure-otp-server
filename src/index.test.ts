@@ -16,7 +16,7 @@ import {
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS
 } from "@/lib/error/names";
-import { generateOtp, OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "@/custom/otp";
+import { generateOtp, OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "@/custom/config";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed";
 import app from "@/index";
 

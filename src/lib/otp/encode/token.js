@@ -5,7 +5,7 @@
  * (no need to create additional objects and arrays).
  */
 
-import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/custom/otp";
+import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/custom/config";
 import { compressNumber, decompressNumber } from "@/lib/compression/number";
 import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/computed";
 import { decodeCredential, encodeCredential } from "@/lib/otp/encode/credential";
