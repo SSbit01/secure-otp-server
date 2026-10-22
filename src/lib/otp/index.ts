@@ -1,4 +1,4 @@
-import { decryptTextSymmetrically } from "@/lib/crypto/symmetric/dek";
+import { decryptTextSymmetrically } from "@/lib/crypto";
 import { ATTEMPTS, EXPIRES, OTP, OTP_BLOCK, RESEND_BLOCK } from "@/lib/otp/encode/token";
 import { getReducedTimePrecision } from "@/lib/time";
 import type { OtpToken } from "@/lib/otp/encode/token";

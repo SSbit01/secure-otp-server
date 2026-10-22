@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { createDek, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto/symmetric/dek";
+import { createDek, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto";
 
 function randomString() {
   return crypto.getRandomValues(new Uint8Array(24)).toBase64();
 }
 
-describe("DEK", () => {
+describe("Crypto DEK", () => {
   test("Generate a random symmetric CryptoKey", async () => {
     const key = await createDek();
     assert.ok(key instanceof globalThis.CryptoKey);

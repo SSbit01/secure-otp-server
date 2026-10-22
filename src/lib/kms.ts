@@ -1,8 +1,7 @@
 import { deleteKek, getCurrentKekId, getKek, storeKek } from "@/custom/kms";
 import { BASE64URL_OPTIONS } from "@/lib/base64";
 import { KEK_ID_LENGTH } from "@/lib/computed";
-import { generateRandomId } from "@/lib/crypto/id";
-import { createKek, unwrapKey, WRAPPED_DEK_BYTES } from "@/lib/crypto/symmetric/kek";
+import { WRAPPED_DEK_BYTES, createKek, generateRandomId, unwrapKey } from "@/lib/crypto";
 import { regexBase64Url } from "@/lib/regex";
 import type { Context } from "hono";
 
