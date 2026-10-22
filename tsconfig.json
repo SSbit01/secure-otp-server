@@ -22,6 +22,5 @@
     "target": "esnext",
     "types": ["node"]
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.*", "tests"]
+  "include": ["src/**/*"]
 }
