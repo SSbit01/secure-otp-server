@@ -19,7 +19,7 @@ import {
   ERR_OTP_TOO_MANY_ATTEMPTS,
   ERR_OTP_TOO_MANY_CREDENTIALS,
   ERR_OTP_VERIFICATION_NOT_ALLOWED
-} from "@/lib/error/static";
+} from "@/lib/error";
 import { getDek, KEK_ID_BYTES, rotateKek } from "@/lib/kms";
 import { blockOtpToken, getOtpTokenData, getOtpTokenList, OTP_TOKEN_SEPARATOR } from "@/lib/otp";
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie";

@@ -12,7 +12,7 @@ import {
   OTP_TOO_MANY_CREDENTIALS,
   OTP_VERIFICATION_NOT_ALLOWED,
   SERVER
-} from "@/lib/error/names";
+} from "@/lib/error/codes";
 
 export const ERR_GENERIC = Object.freeze({
   error: GENERIC

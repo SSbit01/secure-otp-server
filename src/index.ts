@@ -5,7 +5,7 @@ import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { env } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
-import { ERR_BODY_TOO_LARGE, ERR_GENERIC, ERR_SERVER } from "@/lib/error/static";
+import { ERR_BODY_TOO_LARGE, ERR_GENERIC, ERR_SERVER } from "@/lib/error";
 import routesApp from "@/routes";
 
 const app = new Hono();

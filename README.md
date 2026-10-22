@@ -193,9 +193,9 @@ Server error responses follow this structure:
 }
 ```
 
-- `error`: A string representing the error code. You can find all error codes in [`src/lib/error/names.js`](/src/lib/error/names.js).
+- `error`: A string representing the error code. You can find all error codes in [`src/lib/error/codes.ts`](/src/lib/error/codes.ts).
 - `message`: A human readable description of the error. Static error messages can be changed in
-  [`src/lib/error/static.js`](src/lib/error/static.js).
+  [`src/lib/error/index.ts`](src/lib/error/index.ts).
 
 ## Testing
 

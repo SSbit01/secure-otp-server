@@ -4,7 +4,7 @@ import { generateOtp } from "@/custom/config";
 import sendOtp from "@/custom/send";
 import { BASE64URL_OPTIONS } from "@/lib/base64";
 import { generateRandomId, createDek, createKek, encryptTextSymmetrically, wrapKey } from "@/lib/crypto";
-import { ERR_CREDENTIAL_INVALID } from "@/lib/error/static";
+import { ERR_CREDENTIAL_INVALID } from "@/lib/error";
 import { KEK_ID_BYTES } from "@/lib/kms";
 import { OTP_RESEND_BLOCK_MS } from "@/lib/calculations";
 import { OTP_TOKEN_SEPARATOR } from "@/lib/otp";
