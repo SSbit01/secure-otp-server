@@ -1,6 +1,6 @@
 import { deleteCookie, setCookie } from "hono/cookie";
 import { OTP_COOKIE_PREFIX } from "@/custom/config";
-import isProduction from "@/lib/production";
+import isProduction from "@/env";
 import type { Context } from "hono";
 
 const COOKIE_OTP = "o";

@@ -21,19 +21,22 @@ import {
   ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "@/lib/error";
 import { getDek, KEK_ID_BYTES, rotateKek } from "@/lib/kms";
-import { blockOtpToken, getOtpTokenData, getOtpTokenList, OTP_TOKEN_SEPARATOR } from "@/lib/otp";
-import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie";
 import {
   ATTEMPTS,
-  createEncodedOtpToken,
   CREDENTIAL,
-  decodeOtpToken,
-  encodeOtpToken,
   EXPIRES,
   OTP,
   OTP_BLOCK,
-  RESEND_BLOCK
-} from "@/lib/otp/encode/token";
+  OTP_TOKEN_SEPARATOR,
+  RESEND_BLOCK,
+  blockOtpToken,
+  createEncodedOtpToken,
+  decodeOtpToken,
+  encodeOtpToken,
+  getOtpTokenData,
+  getOtpTokenList
+} from "@/lib/otp";
+import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie";
 import { getReducedTimePrecision } from "@/lib/time";
 import { otpValueValidator } from "@/routes/otp/schema";
 import type { Context } from "hono";
