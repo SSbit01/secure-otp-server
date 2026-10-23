@@ -1,5 +1,5 @@
 import { BASE64URL_OPTIONS } from "@/lib/base64";
-import { textDecoder, textEncoder } from "@/lib/text";
+import { textDecoder, textEncoder } from "@/lib/codec";
 
 const IV_BYTES = 12;
 

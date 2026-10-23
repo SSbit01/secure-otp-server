@@ -40,7 +40,7 @@ setInterval(() => {
  * @param c - Hono context.
  * @return The new ID and the expiration date.
  */
-export async function generateOtpTokenListId(c: Context): Promise<[string, number]> {
+export async function generateOtpTokenId(c: Context): Promise<[string, number]> {
   let newId: string;
   let storedExpires: number | undefined;
   let i = 0;
@@ -52,7 +52,7 @@ export async function generateOtpTokenListId(c: Context): Promise<[string, numbe
   } while (storedExpires !== undefined && i < MAX_STORE_ATTEMPTS && storedExpires < Date.now());
 
   if (i >= MAX_STORE_ATTEMPTS) {
-    throw new Error("Failed to generate a new ID after several attempts in `generateOtpTokenListId`");
+    throw new Error("Failed to generate a new ID after several attempts in `generateOtpTokenId`");
   }
 
   const expires = Date.now() + OTP_MAX_AGE_MS;

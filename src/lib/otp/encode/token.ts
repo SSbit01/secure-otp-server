@@ -8,7 +8,6 @@
 import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/custom/config";
 import { compressNumber, decompressNumber } from "@/lib/codec";
 import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/calculations";
-import { decodeCredential, encodeCredential } from "@/lib/otp/encode/credential";
 
 export type OtpToken = [
   credential: string,
@@ -28,6 +27,14 @@ export const OTP_BLOCK = 5;
 
 const OTP_SEPARATOR = "|";
 const OTP_DOUBLE_SEPARATOR = OTP_SEPARATOR + OTP_SEPARATOR;
+
+function encodeCredential(credential: string): string {
+  return encodeURI(credential);
+}
+
+function decodeCredential(encodedCredential: string): string {
+  return decodeURI(encodedCredential).trim();
+}
 
 export function createEncodedOtpToken(
   credential: NonNullable<OtpToken[typeof CREDENTIAL]>,

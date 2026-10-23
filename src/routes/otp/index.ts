@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import credentialValidator from "@/custom/credential";
 import finalAction from "@/custom/final";
-import { deleteOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "@/custom/id";
+import { deleteOtpTokenId, generateOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "@/custom/id";
 import { getCurrentKekId, getKek, storeKek } from "@/custom/kms";
 import { generateOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "@/custom/config";
 import sendOtp from "@/custom/send";
@@ -34,10 +34,74 @@ import {
   OTP_BLOCK,
   RESEND_BLOCK
 } from "@/lib/otp/encode/token";
-import generateOtpTokenCreationResponse from "@/lib/otp/response/create";
 import { getReducedTimePrecision } from "@/lib/time";
 import { otpValueValidator } from "@/routes/otp/schema";
+import type { Context } from "hono";
 import type { OtpTokenData } from "@/lib/otp";
+
+/**
+ * @async
+ * @function generateOtpTokenCreationResponse
+ * @param {Context} c
+ * @param {string} credential
+ * @return {Promise<Response|undefined>}
+ */
+async function generateOtpTokenCreationResponse(c: Context, credential: string): Promise<Response> {
+  const otp = generateOtp();
+
+  if (!await sendOtp(c, credential, otp)) {
+    return c.json(ERR_CREDENTIAL_INVALID, 400);
+  }
+
+  let kekId = await getCurrentKekId(c);
+
+  /**
+   * @type {(CryptoKey|undefined)}
+   */
+  let kek;
+
+  if (kekId) {
+    kek = await getKek(c, kekId);
+  }
+
+  /**
+   * @type {Uint8Array<ArrayBuffer>}
+   */
+  let additionalData;
+
+  if (kek) {
+    // @ts-expect-error: kekId is not undefined.
+    additionalData = Uint8Array.fromBase64(kekId, BASE64URL_OPTIONS);
+  } else {
+    kek = await createKek();
+    additionalData = generateRandomId(KEK_ID_BYTES);
+    kekId = additionalData.toBase64(BASE64URL_OPTIONS);
+    await storeKek(c, kek, kekId);
+  }
+
+  const dek = await createDek();
+  const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
+  const [id, expires] = await generateOtpTokenId(c);
+  const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires));
+  const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
+
+  setOtpCookie(
+    c,
+    kekId +
+      wrappedDekString +
+      await encryptTextSymmetrically(
+        dek,
+        createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
+        additionalData
+      ),
+    lessPreciseExpiresDate
+  );
+
+  return c.json({
+    expires: lessPreciseExpiresDate,
+    resendBlock: new Date(getReducedTimePrecision(resendBlock, Math.ceil))
+  });
+}
 
 const otpApp = new Hono();
 
