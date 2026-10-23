@@ -197,10 +197,6 @@ Server error responses follow this structure:
 - `message`: A human readable description of the error. Static error messages can be changed in
   [`src/lib/error/index.ts`](src/lib/error/index.ts).
 
-## Testing
-
-The test suite is written with Bun's built-in test runner. Use `bun run bun:test` to run the tests.
-
 ## License
 
 This project is [MIT licensed](/LICENSE).
