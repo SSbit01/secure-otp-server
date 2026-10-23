@@ -144,7 +144,7 @@ This endpoint sets one `HttpOnly` cookie that must be included in subsequent req
 
 Generates and sends a new OTP for the current token. This endpoint does not require a request body.
 
-- **Logic**: Resend timing and limits can be configured in [`src/custom/otp.ts`](/src/custom/otp.ts).
+- **Logic**: Resend timing and limits can be configured in [`src/custom/config.ts`](/src/custom/config.ts).
 
 ### `POST /api/otp/verify`
 
@@ -161,7 +161,7 @@ Health check endpoint, available for any HTTP method. Returns `200 OK` with the 
 
 Key logic is separated into the following modules:
 
-- [`src/custom/otp.ts`](/src/custom/otp.ts): OTP generation logic (length, characters, expiry), resend delays,
+- [`src/custom/config.ts`](/src/custom/config.ts): OTP generation logic (length, characters, expiry), resend delays,
   and the `OTP_MAX_CREDENTIALS` cap that governs multi-credential sessions.
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
 - [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email or SMS service).
