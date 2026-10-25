@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { createDek, decryptTextSymmetrically, encryptTextSymmetrically } from "@/lib/crypto";
+import { createDek, decryptTextSymmetrically, encryptTextSymmetrically } from "#src/lib/crypto";
 
 function randomString() {
   return crypto.getRandomValues(new Uint8Array(24)).toBase64();

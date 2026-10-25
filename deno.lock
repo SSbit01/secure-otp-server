@@ -3,9 +3,7 @@
   "specifiers": {
     "npm:@types/node@22.6.1": "22.6.1",
     "npm:generate-license-file@^4.2.5": "4.2.5",
-    "npm:hono@^4.13.7": "4.13.7",
-    "npm:typescript@^6.0.3": "6.0.3",
-    "npm:wrangler@^4.130.0": "4.130.0"
+    "npm:typescript@^6.0.3": "6.0.3"
   },
   "npm": {
     "@cloudflare/kv-asset-handler@0.5.0": {
@@ -1503,9 +1501,9 @@
       "dependencies": [
         "npm:@types/node@22.6.1",
         "npm:generate-license-file@^4.2.5",
-        "npm:hono@^4.13.7",
+        "npm:hono@^4.13.13",
         "npm:typescript@^6.0.3",
-        "npm:wrangler@^4.130.0"
+        "npm:wrangler@^4.151.3"
       ]
     }
   }

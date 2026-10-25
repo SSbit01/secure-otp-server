@@ -11,9 +11,9 @@
  * - Redis, DynamoDB or similar are the best alternatives.
  */
 
-import { BASE64URL_OPTIONS } from "@/lib/base64";
-import { OTP_MAX_AGE_MS } from "@/lib/calculations";
-import { generateRandomId } from "@/lib/crypto";
+import { BASE64URL_OPTIONS } from "#src/lib/base64";
+import { OTP_MAX_AGE_MS } from "#src/lib/calculations";
+import { generateRandomId } from "#src/lib/crypto";
 import type { Context } from "hono";
 
 /// CUSTOM

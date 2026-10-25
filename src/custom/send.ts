@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { generateOtp } from "@/custom/config";
+import type { generateOtp } from "#src/custom/config";
 
 type Otp = ReturnType<typeof generateOtp>;
 

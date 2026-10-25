@@ -5,7 +5,7 @@
     "jsxImportSource": "hono/jsx"
   },
   "imports": {
-    "@/": "./src/"
+    "#src/": "./src/"
   },
   "lint": {
     "rules": {

@@ -5,8 +5,8 @@ import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { env } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
-import { ERR_BODY_TOO_LARGE, ERR_GENERIC, ERR_SERVER } from "@/lib/error";
-import routesApp from "@/routes";
+import { ERR_BODY_TOO_LARGE, ERR_GENERIC, ERR_SERVER } from "#src/lib/error";
+import routesApp from "#src/routes";
 
 const app = new Hono();
 
@@ -15,7 +15,7 @@ app.use(logger());
 app.use(secureHeaders());
 
 app.use(cors({
-  origin(origin, c) {
+  origin(_origin, c) {
     return env(c).CORS_ORIGIN;
   },
 

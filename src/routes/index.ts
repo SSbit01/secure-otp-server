@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import otpApp from "@/routes/otp";
+import otpApp from "#src/routes/otp";
 
 const routesApp = new Hono();
 

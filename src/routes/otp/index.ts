@@ -1,14 +1,14 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import credentialValidator from "@/custom/credential";
-import finalAction from "@/custom/final";
-import { deleteOtpTokenId, generateOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "@/custom/id";
-import { getCurrentKekId, getKek, storeKek } from "@/custom/kms";
-import { generateOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "@/custom/config";
-import sendOtp from "@/custom/send";
-import { BASE64URL_OPTIONS } from "@/lib/base64";
-import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "@/lib/calculations";
-import { createDek, createKek, encryptTextSymmetrically, generateRandomId, wrapKey } from "@/lib/crypto";
+import credentialValidator from "#src/custom/credential";
+import finalAction from "#src/custom/final";
+import { deleteOtpTokenId, generateOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "#src/custom/id";
+import { getCurrentKekId, getKek, storeKek } from "#src/custom/kms";
+import { generateOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "#src/custom/config";
+import sendOtp from "#src/custom/send";
+import { BASE64URL_OPTIONS } from "#src/lib/base64";
+import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_LENGTH, OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
+import { createDek, createKek, encryptTextSymmetrically, generateRandomId, wrapKey } from "#src/lib/crypto";
 import {
   ERR_CREDENTIAL_INVALID,
   ERR_OTP_CONFLICT,
@@ -19,8 +19,8 @@ import {
   ERR_OTP_TOO_MANY_ATTEMPTS,
   ERR_OTP_TOO_MANY_CREDENTIALS,
   ERR_OTP_VERIFICATION_NOT_ALLOWED
-} from "@/lib/error";
-import { getDek, KEK_ID_BYTES, rotateKek } from "@/lib/kms";
+} from "#src/lib/error";
+import { getDek, KEK_ID_BYTES, rotateKek } from "#src/lib/kms";
 import {
   ATTEMPTS,
   CREDENTIAL,
@@ -35,12 +35,12 @@ import {
   encodeOtpToken,
   getOtpTokenData,
   getOtpTokenList
-} from "@/lib/otp";
-import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "@/lib/otp/cookie";
-import { getReducedTimePrecision } from "@/lib/time";
-import { otpValueValidator } from "@/routes/otp/schema";
+} from "#src/lib/otp";
+import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "#src/lib/otp/cookie";
+import { getReducedTimePrecision } from "#src/lib/time";
+import { otpValueValidator } from "#src/routes/otp/schema";
 import type { Context } from "hono";
-import type { OtpTokenData } from "@/lib/otp";
+import type { OtpTokenData } from "#src/lib/otp";
 
 /**
  * @async

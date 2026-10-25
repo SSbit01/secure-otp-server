@@ -1,8 +1,8 @@
-import { decryptTextSymmetrically } from "@/lib/crypto";
-import { getReducedTimePrecision } from "@/lib/time";
-import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "@/custom/config";
-import { compressNumber, decompressNumber } from "@/lib/codec";
-import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "@/lib/calculations";
+import { decryptTextSymmetrically } from "#src/lib/crypto";
+import { getReducedTimePrecision } from "#src/lib/time";
+import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "#src/custom/config";
+import { compressNumber, decompressNumber } from "#src/lib/codec";
+import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
 
 type OtpToken = [
   credential: string,

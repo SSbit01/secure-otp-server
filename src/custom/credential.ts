@@ -1,5 +1,5 @@
 import { validator } from "hono/validator";
-import { ERR_CREDENTIAL_INVALID } from "@/lib/error";
+import { ERR_CREDENTIAL_INVALID } from "#src/lib/error";
 
 /**
  * Verify the initial credential (e.g. email, phone number...) before generating and sending an OTP.

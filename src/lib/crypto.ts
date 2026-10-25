@@ -1,5 +1,5 @@
-import { BASE64URL_OPTIONS } from "@/lib/base64";
-import { textDecoder, textEncoder } from "@/lib/codec";
+import { BASE64URL_OPTIONS } from "#src/lib/base64";
+import { textDecoder, textEncoder } from "#src/lib/codec";
 
 const IV_BYTES = 12;
 
@@ -10,7 +10,9 @@ const KEY_ENCRYPTION_PARAMS: AesKeyGenParams = Object.freeze({
   length: 256
 });
 
-const KEY_ENCRYPTION_USAGES: readonly KeyUsage[] = Object.freeze(["encrypt", "decrypt"]);
+const KEY_ENCRYPTION_USAGES: KeyUsage[] = ["encrypt", "decrypt"];
+
+Object.freeze(KEY_ENCRYPTION_USAGES);
 
 const KEY_WRAP_ALGORITHM_NAME = "AES-KW";
 
@@ -19,7 +21,9 @@ const KEY_WRAP_PARAMS: AesKeyGenParams = Object.freeze({
   length: 256
 });
 
-const KEY_WRAP_USAGES: readonly KeyUsage[] = Object.freeze(["wrapKey", "unwrapKey"]);
+const KEY_WRAP_USAGES: KeyUsage[] = ["wrapKey", "unwrapKey"];
+
+Object.freeze(KEY_WRAP_USAGES);
 
 /**
  * 32 (original DEK size) + 8 (AES-KW overhead) = 40
