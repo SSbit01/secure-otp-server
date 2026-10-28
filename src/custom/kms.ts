@@ -13,7 +13,8 @@
  * A custom key rotation implementation with envelope encryption with a specialized KMS is recommended.
  */
 
-import { OTP_MAX_AGE_MS } from "#src/lib/calculations";
+import { getEnvOtpMaxAge } from "#src/env";
+import { secondsToMs } from "#src/lib/time";
 import type { Context } from "hono";
 
 /// CUSTOM
@@ -104,7 +105,7 @@ export async function getKek(c: Context, keyId: string): Promise<CryptoKey | und
 export async function storeKek(c: Context, key: CryptoKey, id: string): Promise<boolean> {
   const rotate = Date.now() + ROTATE_TIME;
 
-  keyStorage.set(id, [rotate + OTP_MAX_AGE_MS, rotate, key]);
+  keyStorage.set(id, [rotate + secondsToMs(getEnvOtpMaxAge(c)), rotate, key]);
 
   return true;
 }

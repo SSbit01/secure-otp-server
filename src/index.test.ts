@@ -1,4 +1,6 @@
 /**
+ * TODO: Remove the dependency on default configurations in "#src/custom/default" across all tests.
+ * 
  * MANY TESTS ARE STILL MISSING:
  *
  * - Multiple OTP tokens tests.
@@ -16,32 +18,20 @@ import {
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS
 } from "#src/lib/error/codes";
-import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_RADIX } from "#src/custom/default";
-import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
+import {
+  OTP_ATTEMPTS_BLOCK,
+  OTP_INVALID_BLOCK_SECONDS,
+  OTP_LENGTH,
+  OTP_MAX_ATTEMPTS,
+  OTP_RADIX,
+  OTP_RESEND_BLOCK_SECONDS
+} from "#src/custom/default";
+import { secondsToMs } from "#src/lib/time";
 import app from "#src/index";
 
-function generateOtp(): string {
-  return (
-    crypto.getRandomValues(new BigUint64Array(1))[0]
-      .toString(OTP_RADIX)
-      .substring(0, OTP_LENGTH)
-      .padStart(OTP_LENGTH, "0")
-  );
-}
-
 const ATTEMPTS_WITHOUT_BLOCK = OTP_MAX_ATTEMPTS - OTP_ATTEMPTS_BLOCK;
-
-function getCookieFromResponse(res: Response) {
-  const arr = res.headers.getSetCookie();
-
-  const result = [];
-
-  for (const cookie of arr) {
-    result.push(cookie.split(";")[0]);
-  }
-
-  return result.join("; ");
-}
+const OTP_INVALID_BLOCK_MS = secondsToMs(OTP_INVALID_BLOCK_SECONDS);
+const OTP_RESEND_BLOCK_MS = secondsToMs(OTP_RESEND_BLOCK_SECONDS);
 
 async function fetchOtpcookie() {
   const body = new URLSearchParams();
@@ -67,6 +57,27 @@ async function fetchOtpcookie() {
   assert.ok(new Date(data.expires) > date);
 
   return getCookieFromResponse(res);
+}
+
+function generateOtp(): string {
+  return (
+    crypto.getRandomValues(new BigUint64Array(1))[0]
+      .toString(OTP_RADIX)
+      .substring(0, OTP_LENGTH)
+      .padStart(OTP_LENGTH, "0")
+  );
+}
+
+function getCookieFromResponse(res: Response) {
+  const arr = res.headers.getSetCookie();
+
+  const result = [];
+
+  for (const cookie of arr) {
+    result.push(cookie.split(";")[0]);
+  }
+
+  return result.join("; ");
 }
 
 describe("OTP Generation", () => {

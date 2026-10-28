@@ -11,9 +11,10 @@
  * - Redis, DynamoDB or similar are the best alternatives.
  */
 
+import { getEnvOtpMaxAge } from "#src/env";
 import { BASE64URL_OPTIONS } from "#src/lib/base64";
-import { OTP_MAX_AGE_MS } from "#src/lib/calculations";
 import { generateRandomId } from "#src/lib/crypto";
+import { secondsToMs } from "#src/lib/time";
 import type { Context } from "hono";
 
 /// CUSTOM
@@ -55,7 +56,7 @@ export async function generateOtpTokenId(c: Context): Promise<[string, number]> 
     throw new Error("Failed to generate a new ID after several attempts in `generateOtpTokenId`");
   }
 
-  const expires = Date.now() + OTP_MAX_AGE_MS;
+  const expires = Date.now() + secondsToMs(getEnvOtpMaxAge(c));
 
   idStorage.set(newId, expires);
 
@@ -139,7 +140,7 @@ export async function updateOtpTokenExpires(c: Context, id: string, oldExpires: 
     return 0;
   }
 
-  const newExpires = Date.now() + OTP_MAX_AGE_MS;
+  const newExpires = Date.now() + secondsToMs(getEnvOtpMaxAge(c));
 
   idStorage.set(id, newExpires);
 

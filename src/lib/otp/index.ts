@@ -2,7 +2,6 @@ import { getEnvOtpLength, getEnvOtpMaxAttempts, getEnvOtpRadix } from "#src/env"
 import { decryptTextSymmetrically } from "#src/lib/crypto";
 import { getReducedTimePrecision } from "#src/lib/time";
 import { compressNumber, decompressNumber } from "#src/lib/codec";
-import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
 import type { Context } from "hono";
 
 type OtpToken = [
@@ -80,10 +79,6 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
 
   otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES]);
 
-  if ((otpToken[EXPIRES] - dateNow) > OTP_MAX_AGE_MS) {
-    return;
-  }
-
   try {
     otpToken[CREDENTIAL] = decodeCredential(otpToken[CREDENTIAL]);
   } catch {
@@ -109,18 +104,10 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
 
     if (otpToken[RESEND_BLOCK]) {
       otpToken[RESEND_BLOCK] = decompressNumber(otpToken[RESEND_BLOCK]);
-
-      if ((otpToken[RESEND_BLOCK] - dateNow) > OTP_RESEND_BLOCK_MS) {
-        return;
-      }
     }
 
     if (otpToken[OTP_BLOCK]) {
       otpToken[OTP_BLOCK] = decompressNumber(otpToken[OTP_BLOCK]);
-
-      if ((otpToken[OTP_BLOCK] - dateNow) > OTP_INVALID_BLOCK_MS) {
-        return;
-      }
     }
   } else if (otpToken[ATTEMPTS] || otpToken[RESEND_BLOCK] || otpToken[OTP_BLOCK]) {
     return;

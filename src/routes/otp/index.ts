@@ -5,9 +5,14 @@ import finalAction from "#src/custom/final";
 import { deleteOtpTokenId, generateOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "#src/custom/id";
 import { getCurrentKekId, getKek, storeKek } from "#src/custom/kms";
 import sendOtp from "#src/custom/send";
-import { getEnvOtpAllowOnlyOneResending, getEnvOtpAttemptsBlock, getEnvOtpMaxCredentials } from "#src/env";
+import {
+  getEnvOtpAllowOnlyOneResending,
+  getEnvOtpAttemptsBlock,
+  getEnvOtpInvalidBlockSeconds,
+  getEnvOtpMaxCredentials,
+  getEnvOtpResendBlockSeconds
+} from "#src/env";
 import { BASE64URL_OPTIONS } from "#src/lib/base64";
-import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
 import { createDek, createKek, encryptTextSymmetrically, generateRandomId, wrapKey } from "#src/lib/crypto";
 import {
   ERR_CREDENTIAL_INVALID,
@@ -38,7 +43,7 @@ import {
   RESEND_BLOCK
 } from "#src/lib/otp";
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "#src/lib/otp/cookie";
-import { getReducedTimePrecision } from "#src/lib/time";
+import { getReducedTimePrecision, secondsToMs } from "#src/lib/time";
 import { otpValueValidator } from "#src/routes/otp/schema";
 import type { Context } from "hono";
 import type { OtpTokenData } from "#src/lib/otp";
@@ -87,7 +92,7 @@ async function generateOtpTokenCreationResponse(c: Context, credential: string):
   const wrappedDekString = new Uint8Array(await wrapKey(dek, kek)).toBase64(BASE64URL_OPTIONS);
   const [id, expires] = await generateOtpTokenId(c);
   const lessPreciseExpiresDate = new Date(getReducedTimePrecision(expires));
-  const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
+  const resendBlock = Date.now() + secondsToMs(getEnvOtpResendBlockSeconds(c));
 
   setOtpCookie(
     c,
@@ -259,7 +264,7 @@ otpApp.post("/create", credentialValidator, async (c) => {
       return c.json(ERR_OTP_CONFLICT, 429);
     }
 
-    const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
+    const resendBlock = Date.now() + secondsToMs(getEnvOtpResendBlockSeconds(c));
 
     currentEncodedOtpToken = createEncodedOtpToken(c, credential, expires, otp, resendBlock);
 
@@ -425,7 +430,7 @@ otpApp.post("/resend", async (c) => {
   } else if (getEnvOtpAllowOnlyOneResending(c)) {
     currentOtpToken[RESEND_BLOCK] = undefined;
   } else {
-    const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
+    const resendBlock = Date.now() + secondsToMs(getEnvOtpResendBlockSeconds(c));
     /**
      * Only set resend block if the OTP token will expire in more than 4 seconds.
      */
@@ -628,13 +633,17 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
 
   if (!currentOtpToken[ATTEMPTS]) {
     blockOtpToken(currentOtpToken);
-  } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= getEnvOtpAttemptsBlock(c)) {
-    currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS;
-    /**
-     * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
-     */
-    if ((currentOtpToken[EXPIRES] - currentOtpToken[OTP_BLOCK]) <= 1000) {
-      blockOtpToken(currentOtpToken);
+  } else {
+    const otpInvalidBlockMs = secondsToMs(getEnvOtpInvalidBlockSeconds(c));
+
+    if (otpInvalidBlockMs && currentOtpToken[ATTEMPTS] <= getEnvOtpAttemptsBlock(c)) {
+      currentOtpToken[OTP_BLOCK] = Date.now() + otpInvalidBlockMs;
+      /**
+       * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
+       */
+      if ((currentOtpToken[EXPIRES] - currentOtpToken[OTP_BLOCK]) <= 1000) {
+        blockOtpToken(currentOtpToken);
+      }
     }
   }
 
