@@ -1,4 +1,9 @@
 /**
+ * This file contains default configuration values for the OTP system.
+ * These values can be overridden by environment variables.
+ */
+
+/**
  * By default, only one resending is allowed per session.
  * You can enable unlimited resendings by setting this variable to `false`.
  *

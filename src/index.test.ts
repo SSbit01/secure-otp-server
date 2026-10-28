@@ -1,6 +1,6 @@
 /**
  * TODO: Remove the dependency on default configurations in "#src/custom/default" across all tests.
- * 
+ *
  * MANY TESTS ARE STILL MISSING:
  *
  * - Multiple OTP tokens tests.

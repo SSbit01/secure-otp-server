@@ -108,10 +108,24 @@ deno install
 Create a `.env` file in the root of the project. For production, set `NODE_ENV` to `"production"` to enable secure cookies
 and specify your frontend's origin with `CORS_ORIGIN`.
 
-```env
+The OTP defaults are defined in [`src/custom/default.ts`](/src/custom/default.ts). You can override them with environment variables:
+
+```shell
 # .env
 NODE_ENV="production"
-CORS_ORIGIN="https://your-app.com"
+CORS_ORIGIN="https://example.com"
+
+# Optional overrides for src/custom/default.ts
+OTP_ALLOW_ONLY_ONE_RESENDING="true"
+OTP_ATTEMPTS_BLOCK="1"
+OTP_COOKIE_PREFIX="__Host-Http-"
+OTP_INVALID_BLOCK_SECONDS="20"
+OTP_LENGTH="10"
+OTP_MAX_AGE="180"
+OTP_MAX_CREDENTIALS="3"
+OTP_MAX_ATTEMPTS="3"
+OTP_RADIX="36"
+OTP_RESEND_BLOCK_SECONDS="30"
 ```
 
 See [`sample.env`](/sample.env).
@@ -144,8 +158,6 @@ This endpoint sets one `HttpOnly` cookie that must be included in subsequent req
 
 Generates and sends a new OTP for the current token. This endpoint does not require a request body.
 
-- **Logic**: Resend timing and limits can be configured in [`src/custom/config.ts`](/src/custom/config.ts).
-
 ### `POST /api/otp/verify`
 
 Verifies an OTP code.
@@ -161,8 +173,7 @@ Health check endpoint, available for any HTTP method. Returns `200 OK` with the 
 
 Key logic is separated into the following modules:
 
-- [`src/custom/config.ts`](/src/custom/config.ts): OTP generation logic (length, characters, expiry), resend delays,
-  and the `OTP_MAX_CREDENTIALS` cap that governs multi-credential sessions.
+- [`src/custom/default.ts`](/src/custom/default.ts): Default configuration values for the OTP system.
 - [`src/custom/credential.ts`](/src/custom/credential.ts): Validation schema for the `/api/otp/create` request body.
 - [`src/custom/send.ts`](/src/custom/send.ts): Logic for sending the OTP to the user (e.g. using an email or SMS service).
 - [`src/custom/id.ts`](/src/custom/id.ts): Storage for OTP token list IDs (defaults to in-memory).
