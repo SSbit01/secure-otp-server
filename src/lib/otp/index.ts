@@ -1,8 +1,9 @@
-import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_RADIX } from "#src/custom/default";
+import { getEnvOtpLength, getEnvOtpMaxAttempts, getEnvOtpRadix } from "#src/env";
 import { decryptTextSymmetrically } from "#src/lib/crypto";
 import { getReducedTimePrecision } from "#src/lib/time";
 import { compressNumber, decompressNumber } from "#src/lib/codec";
 import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
+import type { Context } from "hono";
 
 type OtpToken = [
   credential: string,
@@ -53,6 +54,7 @@ export function blockOtpToken(otpToken: OtpToken) {
 }
 
 export function createEncodedOtpToken(
+  c: Context,
   credential: NonNullable<OtpToken[typeof CREDENTIAL]>,
   expires: NonNullable<OtpToken[typeof EXPIRES]>,
   otp: NonNullable<OtpToken[typeof OTP]>,
@@ -62,7 +64,7 @@ export function createEncodedOtpToken(
     encodeCredential(credential) + OTP_SEPARATOR +
     compressNumber(expires) + OTP_SEPARATOR +
     otp + OTP_SEPARATOR +
-    OTP_MAX_ATTEMPTS + OTP_SEPARATOR +
+    getEnvOtpMaxAttempts(c) + OTP_SEPARATOR +
     compressNumber(resendBlock)
   );
 }
@@ -93,7 +95,7 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
   }
 
   if (otpToken[OTP]) {
-    if (otpToken[OTP].length !== OTP_LENGTH || !regexOtp.test(otpToken[OTP])) {
+    if (!regexOtp.test(otpToken[OTP])) {
       return;
     }
 
@@ -101,7 +103,7 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
     /**
      * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
      */
-    if (isNaN(otpToken[ATTEMPTS]) || otpToken[ATTEMPTS] <= 0 || otpToken[ATTEMPTS] > OTP_MAX_ATTEMPTS) {
+    if (isNaN(otpToken[ATTEMPTS]) || otpToken[ATTEMPTS] <= 0) {
       return;
     }
 
@@ -114,10 +116,6 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
     }
 
     if (otpToken[OTP_BLOCK]) {
-      if (otpToken[ATTEMPTS] > OTP_ATTEMPTS_BLOCK) {
-        return;
-      }
-
       otpToken[OTP_BLOCK] = decompressNumber(otpToken[OTP_BLOCK]);
 
       if ((otpToken[OTP_BLOCK] - dateNow) > OTP_INVALID_BLOCK_MS) {
@@ -155,10 +153,12 @@ export function encodeOtpToken(otpToken: OtpToken): string {
   return result;
 }
 
-export function generateOtp(): string {
+export function generateOtp(c: Context): string {
+  const OTP_LENGTH = getEnvOtpLength(c);
+
   return (
     crypto.getRandomValues(new BigUint64Array(1))[0]
-      .toString(OTP_RADIX)
+      .toString(getEnvOtpRadix(c))
       .substring(0, OTP_LENGTH)
       .padStart(OTP_LENGTH, "0")
   );

@@ -16,10 +16,18 @@ import {
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS
 } from "#src/lib/error/codes";
-import { OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "#src/custom/default";
+import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_RADIX } from "#src/custom/default";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
-import { generateOtp } from "#src/lib/otp";
 import app from "#src/index";
+
+function generateOtp(): string {
+  return (
+    crypto.getRandomValues(new BigUint64Array(1))[0]
+      .toString(OTP_RADIX)
+      .substring(0, OTP_LENGTH)
+      .padStart(OTP_LENGTH, "0")
+  );
+}
 
 const ATTEMPTS_WITHOUT_BLOCK = OTP_MAX_ATTEMPTS - OTP_ATTEMPTS_BLOCK;
 
@@ -218,9 +226,13 @@ describe("OTP Sending", () => {
   });
 
   it("Send invalid OTP format", async () => {
+    const body = new URLSearchParams();
+
+    body.append("otp", "$$AAA");
+
     const res = await app.request("/api/otp/verify", {
       method: "POST",
-      body: `otp=${Math.random().toString(36)}`,
+      body,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         cookie

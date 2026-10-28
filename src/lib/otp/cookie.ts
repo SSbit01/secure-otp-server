@@ -1,6 +1,5 @@
 import { deleteCookie, setCookie } from "hono/cookie";
-import { OTP_COOKIE_PREFIX } from "#src/custom/default";
-import { isProduction } from "#src/env";
+import { getEnvOtpCookiePrefix, isProduction } from "#src/env";
 import type { Context } from "hono";
 
 const COOKIE_OTP = "o";
@@ -13,7 +12,7 @@ export function deleteOtpCookie(c: Context) {
 
 export function getOtpCookieName(c: Context): string {
   if (!cookieOtp) {
-    cookieOtp = isProduction(c) ? (OTP_COOKIE_PREFIX + COOKIE_OTP) : COOKIE_OTP;
+    cookieOtp = isProduction(c) ? (getEnvOtpCookiePrefix(c) + COOKIE_OTP) : COOKIE_OTP;
   }
 
   return cookieOtp;

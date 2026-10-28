@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import credentialValidator from "#src/custom/credential";
-import { OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "#src/custom/default";
 import finalAction from "#src/custom/final";
 import { deleteOtpTokenId, generateOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "#src/custom/id";
 import { getCurrentKekId, getKek, storeKek } from "#src/custom/kms";
 import sendOtp from "#src/custom/send";
+import { getEnvOtpAllowOnlyOneResending, getEnvOtpAttemptsBlock, getEnvOtpMaxCredentials } from "#src/env";
 import { BASE64URL_OPTIONS } from "#src/lib/base64";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
 import { createDek, createKek, encryptTextSymmetrically, generateRandomId, wrapKey } from "#src/lib/crypto";
@@ -23,19 +23,19 @@ import {
 import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, getDek, KEK_ID_BYTES, KEK_ID_LENGTH, rotateKek } from "#src/lib/kms";
 import {
   ATTEMPTS,
+  blockOtpToken,
+  createEncodedOtpToken,
   CREDENTIAL,
+  decodeOtpToken,
+  encodeOtpToken,
   EXPIRES,
+  generateOtp,
+  getOtpTokenData,
+  getOtpTokenList,
   OTP,
   OTP_BLOCK,
   OTP_TOKEN_SEPARATOR,
-  RESEND_BLOCK,
-  blockOtpToken,
-  createEncodedOtpToken,
-  decodeOtpToken,
-  encodeOtpToken,
-  generateOtp,
-  getOtpTokenData,
-  getOtpTokenList
+  RESEND_BLOCK
 } from "#src/lib/otp";
 import { deleteOtpCookie, getOtpCookieName, setOtpCookie } from "#src/lib/otp/cookie";
 import { getReducedTimePrecision } from "#src/lib/time";
@@ -51,7 +51,7 @@ import type { OtpTokenData } from "#src/lib/otp";
  * @return {Promise<Response|undefined>}
  */
 async function generateOtpTokenCreationResponse(c: Context, credential: string): Promise<Response> {
-  const otp = generateOtp();
+  const otp = generateOtp(c);
 
   if (!await sendOtp(c, credential, otp)) {
     return c.json(ERR_CREDENTIAL_INVALID, 400);
@@ -95,7 +95,7 @@ async function generateOtpTokenCreationResponse(c: Context, credential: string):
       wrappedDekString +
       await encryptTextSymmetrically(
         dek,
-        createEncodedOtpToken(credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
+        createEncodedOtpToken(c, credential, expires, otp, resendBlock) + OTP_TOKEN_SEPARATOR + id,
         additionalData
       ),
     lessPreciseExpiresDate
@@ -146,7 +146,7 @@ otpApp.post("/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if (encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+  if (encodedOtpTokenList.length > getEnvOtpMaxCredentials(c)) {
     deleteOtpCookie(c);
     await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
@@ -182,7 +182,7 @@ otpApp.post("/create", credentialValidator, async (c) => {
     }
   }
 
-  if (newEncodedOtpTokenList.length >= OTP_MAX_CREDENTIALS) {
+  if (newEncodedOtpTokenList.length >= getEnvOtpMaxCredentials(c)) {
     return c.json(ERR_OTP_TOO_MANY_CREDENTIALS, 400);
   }
 
@@ -242,7 +242,7 @@ otpApp.post("/create", credentialValidator, async (c) => {
       return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
 
-    const otp = generateOtp();
+    const otp = generateOtp(c);
 
     if (!await sendOtp(c, credential, otp)) {
       return c.json(ERR_CREDENTIAL_INVALID, 400);
@@ -261,7 +261,7 @@ otpApp.post("/create", credentialValidator, async (c) => {
 
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
 
-    currentEncodedOtpToken = createEncodedOtpToken(credential, expires, otp, resendBlock);
+    currentEncodedOtpToken = createEncodedOtpToken(c, credential, expires, otp, resendBlock);
 
     newEncodedOtpTokenList.push(currentEncodedOtpToken);
 
@@ -324,7 +324,7 @@ otpApp.post("/resend", async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if (encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+  if (encodedOtpTokenList.length > getEnvOtpMaxCredentials(c)) {
     deleteOtpCookie(c);
     await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
@@ -415,14 +415,14 @@ otpApp.post("/resend", async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  currentOtpToken[OTP] = generateOtp();
+  currentOtpToken[OTP] = generateOtp(c);
 
   if (!await sendOtp(c, currentOtpToken[CREDENTIAL], currentOtpToken[OTP])) {
     /**
      * Block the OTP token.
      */
     blockOtpToken(currentOtpToken);
-  } else if (OTP_ALLOW_ONLY_ONE_RESENDING) {
+  } else if (getEnvOtpAllowOnlyOneResending(c)) {
     currentOtpToken[RESEND_BLOCK] = undefined;
   } else {
     const resendBlock = Date.now() + OTP_RESEND_BLOCK_MS;
@@ -496,7 +496,7 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if (encodedOtpTokenList.length > OTP_MAX_CREDENTIALS) {
+  if (encodedOtpTokenList.length > getEnvOtpMaxCredentials(c)) {
     deleteOtpCookie(c);
     await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
@@ -628,7 +628,7 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
 
   if (!currentOtpToken[ATTEMPTS]) {
     blockOtpToken(currentOtpToken);
-  } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= OTP_ATTEMPTS_BLOCK) {
+  } else if (OTP_INVALID_BLOCK_MS && currentOtpToken[ATTEMPTS] <= getEnvOtpAttemptsBlock(c)) {
     currentOtpToken[OTP_BLOCK] = Date.now() + OTP_INVALID_BLOCK_MS;
     /**
      * If the OTP block time is greater than or similar to the OTP expiration time, block the OTP.
