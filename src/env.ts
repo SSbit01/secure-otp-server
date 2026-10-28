@@ -5,14 +5,14 @@ const PRODUCTION = "production";
 
 let production: boolean;
 
-export default function isProduction(c: Context): boolean {
+export function isProduction(c: Context): boolean {
   if (production === undefined) {
-    const envVars = env(c);
+    const envVariables = env(c);
 
-    production = envVars.NODE_ENV?.toLowerCase() === PRODUCTION ||
-      envVars.ENVIRONMENT?.toLowerCase() === PRODUCTION ||
-      envVars.DENO_ENV?.toLowerCase() === PRODUCTION ||
-      envVars.VERCEL_ENV?.toLowerCase() === PRODUCTION;
+    production = envVariables.NODE_ENV?.toLowerCase() === PRODUCTION ||
+      envVariables.ENVIRONMENT?.toLowerCase() === PRODUCTION ||
+      envVariables.DENO_ENV?.toLowerCase() === PRODUCTION ||
+      envVariables.VERCEL_ENV?.toLowerCase() === PRODUCTION;
   }
 
   return production;
