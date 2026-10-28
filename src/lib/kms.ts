@@ -1,11 +1,14 @@
 import { deleteKek, getCurrentKekId, getKek, storeKek } from "#src/custom/kms";
-import { BASE64URL_OPTIONS } from "#src/lib/base64";
-import { KEK_ID_LENGTH } from "#src/lib/calculations";
+import { BASE64URL_OPTIONS, bytesToBase64Length } from "#src/lib/base64";
 import { WRAPPED_DEK_BYTES, createKek, generateRandomId, unwrapKey } from "#src/lib/crypto";
 import { regexBase64Url } from "#src/lib/regex";
 import type { Context } from "hono";
 
 export const KEK_ID_BYTES: number = 12;
+
+export const KEK_ID_LENGTH: number = bytesToBase64Length(KEK_ID_BYTES);
+
+export const ENVELOPE_ENCRYPTION_WRAP_LENGTH = KEK_ID_LENGTH + bytesToBase64Length(WRAPPED_DEK_BYTES);
 
 export async function getDek(c: Context, kekId: string, wrappedDekString: string): Promise<CryptoKey | undefined> {
   if (kekId.length !== KEK_ID_LENGTH || !regexBase64Url.test(kekId)) {
