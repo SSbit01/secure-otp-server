@@ -1,5 +1,5 @@
 import { deleteCookie, setCookie } from "hono/cookie";
-import { OTP_COOKIE_PREFIX } from "#src/custom/config";
+import { OTP_COOKIE_PREFIX } from "#src/custom/default";
 import isProduction from "#src/env";
 import type { Context } from "hono";
 

@@ -1,6 +1,6 @@
+import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_RADIX } from "#src/custom/default";
 import { decryptTextSymmetrically } from "#src/lib/crypto";
 import { getReducedTimePrecision } from "#src/lib/time";
-import { OTP_ATTEMPTS_BLOCK, OTP_LENGTH, OTP_MAX_ATTEMPTS, OTP_REGEX } from "#src/custom/config";
 import { compressNumber, decompressNumber } from "#src/lib/codec";
 import { OTP_INVALID_BLOCK_MS, OTP_MAX_AGE_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
 
@@ -28,6 +28,8 @@ export const RESEND_BLOCK = 4;
 export const OTP_BLOCK = 5;
 
 export const OTP_TOKEN_SEPARATOR = ",";
+
+export const regexOtp = /[a-z0-9]+/;
 
 const OTP_SEPARATOR = "|";
 const OTP_DOUBLE_SEPARATOR = OTP_SEPARATOR + OTP_SEPARATOR;
@@ -91,9 +93,10 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
   }
 
   if (otpToken[OTP]) {
-    if (otpToken[OTP].length !== OTP_LENGTH || !OTP_REGEX.test(otpToken[OTP])) {
+    if (otpToken[OTP].length !== OTP_LENGTH || !regexOtp.test(otpToken[OTP])) {
       return;
     }
+
     otpToken[ATTEMPTS] = +otpToken[ATTEMPTS];
     /**
      * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.
@@ -101,17 +104,22 @@ export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): O
     if (isNaN(otpToken[ATTEMPTS]) || otpToken[ATTEMPTS] <= 0 || otpToken[ATTEMPTS] > OTP_MAX_ATTEMPTS) {
       return;
     }
+
     if (otpToken[RESEND_BLOCK]) {
       otpToken[RESEND_BLOCK] = decompressNumber(otpToken[RESEND_BLOCK]);
+
       if ((otpToken[RESEND_BLOCK] - dateNow) > OTP_RESEND_BLOCK_MS) {
         return;
       }
     }
+
     if (otpToken[OTP_BLOCK]) {
       if (otpToken[ATTEMPTS] > OTP_ATTEMPTS_BLOCK) {
         return;
       }
+
       otpToken[OTP_BLOCK] = decompressNumber(otpToken[OTP_BLOCK]);
+
       if ((otpToken[OTP_BLOCK] - dateNow) > OTP_INVALID_BLOCK_MS) {
         return;
       }
@@ -145,6 +153,15 @@ export function encodeOtpToken(otpToken: OtpToken): string {
   }
 
   return result;
+}
+
+export function generateOtp(): string {
+  return (
+    crypto.getRandomValues(new BigUint64Array(1))[0]
+      .toString(OTP_RADIX)
+      .substring(0, OTP_LENGTH)
+      .padStart(OTP_LENGTH, "0")
+  );
 }
 
 export function getOtpTokenData(otpToken: OtpToken) {

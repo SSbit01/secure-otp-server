@@ -16,8 +16,9 @@ import {
   OTP_RESENT_NOT_ALLOWED,
   OTP_TOO_MANY_ATTEMPTS
 } from "#src/lib/error/codes";
-import { generateOtp, OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "#src/custom/config";
+import { OTP_ATTEMPTS_BLOCK, OTP_MAX_ATTEMPTS } from "#src/custom/default";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
+import { generateOtp } from "#src/lib/otp";
 import app from "#src/index";
 
 const ATTEMPTS_WITHOUT_BLOCK = OTP_MAX_ATTEMPTS - OTP_ATTEMPTS_BLOCK;

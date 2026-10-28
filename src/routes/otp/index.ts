@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import credentialValidator from "#src/custom/credential";
+import { OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "#src/custom/default";
 import finalAction from "#src/custom/final";
 import { deleteOtpTokenId, generateOtpTokenId, replaceOtpTokenId, updateOtpTokenExpires, verifyOtpTokenId } from "#src/custom/id";
 import { getCurrentKekId, getKek, storeKek } from "#src/custom/kms";
-import { generateOtp, OTP_ALLOW_ONLY_ONE_RESENDING, OTP_ATTEMPTS_BLOCK, OTP_MAX_CREDENTIALS } from "#src/custom/config";
 import sendOtp from "#src/custom/send";
 import { BASE64URL_OPTIONS } from "#src/lib/base64";
 import { OTP_INVALID_BLOCK_MS, OTP_RESEND_BLOCK_MS } from "#src/lib/calculations";
@@ -20,7 +20,7 @@ import {
   ERR_OTP_TOO_MANY_CREDENTIALS,
   ERR_OTP_VERIFICATION_NOT_ALLOWED
 } from "#src/lib/error";
-import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, KEK_ID_BYTES, KEK_ID_LENGTH, getDek, rotateKek } from "#src/lib/kms";
+import { ENVELOPE_ENCRYPTION_WRAP_LENGTH, getDek, KEK_ID_BYTES, KEK_ID_LENGTH, rotateKek } from "#src/lib/kms";
 import {
   ATTEMPTS,
   CREDENTIAL,
@@ -33,6 +33,7 @@ import {
   createEncodedOtpToken,
   decodeOtpToken,
   encodeOtpToken,
+  generateOtp,
   getOtpTokenData,
   getOtpTokenList
 } from "#src/lib/otp";

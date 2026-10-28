@@ -60,27 +60,14 @@ export const OTP_MAX_CREDENTIALS: number = 3;
 export const OTP_MAX_ATTEMPTS: number = 3;
 
 /**
+ * Base to use for representing the OTP value, from 2 to 36.
+ * The higher the base, the more characters are used to represent the OTP value.
+ */
+export const OTP_RADIX: number = 36;
+
+/**
  * When sending an OTP, you may want to ask users to wait a few seconds until they have the option to resend another OTP.
  *
  * - It is recommended to set it to 30 seconds.
  */
 export const OTP_RESEND_BLOCK_SECONDS: number = 30;
-
-/**
- * You can customize the OTP format using regular expressions.
- *
- * This will be used to verify OTP values; it has no impact on their creation.
- */
-export const OTP_REGEX: RegExp = /[a-z0-9]+/;
-
-/**
- * This implenetation creates an OTP with lowercase letters and numbers.
- */
-export function generateOtp() {
-  return (
-    crypto.getRandomValues(new BigUint64Array(1))[0]
-      .toString(36)
-      .substring(0, OTP_LENGTH)
-      .padStart(OTP_LENGTH, "0")
-  );
-}

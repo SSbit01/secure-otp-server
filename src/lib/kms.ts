@@ -1,7 +1,6 @@
 import { deleteKek, getCurrentKekId, getKek, storeKek } from "#src/custom/kms";
-import { BASE64URL_OPTIONS, bytesToBase64Length } from "#src/lib/base64";
-import { WRAPPED_DEK_BYTES, createKek, generateRandomId, unwrapKey } from "#src/lib/crypto";
-import { regexBase64Url } from "#src/lib/regex";
+import { BASE64URL_OPTIONS, bytesToBase64Length, regexBase64Url } from "#src/lib/base64";
+import { createKek, generateRandomId, unwrapKey, WRAPPED_DEK_BYTES } from "#src/lib/crypto";
 import type { Context } from "hono";
 
 export const KEK_ID_BYTES: number = 12;
