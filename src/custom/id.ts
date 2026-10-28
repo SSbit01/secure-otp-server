@@ -67,7 +67,7 @@ export async function generateOtpTokenId(c: Context): Promise<[string, number]> 
  *
  * @param c - Hono context.
  * @param id - The ID to delete.
- * @param [expires] - Expiration time in milliseconds since epoch used to verify the ID; if not provided, the ID must be deleted without verification.
+ * @param expires - Expiration time in milliseconds since epoch used to verify the ID; if not provided, the ID must be deleted without verification.
  * @returns Whether deletion was successful or not.
  */
 export async function deleteOtpTokenId(c: Context, id: string, expires?: number): Promise<boolean> {
