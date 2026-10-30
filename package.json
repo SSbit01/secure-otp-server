@@ -1,6 +1,6 @@
 {
   "name": "secure-otp-server",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "Server template for generating, encrypting, and verifying One-Time Passwords (OTP).",
   "author": "Stefan Samson <ss42701@outlook.com> (https://ssbit01.github.io/)",
   "license": "MIT",
