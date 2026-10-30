@@ -38,8 +38,8 @@ export const OTP_INVALID_BLOCK_SECONDS: number = 20;
 /**
  * You can customize the length of OTPs.
  *
- * - It is recommended to set it between 6 and 10.
  * - Increasesing the OTP length improves security (higher [min-entropy](https://en.wikipedia.org/wiki/Min-entropy)).
+ * - Set this value between 6 and 10. Exceeding 12 can reduce OTP generation precision at high `OTP_RADIX` values.
  */
 export const OTP_LENGTH: number = 10;
 
