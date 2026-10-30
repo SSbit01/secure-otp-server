@@ -71,10 +71,9 @@ export function createEncodedOtpToken(
 /**
  * @function decodeOtpToken
  * @param {string} encodedOtpToken
- * @param {number} [dateNow]
  * @returns {OtpToken|undefined} If it doesn't return anything, it means the token is invalid, and maybe the keys were compromised.
  */
-export function decodeOtpToken(encodedOtpToken: string, dateNow = Date.now()): OtpToken | undefined {
+export function decodeOtpToken(encodedOtpToken: string): OtpToken | undefined {
   const otpToken: any = encodedOtpToken.split(OTP_SEPARATOR);
 
   otpToken[EXPIRES] = decompressNumber(otpToken[EXPIRES]);
