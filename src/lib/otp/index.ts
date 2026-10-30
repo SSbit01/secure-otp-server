@@ -1,7 +1,8 @@
 import { getEnvOtpLength, getEnvOtpMaxAttempts, getEnvOtpRadix } from "#src/env";
+import { BASE64URL_OPTIONS } from "#src/lib/base64";
 import { decryptTextSymmetrically } from "#src/lib/crypto";
 import { getReducedTimePrecision } from "#src/lib/time";
-import { compressNumber, decompressNumber } from "#src/lib/codec";
+import { compressNumber, decompressNumber, textEncoder } from "#src/lib/codec";
 import type { Context } from "hono";
 
 type OtpToken = [
@@ -89,10 +90,6 @@ export function decodeOtpToken(encodedOtpToken: string): OtpToken | undefined {
   }
 
   if (otpToken[OTP]) {
-    if (!regexOtp.test(otpToken[OTP])) {
-      return;
-    }
-
     otpToken[ATTEMPTS] = +otpToken[ATTEMPTS];
     /**
      * `otpToken[ATTEMPTS]` can't be zero because it's automatically deleted.

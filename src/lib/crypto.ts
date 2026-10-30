@@ -71,12 +71,7 @@ export async function encryptTextSymmetrically(
     )
   );
 
-  const result = new Uint8Array(IV_BYTES + encryptedText.length);
-
-  result.set(iv);
-  result.set(encryptedText, IV_BYTES);
-
-  return result.toBase64(BASE64URL_OPTIONS);
+  return iv.toBase64(BASE64URL_OPTIONS) + encryptedText.toBase64(BASE64URL_OPTIONS);
 }
 
 /**
