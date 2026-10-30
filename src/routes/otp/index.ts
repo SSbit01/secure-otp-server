@@ -151,12 +151,6 @@ otpApp.post("/create", credentialValidator, async (c) => {
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
-  if (encodedOtpTokenList.length > getEnvOtpMaxCredentials(c)) {
-    deleteOtpCookie(c);
-    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
-    return c.json(ERR_OTP_INVALID_COOKIE, 400);
-  }
-
   const newEncodedOtpTokenList: string[] = [];
 
   let currentOtpTokenData: OtpTokenData | undefined;
@@ -167,6 +161,7 @@ otpApp.post("/create", credentialValidator, async (c) => {
 
   for (const encodedOtpToken of encodedOtpTokenList) {
     const otpToken = decodeOtpToken(encodedOtpToken);
+
     if (!otpToken) {
       deleteOtpCookie(c);
       await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
@@ -326,12 +321,6 @@ otpApp.post("/resend", async (c) => {
   if (!id) {
     deleteOtpCookie(c);
     await rotateKek(c, kekId);
-    return c.json(ERR_OTP_INVALID_COOKIE, 400);
-  }
-
-  if (encodedOtpTokenList.length > getEnvOtpMaxCredentials(c)) {
-    deleteOtpCookie(c);
-    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
@@ -498,12 +487,6 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
   if (!id) {
     deleteOtpCookie(c);
     await rotateKek(c, kekId);
-    return c.json(ERR_OTP_INVALID_COOKIE, 400);
-  }
-
-  if (encodedOtpTokenList.length > getEnvOtpMaxCredentials(c)) {
-    deleteOtpCookie(c);
-    await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
     return c.json(ERR_OTP_INVALID_COOKIE, 400);
   }
 
