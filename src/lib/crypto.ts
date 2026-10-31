@@ -1,5 +1,5 @@
 import { BASE64URL_OPTIONS } from "#src/lib/base64";
-import { textDecoder, textEncoder } from "#src/lib/codec";
+import { decodeText, encodeText } from "#src/lib/codec";
 
 const IV_BYTES = 12;
 
@@ -67,7 +67,7 @@ export async function encryptTextSymmetrically(
     await crypto.subtle.encrypt(
       { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv, additionalData },
       key,
-      textEncoder.encode(text)
+      encodeText(text)
     )
   );
 
@@ -82,7 +82,7 @@ export async function encryptTextSymmetrically(
 export async function decryptTextSymmetrically(key: CryptoKey, ciphertext: string, additionalData?: BufferSource): Promise<string> {
   const data = Uint8Array.fromBase64(ciphertext, BASE64URL_OPTIONS);
 
-  return textDecoder.decode(
+  return decodeText(
     await crypto.subtle.decrypt(
       {
         name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,

@@ -1,8 +1,7 @@
 import { getEnvOtpLength, getEnvOtpMaxAttempts, getEnvOtpRadix } from "#src/env";
-import { BASE64URL_OPTIONS } from "#src/lib/base64";
 import { decryptTextSymmetrically } from "#src/lib/crypto";
 import { getReducedTimePrecision } from "#src/lib/time";
-import { compressNumber, decompressNumber, textEncoder } from "#src/lib/codec";
+import { compressNumber, decompressNumber } from "#src/lib/codec";
 import type { Context } from "hono";
 
 type OtpToken = [
