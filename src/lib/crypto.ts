@@ -3,10 +3,10 @@ import { decodeText, encodeText } from "#src/lib/codec";
 
 const IV_BYTES = 12;
 
-const SYMMETRIC_ENCRYPTION_ALGORITHM_NAME = "AES-GCM";
+const KEY_ENCRYPTION_NAME = "AES-GCM";
 
 const KEY_ENCRYPTION_PARAMS: AesKeyGenParams = Object.freeze({
-  name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,
+  name: KEY_ENCRYPTION_NAME,
   length: 256
 });
 
@@ -65,7 +65,7 @@ export async function encryptTextSymmetrically(
 
   const encryptedText = new Uint8Array(
     await crypto.subtle.encrypt(
-      { name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME, iv, additionalData },
+      { name: KEY_ENCRYPTION_NAME, iv, additionalData },
       key,
       encodeText(text)
     )
@@ -85,7 +85,7 @@ export async function decryptTextSymmetrically(key: CryptoKey, ciphertext: strin
   return decodeText(
     await crypto.subtle.decrypt(
       {
-        name: SYMMETRIC_ENCRYPTION_ALGORITHM_NAME,
+        name: KEY_ENCRYPTION_NAME,
         iv: data.subarray(0, IV_BYTES),
         additionalData
       },
