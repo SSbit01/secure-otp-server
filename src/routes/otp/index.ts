@@ -207,11 +207,13 @@ otpApp.post("/create", credentialValidator, async (c) => {
     envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH);
   } else {
     let kek: CryptoKey | undefined;
+
     if (currentKekId) {
       [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)]);
     } else {
       dek = await createDek();
     }
+
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId;
@@ -343,11 +345,13 @@ otpApp.post("/resend", async (c) => {
 
   for (const encodedOtpToken of encodedOtpTokenList) {
     const otpToken = decodeOtpToken(encodedOtpToken);
+
     if (!otpToken) {
       deleteOtpCookie(c);
       await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
       return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
+
     if (dateNow < otpToken[EXPIRES]) {
       if (expires < otpToken[EXPIRES]) {
         expires = otpToken[EXPIRES];
@@ -383,11 +387,13 @@ otpApp.post("/resend", async (c) => {
     envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH);
   } else {
     let kek: CryptoKey | undefined;
+
     if (currentKekId) {
       [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)]);
     } else {
       dek = await createDek();
     }
+
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId;
@@ -509,11 +515,13 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
 
   for (const encodedOtpToken of encodedOtpTokenList) {
     const otpToken = decodeOtpToken(encodedOtpToken);
+
     if (!otpToken) {
       deleteOtpCookie(c);
       await Promise.allSettled([deleteOtpTokenId(c, id), rotateKek(c, kekId)]);
       return c.json(ERR_OTP_INVALID_COOKIE, 400);
     }
+
     if (dateNow < otpToken[EXPIRES]) {
       if (expires < otpToken[EXPIRES]) {
         expires = otpToken[EXPIRES];
@@ -580,11 +588,13 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
     envelope = otpData.substring(0, ENVELOPE_ENCRYPTION_WRAP_LENGTH);
   } else {
     let kek: CryptoKey | undefined;
+
     if (currentKekId) {
       [dek, kek] = await Promise.all([createDek(), getKek(c, currentKekId)]);
     } else {
       dek = await createDek();
     }
+
     if (kek) {
       // @ts-expect-error: `currentKekId` must be defined if KEK exists.
       kekId = currentKekId;
@@ -614,9 +624,7 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
 
   currentOtpToken[ATTEMPTS]--;
 
-  if (!currentOtpToken[ATTEMPTS]) {
-    blockOtpToken(currentOtpToken);
-  } else {
+  if (currentOtpToken[ATTEMPTS] > 0) {
     const otpInvalidBlockMs = secondsToMs(getEnvOtpInvalidBlockSeconds(c));
 
     if (otpInvalidBlockMs && currentOtpToken[ATTEMPTS] <= getEnvOtpAttemptsBlock(c)) {
@@ -628,6 +636,8 @@ otpApp.post("/verify", otpValueValidator, async (c) => {
         blockOtpToken(currentOtpToken);
       }
     }
+  } else {
+    blockOtpToken(currentOtpToken)
   }
 
   encodedOtpTokenList.push(
